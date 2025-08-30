@@ -1,0 +1,302 @@
+:root {
+    --primary-color: #f4c2c2; /* Rosa pastel - suavidad y dulzura */
+    --primary-color-hover: rgba(244, 194, 194, 0.4);
+    --secondary-color: #ffb7b2; /* Melocotón suave - atractivo y moderno */
+    --accent-color: #ffd1a9; /* Durazno claro - cálido y acogedor */
+    --background-color: #fffaf0; /* Crema claro - neutro y suave */
+    --text-color: #6b4226; /* Marrón cálido - tono natural para el texto */
+    --highlight-color: #ffefba; /* Amarillo claro - toque alegre para resaltar */
+    --dark-color: #533747; /* Marrón oscuro - elegante y serio para contrastes */
+    --shadow-color: 40deg 28% 61%;
+    --container-color: hsl(0, 0%, 100%);
+    --shadow-elevation-medium:
+        0.3px 0.5px 0.6px hsl(var(--shadow-color) / 0.44),
+        0.7px 1.5px 1.7px -1px hsl(var(--shadow-color) / 0.4),
+        2px 3.9px 4.6px -2px hsl(var(--shadow-color) / 0.36),
+        5px 10px 11.7px -3px hsl(var(--shadow-color) / 0.32);
+    --shadow-elevation-high:
+        0.3px 0.5px 0.6px hsl(var(--shadow-color) / 0.41),
+        1.2px 2.4px 2.8px -0.4px hsl(var(--shadow-color) / 0.39),
+        2.3px 4.6px 5.4px -0.9px hsl(var(--shadow-color) / 0.37),
+        4px 7.9px 9.2px -1.3px hsl(var(--shadow-color) / 0.35),
+        6.6px 13.3px 15.5px -1.7px hsl(var(--shadow-color) / 0.34),
+        10.7px 21.5px 25px -2.2px hsl(var(--shadow-color) / 0.32),
+        16.7px 33.4px 38.9px -2.6px hsl(var(--shadow-color) / 0.3),
+        25px 50px 58.3px -3px hsl(var(--shadow-color) / 0.28);
+}
+
+/* ********************************** */
+/*             MAIN CONTENT           */
+/* ********************************** */
+
+
+/* **********  TITLE  *************** */
+
+.title {
+    width: 100%;
+    display: grid;
+    align-items: start;
+    padding: 1.5rem 3rem;
+}
+
+.title h1 {
+    font-size: 2rem;
+}
+
+/* **********  DATA  *************** */
+
+.data {
+    display: flex;
+    /*flex-direction: row;
+    flex-wrap: wrap;*/
+    flex-flow: row wrap;
+    justify-content: space-between;
+    padding: 1.5rem 1rem;
+    border-top: 1px solid #cccccc;
+    border-bottom: 1px solid #cccccc;
+}
+
+.data div {
+    /*border: 1px solid var(--primary-color);
+    border-radius: 1rem;*/
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-flow: row wrap;
+    gap: 1rem;
+    /*flex: 1 1 200px;*/
+}
+
+.data h2 {
+    padding: 4px;
+}
+
+.data input {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    height: 100%;
+    padding: 0.3rem;
+    text-align: center;
+}
+
+/* **********    CUSTOMER    *********** */
+
+.customer {
+    display: flex;
+    flex-flow: column wrap;
+    justify-content: space-between;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #cccccc;
+}
+
+.customer .customer-crud {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+    align-items: center;
+    margin: 0 10rem;
+    justify-content: space-evenly;
+}
+
+.customer-crud div{
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-flow: row wrap;
+    gap: 1rem;
+}
+
+.customer-search h2{
+    padding: 4px;
+}
+
+.customer-search input[type="text"] {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    height: 100%;
+    padding: 0.5rem;
+}
+
+.customer-search input[type="submit"] {
+    border: 2px solid var(--dark-color);
+    border-radius: 1rem;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0.6rem 1rem;
+    cursor: pointer;
+}
+
+.customer-search form{
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    width: fit-content;
+}
+.customer-information {
+    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 0;
+    
+}
+
+.customer-details {
+    margin: 0 13rem;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+    align-content: center;
+}
+
+.customer-details h2{
+    padding: 4px;
+}
+
+.customer-details input {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    height: 100%;
+    padding: 0.5rem;
+}
+
+/* **********    PRODUCT    *********** */
+
+.product {
+    display: flex;
+    flex-flow: column wrap;
+    justify-content: space-between;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #cccccc;
+}
+
+.product .product-list {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+    gap: 1rem;
+    align-items: center;
+    margin: 0 10rem;
+    justify-content: center;
+}
+
+.product-list div{
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-flow: row wrap;
+    gap: 1rem;
+}
+
+.product-list h2{
+    padding: 4px;
+}
+
+.product-list button {
+    border: 2px solid var(--dark-color);
+    border-radius: 1rem;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0.6rem;
+    cursor: pointer;
+}
+
+.product-table {
+  width: 100%;
+  max-width: 900px;
+  margin: 1.5rem auto;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+}
+
+.product-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-table th,
+.product-table td {
+  padding: 12px 16px;
+  text-align: center;
+}
+
+.product-table thead {
+  background-color: var(--primary-color);
+  color: #333; /* texto oscuro para contraste */
+  text-transform: uppercase;
+  font-weight: bold;
+  letter-spacing: 0.5px;
+}
+
+.product-table tbody tr:nth-child(even) {
+  background-color: #fdfdfd;
+}
+
+.product-table tbody tr:hover {
+  background-color: var(--primary-color-hover);
+  transition: background 0.3s;
+}
+
+.product-table tfoot {
+  background-color: #f9f9f9;
+  font-weight: bold;
+}
+
+.product-table tfoot td {
+  padding: 12px 16px;
+}
+
+/* primera celda del tfoot */
+.product-table tfoot td:first-child {
+  text-align: right;
+  padding-left: 20px;
+}
+
+/* última celda del tfoot */
+.product-table tfoot td:last-child {
+  text-align: center;
+}
+
+/* **********    PRE ORDEN BUTTONS    *********** */
+
+.preorden-buttons {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    padding: 1.5rem 1rem;
+    border-bottom: 1px solid #cccccc;
+    gap: 1rem;
+}
+
+.preorden-buttons div {
+    display: flex;
+    justify-content: center;
+    padding: 1rem 1.5rem;
+}
+
+.preorden-buttons button{
+    border: 2px solid var(--dark-color);
+    border-radius: 1rem;
+    background-color: var(--primary-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0.6rem;
+    cursor: pointer;
+    width: 15rem;
+}
+

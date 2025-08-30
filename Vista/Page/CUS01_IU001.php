@@ -24,6 +24,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
             "rol" => $rol
         ];
         #$mejoresVendidos = $obj->bestProducts();
+        #para ver si he cambido XD
         ?>
         <script>
             $(function () {

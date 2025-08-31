@@ -24,7 +24,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
             "rol" => $rol
         ];
         #$mejoresVendidos = $obj->bestProducts();
-        #para ver si he cambido XD
         ?>
         <script>
             $(function () {
@@ -51,7 +50,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <form method="post" id="buscarCliente">
                             <h2>DNI:</h2>
                             <input type="text" placeholder="Ingrese DNI" name="dni-cliente">
-                            <input type="submit" value="Buscar" id="btn-enviar">
+                            <button class="style-button button-search">Buscar</button>
                         </form>
                     </div>
                 </div>
@@ -83,11 +82,75 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                 </div>
             </section>
             <section class="product">
-                <div class="product-list">
-                    <h2>Ver la lista de productos</h2>
-                    <button>Agregar producto</button>
+                <div class="product-filters">
+                    <form method="post" id="filter-product">
+                        <div class="brand">
+                            <label>Marca:</label>
+                            <select id="brand" name="brand-options">
+                                <option value="0">Seleccionar</option>
+                                <option value="2">Opción 1</option>
+                                <option value="3">Opción 2</option>
+                            </select>
+                        </div>
+                        <div class="price">
+                            <label>Precio:</label>
+                            <input type="text" placeholder="Mínimo">
+                            <input type="text" placeholder="Máximo">
+                        </div>
+                        <div class="id-product">
+                            <label>Código producto:</label>
+                            <input type="text">
+                        </div>
+                        <div class="name-product">
+                            <label>Nombre producto:</label>
+                            <input type="text">
+                        </div>
+                        <div class="button-filter">
+                            <button class="style-button">Filtrar</button>
+                        </div>
+                    </form>
                 </div>
-                <div class="product-table">
+                <div class="product-table filter-product-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código</th>
+                                <th>Descripción</th>
+                                <th>Precio (S/)</th>
+                                <th>Stock</th>
+                                <th>Eliminar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body">
+                            <tr>
+                                <td>001</td>
+                                <td>Producto A</td>
+                                <td>10.50</td>
+                                <td>2</td>
+                                <td><input type="checkbox"></td>
+                            </tr>
+                            <tr>
+                                <td>001</td>
+                                <td>Producto A</td>
+                                <td>10.50</td>
+                                <td>2</td>
+                                <td><input type="checkbox"></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="quantity-button">
+                    <div class="quantity">
+                        <label>Seleccione cantidad:</label>
+                        <input type="number" value="1" min="1" onkeydown="return false;">
+                    </div>
+                    <div class="add-product">
+                        <button class="style-button button-add-product">Agregar producto</button>
+                    </div>
+                </div>
+            </section>
+            <section class="list-product">
+                <div class="product-table list-product-table">
                     <table>
                         <thead>
                             <tr>
@@ -98,35 +161,8 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                                 <th>Eliminar</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            <tr>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td> 
-                            </tr>
-                            <tr>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td> 
-                            </tr>
-                            <tr>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td> 
-                            </tr>
-                            <tr>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>
-                                <td>1</td>  
-                            </tr>
+                        <tbody id="table-body2">
+                            
                         </tbody>
                         <tfoot>
                             <tr>
@@ -146,5 +182,26 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                 </div>
             </section>
         </main>
+        <script>
+            const minRows = 5;
+            const tbody = document.getElementById("table-body");
+            const tbody2 = document.getElementById("table-body2");
+            const currentRows = tbody.rows.length;
+            const currentRows2 = tbody2.rows.length;
+            if (currentRows < minRows) {
+                for (let i = currentRows; i < minRows; i++) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td colspan="5">&nbsp;</td>`;
+                    tbody.appendChild(tr);
+                }
+            }
+            if (currentRows2 < minRows) {
+                for (let i = currentRows2; i < minRows; i++) {
+                    const tr = document.createElement("tr");
+                    tr.innerHTML = `<td colspan="5">&nbsp;</td>`;
+                    tbody2.appendChild(tr);
+                }
+            }
+        </script>
     </body>
 </html>

@@ -171,5 +171,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <script src="../Script/CUS01/cantidadConfig.js" type="text/javascript"></script>
         <script src="../Script/CUS01/registrarPreorden.js" type="text/javascript"></script>
         <script src="../Script/CUS01/salirBoton.js" type="text/javascript"></script>
+        <script src="../Script/CUS01/recargaAdvertencia.js" type="text/javascript"></script>
     </body>
 </html>

@@ -1,3 +1,4 @@
+let clienteBuscado = false;
 $(function () {
     $('#buscarCliente').on('submit', function (e) {
         e.preventDefault();
@@ -32,12 +33,14 @@ $(function () {
                     const btn = $(".button-add-product");
                     btn.prop("disabled", false);
                     btn.removeClass("style-button-disabled").addClass("style-button");
+                    clienteBuscado = true;
                 } else {
                     alert(res.message);
                     $('#nombreCliente, #telefonoCliente, #apepatCliente, #apematCliente, #emailCliente, #direccionCliente').val('');
                     const btn = $(".button-add-product");
                     btn.prop("disabled", true);
                     btn.removeClass("style-button").addClass("style-button-disabled");
+                    clienteBuscado = false;
                 }
             },
             error: function (xhr, status, error) {
@@ -51,6 +54,3 @@ $(function () {
         });
     });
 });
-
-
-

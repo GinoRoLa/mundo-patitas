@@ -263,6 +263,7 @@
     border-radius: 8px;
     width: fit-content;
 }
+
 .customer-information {
     padding: 1rem 1.5rem;
     display: grid;
@@ -448,6 +449,10 @@ form select {
 }
 
 /* **********    LIST PRODUCT    *********** */
+
+.list-product {
+    border-bottom: 1px solid #cccccc;
+}
 
 .list-product-table tfoot {
     display: table;

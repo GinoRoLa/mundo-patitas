@@ -45,64 +45,127 @@
     font-size: 13px;
 }
 
+.style-button-disabled {
+    border: 2px solid #ccc;
+    border-radius: 1rem;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    padding: 0.6rem 1rem;
+    cursor: not-allowed;
+    font-weight: 700;
+    color: #888;
+    opacity: 0.6;
+}
+
 /* CSS TBODY GENERAL */
 
 .product-table {
-  width: 100%;
-  max-width: 900px;
-  margin: 1.5rem auto;
-  border-radius: 12px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  font-family: Arial, sans-serif;
-  font-size: 14px;
+    width: 100%;
+    max-width: 900px;
+    margin: 1.5rem auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    font-family: Arial, sans-serif;
+    font-size: 14px;
 }
 
 .product-table table {
-  width: 100%;
-  border-collapse: collapse;
+    width: 100%;
+    border-collapse: collapse;
 }
 
 .product-table tbody {
-  display: block;
-  max-height: 20rem;
-  overflow-y: auto;
+    display: block;
+    max-height: 20rem;
+    overflow-y: auto;
 }
 
 .product-table thead {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .product-table tbody tr {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .product-table th,
 .product-table td {
-  padding: 12px 16px;
-  text-align: center;
+    padding: 12px 16px;
+    text-align: center;
 }
 
 .product-table thead {
-  background-color: var(--primary-color);
-  color: #333;
-  text-transform: uppercase;
-  font-weight: bold;
-  letter-spacing: 0.5px;
+    background-color: var(--primary-color);
+    color: #333;
+    text-transform: uppercase;
+    font-weight: bold;
+    letter-spacing: 0.5px;
 }
 
 .product-table tbody tr:nth-child(even) {
-  background-color: #f5f5f5;
+    background-color: #f5f5f5;
 }
 
 .product-table tbody tr:hover {
-  background-color: var(--primary-color-hover);
-  transition: background 0.3s;
+    background-color: var(--primary-color-hover);
+    transition: background 0.3s;
 }
+
+.checkbox-container {
+    display: inline-block;
+    position: relative;
+    cursor: pointer;
+    user-select: none;
+}
+.checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    cursor: pointer;
+}
+.checkmark {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    background-color: #f0f0f0;
+    border: 2px solid #888;
+    border-radius: 5px;
+    transition: all 0.2s ease;
+}
+
+.checkbox-container:hover .checkmark {
+    background-color: #e2e2e2;
+}
+
+.checkbox-container input:checked ~ .checkmark {
+    background-color: #4CAF50;
+    border-color: #4CAF50;
+}
+
+.checkmark::after {
+    content: "";
+    position: absolute;
+    display: none;
+    left: 6px;
+    top: 2px;
+    width: 3px;
+    height: 8px;
+    border: solid white;
+    border-width: 0 2px 2px 0;
+    transform: rotate(45deg);
+}
+
+.checkbox-container input:checked ~ .checkmark::after {
+    display: block;
+}
+
 /* **********  TITLE  *************** */
 
 .title {
@@ -192,7 +255,7 @@
     padding: 0.5rem;
 }
 
-.customer-search form{
+.customer-search .form-search-customer{
     display: flex;
     align-items: center;
     gap: 1rem;
@@ -205,7 +268,7 @@
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 1rem 0;
-    
+
 }
 
 .customer-details {
@@ -214,6 +277,7 @@
     flex-flow: row wrap;
     justify-content: space-between;
     align-content: center;
+    width: 55%;
 }
 
 .customer-details h2{
@@ -225,6 +289,7 @@
     border: 2px solid var(--dark-color);
     border-radius: 8px;
     height: 100%;
+    width: 60%;
     padding: 0.5rem;
 }
 
@@ -250,28 +315,28 @@
     justify-content: center;
 }
 
-form .brand {
+.form-search-customer .brand {
     display: flex;
     justify-content: space-around;
     align-items: center;
     width: 20%;
 }
 
-form .price {
+.form-search-customer .price {
     display: flex;
     justify-content: space-around;
     align-items: center;
     width: 50%;
 }
 
-form .id-product {
+.form-search-customer .id-product {
     display: flex;
     justify-content: space-around;
     align-items: center;
     width: 35%;
 }
 
-form .name-product {
+.form-search-customer .name-product {
     display: flex;
     justify-content: space-around;
     align-items: center;
@@ -298,6 +363,23 @@ form input {
     padding: 0.5rem;
 }
 
+#price-min::-webkit-inner-spin-button,
+#price-min::-webkit-outer-spin-button,
+#price-max::-webkit-inner-spin-button,
+#price-max::-webkit-outer-spin-button,
+#code::-webkit-inner-spin-button,
+#code::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+
+/* Firefox */
+#price-min,
+#price-max,
+#code {
+    -moz-appearance: textfield;
+}
+
 form select {
     text-decoration: none;
     border: 2px solid var(--dark-color);
@@ -306,8 +388,33 @@ form select {
     padding: 0.5rem;
 }
 
-form button {
-    width: 60%;
+.filter-product-table tbody {
+    max-height: 21rem;
+}
+
+.filter-product-table th:nth-child(1),
+.filter-product-table td:nth-child(1) {
+    width: 16.66%;
+}
+
+.filter-product-table th:nth-child(2),
+.filter-product-table td:nth-child(2) {
+    width: 33.33%;
+}
+
+.filter-product-table th:nth-child(3),
+.filter-product-table td:nth-child(3) {
+    width: 16.66%;
+}
+
+.filter-product-table th:nth-child(4),
+.filter-product-table td:nth-child(4) {
+    width: 16.66%;
+}
+
+.filter-product-table th:nth-child(5),
+.filter-product-table td:nth-child(5) {
+    width: 16.66%;
 }
 
 .quantity-button {
@@ -343,27 +450,39 @@ form button {
 /* **********    LIST PRODUCT    *********** */
 
 .list-product-table tfoot {
-  display: table;
-  width: 100%;
-  table-layout: fixed;
+    display: table;
+    width: 100%;
+    table-layout: fixed;
 }
 
 .list-product-table tfoot {
-  background-color: #f9f9f9;
-  font-weight: bold;
+    background-color: #f9f9f9;
+    font-weight: bold;
 }
 
 .list-product-table tfoot td {
-  padding: 12px 16px;
+    padding: 12px 16px;
 }
 
 .list-product-table tfoot td:first-child {
-  text-align: right;
-  padding-left: 20px;
+    text-align: right;
+    padding-left: 20px;
 }
 
 .list-product-table tfoot td:last-child {
-  text-align: center;
+    text-align: center;
+}
+
+.btn-eliminar {
+    background-color: var(--primary-color-hover);
+    height: 25px;
+}
+
+.list-product-table td:nth-child(5) {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 16px 6px 16px;
 }
 
 /* **********    PRE ORDEN BUTTONS    *********** */
@@ -383,16 +502,4 @@ form button {
     padding: 1rem 1.5rem;
 }
 
-.preorden-buttons button{
-    border: 2px solid var(--dark-color);
-    border-radius: 1rem;
-    background-color: var(--primary-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100%;
-    padding: 0.6rem;
-    cursor: pointer;
-    width: 15rem;
-}
 

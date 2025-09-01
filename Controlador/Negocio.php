@@ -1,8 +1,69 @@
 <?php
+
 include_once 'Conexion.php';
 class Negocio {
     
-    //LISTA DE RUTAS
+    //BUSCAR CLIENTE
+    function BuscarCliente($DniCliente) {
+        $obj = new Conexion();
+        $sql = "Select * from t20cliente where DniCli = '$DniCliente';";
+        $res = mysqli_query($obj->Conecta(), $sql) or
+                die(mysqli_error($obj->Conecta()));
+        $fila = mysqli_fetch_array($res);
+        return $fila;
+    }
+    
+    //FILTRO PRODUCTO
+    function filtroProducto($sqlFiltro){
+        $obj= new Conexion();
+        $res= mysqli_query($obj->conecta(), $sqlFiltro) or die(mysqli_error($obj->conecta()));
+        $vec=array();
+        while($f= mysqli_fetch_array($res)){
+            $vec[]=$f;
+        }
+        return $vec;
+    }
+    
+    //LISTA DE MARCAS
+    function listaMarcas(){
+        $obj= new Conexion();
+        $sql= "SELECT DISTINCT `Marca` FROM `t18catalogoproducto` ORDER BY `Marca`;";
+        $res= mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
+        $vec=array();
+        while($f= mysqli_fetch_array($res)){
+            $vec[]=$f;
+        }
+        return $vec;
+    }
+    
+    //LISTA DE PRODUCTOS
+    function listaProductos(){
+        $obj= new Conexion();
+        $sql= "SELECT Id_Producto, NombreProducto, PrecioUnitario, StockActual, Marca FROM t18catalogoproducto WHERE Estado = 'activo';";
+        $res= mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
+        $vec=array();
+        while($f= mysqli_fetch_array($res)){
+            $vec[]=$f;
+        }
+        return $vec;
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
     function lisRutas(){
         $obj= new Conexion();
         $sql= "select rutcod,rutnom,pago_cho, rutdes from ruta";
@@ -13,7 +74,7 @@ class Negocio {
         }
         return $vec;
     }
-    
+       
     //LISTA DE VIAJES POR RUTA
     function lisViajes($codruta){
         $obj= new Conexion();

@@ -15,6 +15,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <link href="../Style/CUS01/StyleTbodyTable.css" rel="stylesheet" type="text/css"/>
         <link href="../Style/CUS01/StyleButtonGeneral.css" rel="stylesheet" type="text/css"/>
         <link href="../Style/CUS01/StyleFormularioDatos.css" rel="stylesheet" type="text/css"/>
+        <link href="../Style/CUS01/StyleInputNumberSinSpinner.css" rel="stylesheet" type="text/css"/>
     </head>
     <body>
         <?php
@@ -59,26 +60,26 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         </div>
                     </div>
                     <div class="input-search">
-                        <input type="text" name="dniCliente" class="input-style">
+                        <input type="number" name="filtroOrdenPedido" class="input-style-number-spinner" min="0">
                         <button class="style-button button-search-orden" type="submit">Buscar</button>
                     </div>                        
                 </form>
                 <div class="form-data-information">
                     <div class="form-data-details">
                         <h2>Código Orden:</h2>
-                        <input type="text" readonly id="nombreCliente">
+                        <input type="text" readonly id="codigoOrden">
                     </div>
                     <div class="form-data-details">
                         <h2>Total:</h2>
-                        <input type="text" readonly id="telefonoCliente">
+                        <input type="text" readonly id="totalOrden">
                     </div>
                     <div class="form-data-details">
                         <h2>Fecha:</h2>
-                        <input type="text" readonly id="apepatCliente">
+                        <input type="text" readonly id="fechaOrden">
                     </div>
                     <div class="form-data-details">
                         <h2>DNI cliente:</h2>
-                        <input type="text" readonly id="apematCliente">
+                        <input type="text" readonly id="dniCliente">
                     </div>
                 </div>
                 <div class="product-table">

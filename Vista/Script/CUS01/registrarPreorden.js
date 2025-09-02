@@ -12,7 +12,8 @@ $(function () {
             success: function (respuesta) {
                 if (respuesta.success) {
                     alert(respuesta.message);
-                    location.reload(); // recarga la página para limpiar todo
+                    clienteBuscado = false;
+                    location.reload();
                 } else {
                     alert("Error: " + respuesta.message);
                 }

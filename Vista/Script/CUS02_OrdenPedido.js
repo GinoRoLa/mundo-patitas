@@ -6,7 +6,7 @@ const log   = (...a) => { if (DEBUG) console.log('[CUS02]', ...a); };
 const warn  = (...a) => { if (DEBUG) console.warn('[CUS02]', ...a); };
 const error = (...a) => { if (DEBUG) console.error('[CUs02]', ...a); };
 
-/* ===================== Helpers ===================== */
+
 const API = window.CUS_BASE || window.API_CUS02 || '/Controlador/ControladorCUS02.php';
 const $  = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
@@ -164,7 +164,6 @@ async function buscarCliente() {
     msg("");
   }
 }
-
 
 /* ===================== Consolidación ===================== */
 function idsSeleccionadas() {

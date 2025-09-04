@@ -82,8 +82,11 @@ try{
       $desc = desc_hu002($cant);
       $total = max(0, $subt - $desc + $costoEntrega);
 
+      $cli = (new Cliente())->buscarPorDni($dni);
+      if (!$cli) err('Cliente no encontrado por DNI', 422);
+
       $ordenId = (new OrdenPedido())->crearOrdenConDetalle([
-        'dni'=>$dni,
+        'idCliente'=> (int)$cli['Id_Cliente'],
         'metodoEntregaId'=>$metodoId,
         'costoEntrega'=>$costoEntrega,
         'descuento'=>$desc,

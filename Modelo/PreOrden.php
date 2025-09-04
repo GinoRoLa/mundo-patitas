@@ -70,8 +70,7 @@ public function consolidarProductos(array $ids): array {
 
 
   // Marcar como procesadas y vincular a la orden
-  public function procesarYVincular(array $idsPreorden, int $ordenId): int
-  {
+  public function procesarYVincular(array $idsPreorden, int $ordenId): int{
     if (empty($idsPreorden)) return 0;
     $idsPreorden = array_values(array_unique(array_map('intval', $idsPreorden)));
 

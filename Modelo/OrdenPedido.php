@@ -8,22 +8,19 @@ final class OrdenPedido {
 
 
     public function crearOrdenConDetalle(array $payload): int {
+        if (empty($payload['idCliente']) || (int)$payload['idCliente'] <= 0) {
+            throw new InvalidArgumentException('idCliente es requerido en el payload');
+        }
+        $idCliente = (int)$payload['idCliente'];
+
         mysqli_begin_transaction($this->cn);
         try {
-            // 1) Resolver cliente por idCliente (preferido) o por DNI (legacy)
-            $cli = $this->resolverCliente($payload);
-            if (!$cli) {
-                throw new RuntimeException('Cliente no encontrado (idCliente/DNI)');
-            }
-            $idCliente = (int)$cli['Id_Cliente'];
-
-            // 2) Insertar cabecera (t02OrdenPedido)
+            // Cabecera
             $sqlCab = "INSERT INTO t02OrdenPedido
                        (Fecha, Id_Cliente, Id_MetodoEntrega, CostoEntrega, Descuento, Total, Estado)
                        VALUES (NOW(), ?, ?, ?, ?, ?, 'Generada')";
             $st = mysqli_prepare($this->cn, $sqlCab);
             if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
-
             mysqli_stmt_bind_param(
                 $st, "iiddd",
                 $idCliente,
@@ -36,11 +33,10 @@ final class OrdenPedido {
             $ordenId = mysqli_insert_id($this->cn);
             mysqli_stmt_close($st);
 
-            // 3) Insertar detalle (t60DetOrdenPedido)
+            // Detalle
             if (empty($payload['items']) || !is_array($payload['items'])) {
                 throw new RuntimeException('Items vacíos o inválidos');
             }
-
             $sqlDet = "INSERT INTO t60DetOrdenPedido(
                          t18CatalogoProducto_Id_Producto,
                          t02OrdenPedido_Id_OrdenPedido,
@@ -49,40 +45,26 @@ final class OrdenPedido {
                        ) VALUES (?,?,?,?)";
             $st = mysqli_prepare($this->cn, $sqlDet);
             if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
-
             foreach ($payload['items'] as $it) {
                 $idProd = (int)($it['IdProducto'] ?? 0);
                 $cant   = (int)($it['Cantidad'] ?? 0);
                 if ($idProd <= 0 || $cant <= 0) {
                     throw new RuntimeException('Item inválido (IdProducto/Cantidad)');
                 }
-
-                mysqli_stmt_bind_param(
-                    $st, "iiii",
-                    $idProd,
-                    $ordenId,
-                    $idCliente,
-                    $cant
-                );
+                mysqli_stmt_bind_param($st, "iiii", $idProd, $ordenId, $idCliente, $cant);
                 mysqli_stmt_execute($st);
             }
             mysqli_stmt_close($st);
 
             mysqli_commit($this->cn);
             return $ordenId;
-
         } catch (\Throwable $e) {
             mysqli_rollback($this->cn);
             throw $e;
         }
     }
 
-    /**
-     * Devuelve array con al menos:
-     *  ['Id_Cliente', 'des_apepatCliente', 'des_apematCliente', 'des_nombreCliente']
-     * Busca por idCliente (si viene) o por DniCli (si no viene idCliente).
-     */
-    private function resolverCliente(array $payload): ?array {
+    /* private function resolverCliente(array $payload): ?array {
         // A) Si viene idCliente, úsalo directo
         if (isset($payload['idCliente']) && (int)$payload['idCliente'] > 0) {
             $sql = "SELECT Id_Cliente, des_apepatCliente, des_apematCliente, des_nombreCliente
@@ -116,5 +98,5 @@ final class OrdenPedido {
         }
 
         return null;
-    }
+    } */
 }

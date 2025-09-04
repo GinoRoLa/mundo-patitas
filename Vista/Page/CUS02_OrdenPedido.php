@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/../../Modelo/Trabajador.php';
-$trabajadorRow = (new Trabajador())->buscarPorDni('33333333');
+$trabajadorRow = (new Trabajador())->buscarPorDni('22222222');
 
 $actor = [
     'nombre' => $trabajadorRow

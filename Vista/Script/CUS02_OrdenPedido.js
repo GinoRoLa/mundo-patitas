@@ -279,6 +279,13 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#btnAgregar")?.addEventListener("click", consolidar);
   $("#btnRegistrar")?.addEventListener("click", registrarOrden);
   $("#cboEntrega")?.addEventListener("change", onMetodoEntregaChange);
+  $("#txtDni")?.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") {
+    e.preventDefault();   // evita enviar formularios o recargar
+    buscarCliente();
+  }
+});
+
 
   // Trazas globales por si algo explota
   window.addEventListener('error', (ev) => error('window.error:', ev.message, ev.filename, ev.lineno));

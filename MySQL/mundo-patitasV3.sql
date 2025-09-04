@@ -152,7 +152,7 @@ CREATE TABLE t27MetodoEntrega (
 
 CREATE TABLE t02OrdenPedido (
   Id_OrdenPedido INT NOT NULL AUTO_INCREMENT,
-  Fecha DATE,
+  Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Id_Cliente INT NOT NULL,
   Id_MetodoEntrega INT,
   CostoEntrega DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (CostoEntrega >= 0),

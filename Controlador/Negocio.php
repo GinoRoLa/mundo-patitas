@@ -3,6 +3,7 @@
 include_once 'Conexion.php';
 class Negocio {
     
+    
     //BUSCAR CLIENTE
     function BuscarCliente($DniCliente) {
         $obj = new Conexion();
@@ -12,6 +13,7 @@ class Negocio {
         $fila = mysqli_fetch_array($res);
         return $fila;
     }
+
     
     //FILTRO PRODUCTO
     function filtroProducto($sqlFiltro){

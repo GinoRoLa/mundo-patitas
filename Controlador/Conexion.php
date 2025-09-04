@@ -9,4 +9,4 @@ class Conexion {
         }
         return $this->cn;
     }
-}
+} 

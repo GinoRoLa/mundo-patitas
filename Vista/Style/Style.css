@@ -1,15 +1,129 @@
 html {
-    font-size: 62.5%;
-    font-family: 'Poppins', sans-serif;
+  font-size: 62.5%;
+  font-family: 'Poppins', sans-serif;
 }
 
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
 .container {
-    max-width: 120rem;
-    margin: 0 auto;
+  max-width: 120rem;
+  margin: 0 auto;
+}
+
+/* ================= Vars (unificación de colores) ================= */
+:root{
+  /* Fondo degradado del body:
+     - Antes: #f7f8fa (top) y #eef2ff (bottom)
+     - Unificamos #f7f8fa con #f9fafb -> intermedio #f8f9fb */
+  --menu-bg-start: #f8f9fb;   /* intermedio entre #f7f8fa y #f9fafb */
+  --menu-bg-end:   #eef2ff;
+
+  /* Superficies / bordes / sombra */
+  --surface: #ffffff;
+  --border:  #e5e7eb;
+  --shadow-soft: 0 10px 30px rgba(0,0,0,.06);
+
+  /* Texto */
+  --text-strong: #111827;
+  --text-muted:  #4b5563;
+
+  /* Botón base (link) */
+  --btn-base-bg:    #ffffff;
+  --btn-base-text:  var(--text-strong);
+  --btn-base-border: var(--border);
+  --btn-base-hover: #f8f9fb;  /* intermedio usado para hover */
+
+  /* Botón primario */
+  --primary:     #ff6d6d;
+  --primary-600: #d65252;
+  --primary-shadow: rgba(37,99,235,.25);
+}
+
+/* ======== MENU INDEX ======== */
+body.menu {
+  min-height: 100vh;
+  background: linear-gradient(180deg, var(--menu-bg-start) 0%, var(--menu-bg-end) 100%);
+  display: flex;
+  align-items: center;
+}
+
+body.menu .container{
+  max-width: 760px;
+  width: 100%;
+  padding: 0 18px;
+  margin: 32px auto;
+}
+
+.menu-card{
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: var(--shadow-soft);
+  padding: 28px;
+}
+
+.menu-card h2{
+  margin: 0 0 10px;
+  font-size: 22px;
+  color: var(--text-strong);
+  letter-spacing: .2px;
+}
+
+.menu-card p{
+  color: var(--text-muted);
+  margin: 6px 0 18px;
+}
+
+.menu-actions{
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.menu-actions .btn{
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 44px;
+  padding: 0 16px;
+  border-radius: 10px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: transform .05s ease, box-shadow .2s ease, background .2s ease;
+  border: 1px solid var(--btn-base-border);
+  color: var(--btn-base-text);
+  background: var(--btn-base-bg);
+}
+
+.menu-actions .btn:hover{
+  background: var(--btn-base-hover);
+  box-shadow: 0 4px 16px rgba(0,0,0,.06);
+}
+
+.menu-actions .btn:active{
+  transform: translateY(1px);
+}
+
+.menu-actions .btn-primary{
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+}
+
+.menu-actions .btn-primary:hover{
+  background: var(--primary-600);
+  border-color: var(--primary-600);
+  box-shadow: 0 6px 18px var(--primary-shadow);
+}
+
+/* Responsive: si luego agregas más botones en columnas */
+@media (min-width: 640px){
+  .menu-actions{
+    grid-template-columns: repeat(2, 1fr);
+  }
 }

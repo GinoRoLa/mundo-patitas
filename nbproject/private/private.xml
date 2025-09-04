@@ -4,9 +4,9 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Page/CUS04_IU004.php</file>
-            <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Style/CUS04/CUS04_IU004.css</file>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Script/CUS04/buscarOrdenPedidoJQuery.js</file>
-            <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Script/CUS01/TBodyScript.js</file>
+            <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Controlador/Negocio.php</file>
+            <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Ajax/CUS04/buscarOrdenPedido.php</file>
         </group>
     </open-files>
 </project-private>

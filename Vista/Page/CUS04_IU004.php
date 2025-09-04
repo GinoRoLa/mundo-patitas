@@ -39,7 +39,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                     <div class="orden-cse">
                         <label class="labelText">Con servicio de entrega:</label>
                         <label class="checkbox-container">
-                            <input type="radio" name="filtroOrden">
+                            <input type="radio" name="filtroOrden" value="notaDistribucion">
                             <span class="checkmark"></span>
                             <span class="textSpanCheckmark">Nota de distribución</span>
                         </label>
@@ -48,12 +48,12 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <label class="labelText">Sin servicio de entrega:</label>
                         <div class="checkbox-option">
                             <label class="checkbox-container">
-                                <input type="radio" name="filtroOrden">
+                                <input type="radio" name="filtroOrden" value="codigoOrdenPedido">
                                 <span class="checkmark"></span>
                                 <span class="textSpanCheckmark">Código de orden pedido</span>
                             </label>
                             <label class="checkbox-container">
-                                <input type="radio" name="filtroOrden">
+                                <input type="radio" name="filtroOrden" value="dniCliente">
                                 <span class="checkmark"></span>
                                 <span class="textSpanCheckmark">DNI cliente</span>
                             </label>
@@ -101,7 +101,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
             <section class="register-movimiento-buttons">
                 <div class="register">
                     <form method="post" class="form-register-orden" id="register-orden">
-                        <button class="style-button-disabled generar-preorden-button" id="generar-orden">Generar salida de almacén</button>
+                        <button class="style-button-disabled generar-preorden-button" id="generar-orden" disabled>Generar salida de almacén</button>
                     </form>
                 </div>
                 <div class="salir">
@@ -111,5 +111,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         </main>
         <script src="../Script/CUS01/TBodyScript.js" type="text/javascript"></script>
         <script src="../Script/CUS01/salirBoton.js" type="text/javascript"></script>
+        <script src="../Script/CUS04/buscarOrdenPedidoJQuery.js" type="text/javascript"></script>
+        <script src="../Script/CUS04/registarSalidaAlmacen.js" type="text/javascript"></script>
     </body>
 </html>

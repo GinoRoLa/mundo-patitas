@@ -6,7 +6,7 @@ class Negocio {
     //BUSCAR CLIENTE
     function BuscarCliente($DniCliente) {
         $obj = new Conexion();
-        $sql = "Select * from t20cliente where DniCli = '$DniCliente';";
+        $sql = "Select * from t20cliente where DniCli = '$DniCliente' and estado='Activo';";
         $res = mysqli_query($obj->Conecta(), $sql) or
                 die(mysqli_error($obj->Conecta()));
         $fila = mysqli_fetch_array($res);
@@ -48,7 +48,29 @@ class Negocio {
         return $vec;
     }
     
+    //BUSCAR ORDEN
+    function BuscarPreOrden($consultaSQL) {
+        $obj= new Conexion();
+        $sql= "$consultaSQL";
+        $res= mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
+        $vec=array();
+        while($f= mysqli_fetch_array($res)){
+            $vec[]=$f;
+        }
+        return $vec;
+    }
     
+    //BUSCAR DETALLE ORDEN
+    function BuscarDetallePreOrden($consultaSQL) {
+        $obj= new Conexion();
+        $sql= "$consultaSQL";
+        $res= mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
+        $vec=array();
+        while($f= mysqli_fetch_array($res)){
+            $vec[]=$f;
+        }
+        return $vec;
+    }
     
     
     

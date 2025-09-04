@@ -16,7 +16,7 @@ if (isset($_POST['dniCliente'])) {
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Cliente no encontrado.'
+            'message' => 'Cliente no encontrado o inactivo.'
         ]);
     }
 } else {

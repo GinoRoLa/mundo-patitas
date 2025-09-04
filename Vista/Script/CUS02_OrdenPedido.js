@@ -2,16 +2,22 @@
 
 /* ===================== DEBUG ===================== */
 const DEBUG = true;
-const log   = (...a) => { if (DEBUG) console.log('[CUS02]', ...a); };
-const warn  = (...a) => { if (DEBUG) console.warn('[CUS02]', ...a); };
-const error = (...a) => { if (DEBUG) console.error('[CUs02]', ...a); };
+const log = (...a) => {
+  if (DEBUG) console.log("[CUS02]", ...a);
+};
+const warn = (...a) => {
+  if (DEBUG) console.warn("[CUS02]", ...a);
+};
+const error = (...a) => {
+  if (DEBUG) console.error("[CUs02]", ...a);
+};
 
-
-const API = window.CUS_BASE || window.API_CUS02 || '/Controlador/ControladorCUS02.php';
-const $  = (s) => document.querySelector(s);
+const API =
+  window.CUS_BASE || window.API_CUS02 || "/Controlador/ControladorCUS02.php";
+const $ = (s) => document.querySelector(s);
 const $$ = (s) => document.querySelectorAll(s);
 
-function msg(texto = '', isError = false) {
+function msg(texto = "", isError = false) {
   const m = $("#msg");
   if (!m) return;
   m.textContent = texto;
@@ -19,27 +25,38 @@ function msg(texto = '', isError = false) {
   if (texto) m.scrollIntoView({ behavior: "smooth", block: "nearest" });
 }
 
-function validarDni(v){
-  const raw = (v || '').trim();
-  if (raw === '') return { ok:false, msg:'Ingrese DNI (8 dígitos numéricos).' };
-  if (/[^0-9]/.test(raw)) return { ok:false, msg:'Ingrese dato numérico (DNI de 8 dígitos).' };
-  if (raw.length !== 8)   return { ok:false, msg:'DNI incompleto: deben ser 8 dígitos.' };
-  return { ok:true };
+function validarDni(v) {
+  const raw = (v || "").trim();
+  if (raw === "")
+    return { ok: false, msg: "Ingrese DNI (8 dígitos numéricos)." };
+  if (/[^0-9]/.test(raw))
+    return { ok: false, msg: "Ingrese dato numérico (DNI de 8 dígitos)." };
+  if (raw.length !== 8)
+    return { ok: false, msg: "DNI incompleto: deben ser 8 dígitos." };
+  return { ok: true };
 }
 
-function to2(n) { const x = Number(n); return Number.isFinite(x) ? x.toFixed(2) : "0.00"; }
-function setNum(el, val) { if (el) el.value = to2(val); }
+function to2(n) {
+  const x = Number(n);
+  return Number.isFinite(x) ? x.toFixed(2) : "0.00";
+}
+function setNum(el, val) {
+  if (el) el.value = to2(val);
+}
 
 /* fetchJSON */
 async function fetchJSON(url, opts = {}) {
-  const finalOpts = Object.assign({ headers: { "X-Requested-With": "fetch" } }, opts);
-  log('FETCH →', url, finalOpts);
+  const finalOpts = Object.assign(
+    { headers: { "X-Requested-With": "fetch" } },
+    opts
+  );
+  log("FETCH →", url, finalOpts);
   let res, text;
   try {
     res = await fetch(url, finalOpts);
     text = await res.text();
   } catch (e) {
-    error('FETCH ERROR (network):', e);
+    error("FETCH ERROR (network):", e);
     return { ok: false, error: String(e), network: true };
   }
   let data;
@@ -49,10 +66,10 @@ async function fetchJSON(url, opts = {}) {
     data = { ok: false, error: `HTTP ${res.status}`, raw: text };
   }
   if (!res.ok) {
-    warn('FETCH ← HTTP', res.status, url, data);
+    warn("FETCH ← HTTP", res.status, url, data);
     return Object.assign({ ok: false, httpStatus: res.status }, data);
   }
-  log('FETCH ← OK', data);
+  log("FETCH ← OK", data);
   return data;
 }
 
@@ -60,12 +77,12 @@ async function fetchJSON(url, opts = {}) {
 async function cargarMetodosEntrega() {
   const r = await fetchJSON(`${API}?accion=metodos-entrega`);
   if (!r.ok) {
-    msg('No se pudieron cargar los métodos de entrega.', true);
+    msg("No se pudieron cargar los métodos de entrega.", true);
     return;
   }
   const cbo = $("#cboEntrega");
   cbo.innerHTML = "";
-  (r.metodos || []).forEach(m => {
+  (r.metodos || []).forEach((m) => {
     const opt = document.createElement("option");
     opt.value = m.Id_MetodoEntrega;
     opt.textContent = m.Descripcion;
@@ -74,20 +91,22 @@ async function cargarMetodosEntrega() {
   });
 
   // Default: "tienda" si existe
-  const idx = Array.from(cbo.options).findIndex(o => /tienda/i.test(o.textContent));
+  const idx = Array.from(cbo.options).findIndex((o) =>
+    /tienda/i.test(o.textContent)
+  );
   cbo.selectedIndex = idx >= 0 ? idx : 0;
 
   const costo = Number(cbo.selectedOptions[0]?.dataset.costo || 0);
   setNum($("#txtCostoEnt"), costo);
-  log('Métodos cargados:', r.metodos);
-  log('Seleccion inicial → id:', cbo.value, 'costo:', costo);
+  log("Métodos cargados:", r.metodos);
+  log("Seleccion inicial → id:", cbo.value, "costo:", costo);
 }
 
 /* ===================== Cliente & Preórdenes ===================== */
 function pintarPreordenes(rows) {
   const tb = $("#tblPreorden tbody");
   tb.innerHTML = "";
-  (rows || []).forEach(p => {
+  (rows || []).forEach((p) => {
     const dni = p.DniCli ?? p.dni ?? ""; // por si el backend lo aliasa distinto
     const tr = document.createElement("tr");
     tr.innerHTML = `
@@ -96,16 +115,31 @@ function pintarPreordenes(rows) {
       <td>${dni}</td>
       <td>${to2(p.Total)}</td>
       <td>${p.Estado}</td>
-      <td><input type="checkbox" class="chk-pre" value="${p.Id_PreOrdenPedido}"></td>
+      <td><input type="checkbox" class="chk-pre" value="${
+        p.Id_PreOrdenPedido
+      }"></td>
     `;
     tb.appendChild(tr);
   });
+
+  const hayFilas = rows && rows.length > 0;
+  const btn = $("#btnAgregar");
+  if (btn) btn.disabled = !hayFilas;
 }
 
-
 function limpiarCliente() {
-  ["#txtDni", "#txtNombre", "#txtApePat", "#txtApeMat", "#txtTel", "#txtDir", "#txtEmail"]
-    .forEach(s => { const el = $(s); if (el) el.value = ""; });
+  [
+    "#txtDni",
+    "#txtNombre",
+    "#txtApePat",
+    "#txtApeMat",
+    "#txtTel",
+    "#txtDir",
+    "#txtEmail",
+  ].forEach((s) => {
+    const el = $(s);
+    if (el) el.value = "";
+  });
 
   $("#tblPreorden tbody").innerHTML = "";
   $("#tblItems tbody").innerHTML = "";
@@ -117,8 +151,9 @@ function limpiarCliente() {
   setNum($("#txtTotal"), 0);
 
   $("#btnRegistrar").disabled = true;
+  const btnAgregar = $("#btnAgregar");
+  if (btnAgregar) btnAgregar.disabled = true;
 }
-
 
 async function buscarCliente() {
   const dni = ($("#txtDni").value || "").trim();
@@ -128,11 +163,11 @@ async function buscarCliente() {
     $("#txtDni").focus();
     return;
   }
-  log('Buscar cliente → DNI', dni);
+  log("Buscar cliente → DNI", dni);
 
   const r = await fetchJSON(`${API}?accion=buscar-cliente`, {
     method: "POST",
-    body: new URLSearchParams({ dni })
+    body: new URLSearchParams({ dni }),
   });
 
   if (!r.ok && r.error) {
@@ -147,16 +182,16 @@ async function buscarCliente() {
   }
 
   // Pintar cliente
-  $("#txtNombre").value = r.cliente.des_nombreCliente || '';
-  $("#txtApePat").value = r.cliente.des_apepatCliente || '';
-  $("#txtApeMat").value = r.cliente.des_apematCliente || '';
-  $("#txtTel").value    = r.cliente.num_telefonoCliente || '';
-  $("#txtEmail").value  = r.cliente.email_cliente || '';
-  $("#txtDir").value    = r.cliente.direccionCliente || '';
+  $("#txtNombre").value = r.cliente.des_nombreCliente || "";
+  $("#txtApePat").value = r.cliente.des_apepatCliente || "";
+  $("#txtApeMat").value = r.cliente.des_apematCliente || "";
+  $("#txtTel").value = r.cliente.num_telefonoCliente || "";
+  $("#txtEmail").value = r.cliente.email_cliente || "";
+  $("#txtDir").value = r.cliente.direccionCliente || "";
 
   // Pintar preórdenes
   pintarPreordenes(r.preordenes || []);
-  log('Preórdenes recibidas:', (r.preordenes || []).length, r.preordenes);
+  log("Preórdenes recibidas:", (r.preordenes || []).length, r.preordenes);
 
   if (!(r.preordenes || []).length) {
     msg("El cliente no tiene preórdenes válidas en las últimas 24 horas.");
@@ -167,13 +202,15 @@ async function buscarCliente() {
 
 /* ===================== Consolidación ===================== */
 function idsSeleccionadas() {
-  return Array.from($$(".chk-pre:checked")).map(c => parseInt(c.value, 10)).filter(Number.isInteger);
+  return Array.from($$(".chk-pre:checked"))
+    .map((c) => parseInt(c.value, 10))
+    .filter(Number.isInteger);
 }
 
 function pintarItemsConsolidados(r) {
   const tb = $("#tblItems tbody");
   tb.innerHTML = "";
-  (r.items || []).forEach(it => {
+  (r.items || []).forEach((it) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td>${it.IdProducto}</td>
@@ -191,25 +228,38 @@ function pintarItemsConsolidados(r) {
 
   const costo = Number($("#cboEntrega").selectedOptions[0]?.dataset.costo || 0);
   setNum($("#txtCostoEnt"), costo);
-  setNum($("#txtTotal"), Math.max(0, (r.subtotal || 0) - (r.descuento || 0) + costo));
+  setNum(
+    $("#txtTotal"),
+    Math.max(0, (r.subtotal || 0) - (r.descuento || 0) + costo)
+  );
 
-  $("#btnRegistrar").disabled = !((r.items || []).length);
+  $("#btnRegistrar").disabled = !(r.items || []).length;
 }
 
 async function consolidar() {
   const dni = ($("#txtDni").value || "").trim();
   const v = validarDni(dni);
-  if (!v.ok) { msg(v.msg, true); $("#txtDni").focus(); return; }
+  if (!v.ok) {
+    msg(v.msg, true);
+    $("#txtDni").focus();
+    return;
+  }
 
   const sel = idsSeleccionadas();
-  if (!sel.length) { msg("Debe seleccionar al menos una preorden para generar la orden.", true); return; }
+  if (!sel.length) {
+    msg("Debe seleccionar al menos una preorden para generar la orden.", true);
+    return;
+  }
 
-  log('Consolidar → DNI', dni, 'IDs', sel);
+  log("Consolidar → DNI", dni, "IDs", sel);
 
   const body = new URLSearchParams({ dni });
   sel.forEach((v, i) => body.append(`ids[${i}]`, String(v)));
 
-  const r = await fetchJSON(`${API}?accion=consolidar`, { method: 'POST', body });
+  const r = await fetchJSON(`${API}?accion=consolidar`, {
+    method: "POST",
+    body,
+  });
   if (!r.ok && r.error) {
     msg(r.error, true);
     return;
@@ -217,43 +267,51 @@ async function consolidar() {
 
   pintarItemsConsolidados(r);
   msg("Preórdenes consolidadas correctamente.");
-  log('Consolidación ←', r);
+  log("Consolidación ←", r);
 }
-
 
 /* ===================== Registrar ===================== */
 async function registrarOrden() {
   const dni = ($("#txtDni").value || "").trim();
   const v = validarDni(dni);
-  if (!v.ok) { msg(v.msg, true); $("#txtDni").focus(); return; }
+  if (!v.ok) {
+    msg(v.msg, true);
+    $("#txtDni").focus();
+    return;
+  }
 
   const sel = idsSeleccionadas();
-  if (!sel.length) { msg("Debe seleccionar al menos una preorden.", true); return; }
+  if (!sel.length) {
+    msg("Debe seleccionar al menos una preorden.", true);
+    return;
+  }
 
   const metodoEntregaId = Number($("#cboEntrega").value);
   const descuento = Number($("#txtDesc").value || 0);
 
   const payload = new URLSearchParams();
-  payload.append('dni', dni);
-  payload.append('metodoEntregaId', String(metodoEntregaId));
-  payload.append('descuento', String(descuento));
+  payload.append("dni", dni);
+  payload.append("metodoEntregaId", String(metodoEntregaId));
+  payload.append("descuento", String(descuento));
   sel.forEach((v, i) => payload.append(`idsPreorden[${i}]`, String(v)));
 
-  log('Registrar → payload', Object.fromEntries(payload));
+  log("Registrar → payload", Object.fromEntries(payload));
 
-  const r = await fetchJSON(`${API}?accion=registrar`, { method: 'POST', body: payload });
+  const r = await fetchJSON(`${API}?accion=registrar`, {
+    method: "POST",
+    body: payload,
+  });
   if (!r.ok) {
     msg(r.error || "No se pudo registrar", true);
-    error('Registrar ← error', r);
+    error("Registrar ← error", r);
     return;
   }
 
   msg(`Orden #${r.ordenId} registrada.`);
   $("#btnRegistrar").disabled = true;
-  log('Registrar ← OK', r);
+  log("Registrar ← OK", r);
   limpiarCliente();
 }
-
 
 /* ===================== Eventos y boot ===================== */
 function onMetodoEntregaChange(e) {
@@ -268,11 +326,11 @@ function onMetodoEntregaChange(e) {
     const total = Math.max(0, subt - desc + costo);
     setNum($("#txtTotal"), total);
   }
-  log('Método entrega cambiado → id:', e.target.value, 'costo:', costo);
+  log("Método entrega cambiado → id:", e.target.value, "costo:", costo);
 }
 
 window.addEventListener("DOMContentLoaded", () => {
-  log('BOOT con API =', API);
+  log("BOOT con API =", API);
   cargarMetodosEntrega();
 
   $("#btnBuscar")?.addEventListener("click", buscarCliente);
@@ -280,14 +338,20 @@ window.addEventListener("DOMContentLoaded", () => {
   $("#btnRegistrar")?.addEventListener("click", registrarOrden);
   $("#cboEntrega")?.addEventListener("change", onMetodoEntregaChange);
   $("#txtDni")?.addEventListener("keydown", (e) => {
-  if (e.key === "Enter") {
-    e.preventDefault();   // evita enviar formularios o recargar
-    buscarCliente();
-  }
-});
+    if (e.key === "Enter") {
+      e.preventDefault(); // evita enviar formularios o recargar
+      buscarCliente();
+    }
+  });
 
+  const btnAgregar = $("#btnAgregar");
+  if (btnAgregar) btnAgregar.disabled = true;
 
   // Trazas globales por si algo explota
-  window.addEventListener('error', (ev) => error('window.error:', ev.message, ev.filename, ev.lineno));
-  window.addEventListener('unhandledrejection', (ev) => error('unhandledrejection:', ev.reason));
+  window.addEventListener("error", (ev) =>
+    error("window.error:", ev.message, ev.filename, ev.lineno)
+  );
+  window.addEventListener("unhandledrejection", (ev) =>
+    error("unhandledrejection:", ev.reason)
+  );
 });

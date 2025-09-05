@@ -344,3 +344,19 @@ input:-webkit-autofill{
   box-shadow: 0 0 0px 1000px var(--surface-muted) inset;
   -webkit-text-fill-color: var(--text-strong);
 }
+
+/* === Ajuste de estilo para el campo Hora === */
+.hora {
+  width: 100%;
+  height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  text-align: center;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size: var(--fs-body);
+  letter-spacing: 0.5px;
+}
+

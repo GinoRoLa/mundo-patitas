@@ -2,10 +2,11 @@
 // /Controlador/CUS02/ControladorCUS02.php
 header('Content-Type: application/json; charset=utf-8');
 
-require_once __DIR__ . '/../Modelo/Cliente.php';
-require_once __DIR__ . '/../Modelo/MetodoEntrega.php';
-require_once __DIR__ . '/../Modelo/PreOrden.php';
-require_once __DIR__ . '/../Modelo/OrdenPedido.php';
+include_once 'Conexion.php';
+include_once '../Modelo/Cliente.php';
+include_once '../Modelo/MetodoEntrega.php';
+include_once '../Modelo/PreOrden.php';
+include_once '../Modelo/OrdenPedido.php';
 
 function ok(array $d=[], int $c=200){ http_response_code($c); echo json_encode(['ok'=>true]+$d, JSON_UNESCAPED_UNICODE); exit; }
 function err(string $m, int $c=400, array $x=[]){ http_response_code($c); echo json_encode(['ok'=>false,'error'=>$m]+$x, JSON_UNESCAPED_UNICODE); exit; }

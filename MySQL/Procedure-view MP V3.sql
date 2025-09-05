@@ -143,3 +143,128 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_registrarPreorden;
+DELIMITER $$
+CREATE PROCEDURE sp_registrarPreorden(
+    IN p_idCliente INT,
+    IN p_productosJson JSON
+)
+BEGIN
+    DECLARE v_preordenId INT;
+    DECLARE v_productoId INT;
+    DECLARE v_cantidad INT;
+    DECLARE v_precio DECIMAL(12,2);
+    DECLARE v_index INT DEFAULT 0;
+    DECLARE v_totalProductos INT;
+    DECLARE v_totalPreorden DECIMAL(12,2) DEFAULT 0.00;
+
+    -- Insertar la preorden con total 0 temporalmente
+    INSERT INTO t01preordenpedido (t20Cliente_Id_Cliente, Estado, Total)
+    VALUES (p_idCliente, 'Emitido', 0.00);
+
+    SET v_preordenId = LAST_INSERT_ID();
+
+    -- Contar cuántos productos vienen en el JSON
+    SET v_totalProductos = JSON_LENGTH(p_productosJson);
+
+    WHILE v_index < v_totalProductos DO
+        SET v_productoId = JSON_UNQUOTE(JSON_EXTRACT(p_productosJson, CONCAT('$[', v_index, '].codigo')));
+        SET v_cantidad  = JSON_UNQUOTE(JSON_EXTRACT(p_productosJson, CONCAT('$[', v_index, '].cantidad')));
+        SET v_precio    = JSON_UNQUOTE(JSON_EXTRACT(p_productosJson, CONCAT('$[', v_index, '].precio')));
+
+        -- Insertar detalle
+        INSERT INTO t61detapreorden (t18CatalogoProducto_Id_Producto, t01PreOrdenPedido_Id_PreOrdenPedido, Cantidad)
+        VALUES (v_productoId, v_preordenId, v_cantidad);
+
+        -- Actualizar stock del producto
+        UPDATE t18CatalogoProducto
+        SET StockActual = StockActual - v_cantidad
+        WHERE Id_Producto = v_productoId;
+
+        -- Acumular el total de la preorden usando el precio del JSON
+        SET v_totalPreorden = v_totalPreorden + (v_precio * v_cantidad);
+
+        SET v_index = v_index + 1;
+    END WHILE;
+
+    -- Actualizar el total de la preorden
+    UPDATE t01preordenpedido
+    SET Total = v_totalPreorden
+    WHERE Id_PreOrdenPedido = v_preordenId;
+
+END$$
+DELIMITER ;
+
+CREATE OR REPLACE VIEW ordenesSSE AS
+SELECT
+  op.Id_OrdenPedido,
+  op.Fecha,
+  c.DniCli,
+  op.Id_MetodoEntrega,
+  op.CostoEntrega,
+  op.Descuento,
+  op.Total,
+  op.Estado
+FROM t02ordenpedido op
+JOIN t20cliente c 
+  ON op.Id_Cliente = c.Id_Cliente
+WHERE op.Id_MetodoEntrega = 9001;
+
+CREATE OR REPLACE VIEW ordenesCSE AS
+SELECT
+  op.Id_OrdenPedido,
+  op.Fecha,
+  c.DniCli,
+  op.Id_MetodoEntrega,
+  op.CostoEntrega,
+  op.Descuento,
+  op.Total,
+  op.Estado,
+  nd.Id_NotaDistribucion
+FROM t02ordenpedido op
+JOIN t20cliente c 
+  ON op.Id_Cliente = c.Id_Cliente
+LEFT JOIN t62notadistribucion nd
+  ON op.Id_OrdenPedido = nd.Id_OrdenPedido
+WHERE op.Id_MetodoEntrega <> 9001;
+
+DELIMITER $$
+
+CREATE PROCEDURE registrarMovimiento (
+    IN p_Id_OrdenPedido INT,
+    IN p_Estado VARCHAR(15)
+)
+BEGIN
+    DECLARE v_Id_OrdenSalida INT;
+
+    -- 1. Registrar la Orden de Salida
+    INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido)
+    VALUES (p_Id_OrdenPedido);
+
+    SET v_Id_OrdenSalida = LAST_INSERT_ID();
+
+    -- 2. Insertar productos en el Kardex con el estado dinámico
+    INSERT INTO t10kardex (
+        Fec_Transaccion,
+        id_Producto,
+        Cantidad,
+        Estado,
+        t11OrdenSalida_Id_ordenSalida
+    )
+    SELECT 
+        CURDATE() AS Fec_Transaccion,
+        d.t18CatalogoProducto_Id_Producto,
+        d.Cantidad,
+        p_Estado AS Estado,
+        v_Id_OrdenSalida
+    FROM t61detapreorden d
+    INNER JOIN t01preordenpedido pre 
+        ON d.t01PreOrdenPedido_Id_PreOrdenPedido = pre.Id_PreOrdenPedido
+    INNER JOIN t02ordenpedido o
+        ON pre.t02OrdenPedido_Id_OrdenPedido = o.Id_OrdenPedido
+    WHERE o.Id_OrdenPedido = p_Id_OrdenPedido;
+END$$
+
+DELIMITER ;

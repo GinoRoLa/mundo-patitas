@@ -1,24 +1,27 @@
 <?php
-require_once __DIR__ . '/../../Modelo/Trabajador.php';
+include_once '../../Controlador/Conexion.php'; 
+include_once '../../Modelo/Trabajador.php';
 $trabajadorRow = (new Trabajador())->buscarPorDni('22222222');
 
 $actor = [
-    'nombre' => $trabajadorRow
-        ? trim(($trabajadorRow['des_nombreTrabajador'] ?? '') . ' ' . ($trabajadorRow['des_apepatTrabajador'] ?? '') . ' ' . ($trabajadorRow['des_apematTrabajador'] ?? ''))
-        : '(desconocido)',
-    'rol' => $trabajadorRow['cargo'] ?? '(Desconocido)'
+  'nombre' => $trabajadorRow
+    ? trim(($trabajadorRow['des_nombreTrabajador'] ?? '') . ' ' . ($trabajadorRow['des_apepatTrabajador'] ?? '') . ' ' . ($trabajadorRow['des_apematTrabajador'] ?? ''))
+    : '(desconocido)',
+  'rol' => $trabajadorRow['cargo'] ?? '(Desconocido)'
 ];
 $fecha = date('Y-m-d');
 ?>
 
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8">
   <title>Mundo Patitas - Generar Orden</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../Style/CUS02/CUS02_OrdenPedido.css">
 </head>
+
 <body>
   <main class="container">
 
@@ -26,7 +29,7 @@ $fecha = date('Y-m-d');
       <h2>CUS02 – Generar Orden de Pedido</h2>
       <div class="row">
         <div class="col">
-          <label>Responsable de pedidos:</label>
+          <label>Nombre:</label>
           <span id="lblActor"><?= htmlspecialchars($actor['nombre'] ?? '') ?></span>
         </div>
         <div class="col">
@@ -37,9 +40,13 @@ $fecha = date('Y-m-d');
           <label>Fecha:</label>
           <input type="date" id="dtpFecha" value="<?= $fecha ?? '' ?>" disabled />
         </div>
+        <div class="col">
+          <label>Hora:</label>
+          <input type="text" id="hora" readonly id="hora">
+        </div>
       </div>
 
-      <hr/>
+      <hr />
       <h3>Cliente</h3>
       <div class="grid grid--cliente">
         <label>DNI:</label>
@@ -67,15 +74,21 @@ $fecha = date('Y-m-d');
         <input id="txtApeMat" readonly />
       </div>
 
-      <hr/>
+      <hr />
       <div class="row">
         <div class="col-8">
           <h3>Lista de Preórdenes</h3>
           <table id="tblPreorden" class="table">
-            <thead><tr>
-              <th>Código</th><th>Fecha Emisión</th>
-              <th>DNI Cliente</th><th>Total (S/)</th><th>Estado</th><th>Sel</th>
-            </tr></thead>
+            <thead>
+              <tr>
+                <th>Código</th>
+                <th>Fecha Emisión</th>
+                <th>DNI Cliente</th>
+                <th>Total (S/)</th>
+                <th>Estado</th>
+                <th>Sel</th>
+              </tr>
+            </thead>
             <tbody></tbody>
           </table>
           <button id="btnAgregar">Agregar a la orden</button>
@@ -87,12 +100,18 @@ $fecha = date('Y-m-d');
         </div>
       </div>
 
-      <hr/>
+      <hr />
       <h3>Lista de productos de la orden</h3>
       <table id="tblItems" class="table">
-        <thead><tr>
-          <th>Código</th><th>Descripción</th><th>Precio (S/)</th><th>Cantidad</th><th>Subtotal (S/)</th>
-        </tr></thead>
+        <thead>
+          <tr>
+            <th>Código</th>
+            <th>Descripción</th>
+            <th>Precio (S/)</th>
+            <th>Cantidad</th>
+            <th>Subtotal (S/)</th>
+          </tr>
+        </thead>
         <tbody></tbody>
       </table>
 
@@ -113,7 +132,14 @@ $fecha = date('Y-m-d');
     </section>
 
   </main>
-  <script>window.CUS_BASE = "/Controlador/ControladorCUS02.php";</script>
-  <script src="../Script/CUS02_OrdenPedido.js"></script>
+  <script src="../Script/CUS02/api.js"></script>
+  <script src="../Script/CUS02/utils.js"></script>
+  <script src="../Script/CUS02/cliente.js"></script>
+  <script src="../Script/CUS02/preorden.js"></script>
+  <script src="../Script/CUS02/orden.js"></script>
+  <script src="../Script/CUS02/main.js"></script>
+  <script src="../Script/actualizarHora.js" type="text/javascript"></script>
+
 </body>
+
 </html>

@@ -25,6 +25,22 @@
     log("Métodos cargados y selección inicial aplicada.");
   }
 
+ function vaciarConsolidado() {
+    const tb = $("#tblItems tbody");
+    if (tb) tb.innerHTML = "";
+
+    $("#txtCantProd").value = 0;
+    window.Utils.setNum($("#txtDesc"), 0);
+    window.Utils.setNum($("#txtSubTotal"), 0);
+
+    const costo = Number($("#cboEntrega").selectedOptions[0]?.dataset.costo || 0);
+    setNum($("#txtCostoEnt"), costo);
+    setNum($("#txtTotal"), 0);
+
+    const btn = $("#btnRegistrar");
+    if (btn) btn.disabled = true;
+  }
+
   function pintarItemsConsolidados(r) {
     const tb = $("#tblItems tbody");
     tb.innerHTML = "";
@@ -89,7 +105,14 @@
     $("#btnRegistrar").disabled = true;
     setDirty(false); // ← ya no hay cambios pendientes
     window.Cliente.limpiarCliente();
+    
   }
 
-  window.Orden = { cargarMetodosEntrega, pintarItemsConsolidados, onMetodoEntregaChange, registrarOrden };
+  window.Orden = {
+    cargarMetodosEntrega,
+    vaciarConsolidado,
+    pintarItemsConsolidados,
+    onMetodoEntregaChange,
+    registrarOrden
+  };
 })();

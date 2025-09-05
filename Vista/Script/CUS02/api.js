@@ -1,8 +1,9 @@
 // /Vista/Script/CUS02/api.js
 (function () {
-  //window.SERVICIOURL = "http://localhost:8080/mundo-patitas/";
+  window.SERVICIOURL = "http://localhost:8080";
 
-  window.SERVICIOURL = "http://localhost:3000";
+  //window.SERVICIOURL = "http://localhost:3000";
+
   const BASE = `${window.SERVICIOURL}/Controlador/ControladorCUS02.php`;
 
   //const BASE = window.CUS_BASE || "/Controlador/ControladorCUS02.php";

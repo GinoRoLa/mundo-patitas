@@ -11,7 +11,13 @@ include_once '../Modelo/OrdenPedido.php';
 function ok(array $d=[], int $c=200){ http_response_code($c); echo json_encode(['ok'=>true]+$d, JSON_UNESCAPED_UNICODE); exit; }
 function err(string $m, int $c=400, array $x=[]){ http_response_code($c); echo json_encode(['ok'=>false,'error'=>$m]+$x, JSON_UNESCAPED_UNICODE); exit; }
 function dni_ok($dni){ return (bool)preg_match('/^\d{8}$/', (string)$dni); }
-function desc_hu002(int $cant): float { return $cant>=6?12.0:($cant>=3?5.0:0.0); }
+
+function desc_hu002(int $cant): float {
+  if ($cant >= 10) return 12.0;
+  if ($cant >= 6)  return 5.0;
+  return 0.0;
+}
+
 
 try{
   $accion = $_GET['accion'] ?? '';

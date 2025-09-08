@@ -70,6 +70,18 @@ VALUES
   (60001, '12345678', 'Quispe', 'Huamán', 'Ana',  '987654321', 'ana.quispe@correo.com',  'Av. Los Olivos 456', 'Activo'),
   (60002, '87654321', 'Flores', 'Rojas',  'Pedro','981234567', 'pedro.flores@correo.com','Jr. San Martín 789', 'Activo'),
   (60003, '11223344', 'Soto',   'Méndez', 'Luisa','980112233', 'luisa.soto@correo.com',  'Calle Norte 101',    'Inactivo');
+  
+  -- Ana (Activa)
+INSERT INTO t70DireccionEnvioCliente (Id_Cliente, NombreContacto, TelefonoContacto, Direccion)
+VALUES
+  (60001, 'Ana Quispe',  '987654321', 'Av. Los Olivos 456 Dpto. 302'),
+  (60001, 'Ana Quispe',  '987654321', 'Jr. Los Sauces 120');
+
+-- Pedro (Activo)
+INSERT INTO t70DireccionEnvioCliente (Id_Cliente, NombreContacto, TelefonoContacto, Direccion)
+VALUES
+  (60002, 'Pedro Flores','981234567', 'Jr. San Martín 789 Int. 201');
+
 
 -- ==========================================================
 -- 6) Preórdenes (cliente 60001) - primero SIN vínculo a orden

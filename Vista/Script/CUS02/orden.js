@@ -4,7 +4,7 @@
   const { fetchJSON, url } = window.API;
 
   function isDeliverySelected() {
-    const opt = $("#cboEntrega")?.selectedOptions?.[0];
+    const opt = document.getElementById('cboEntrega')?.selectedOptions?.[0];
     if (!opt) return false;
     if (opt.dataset.esDelivery !== undefined) {
       return opt.dataset.esDelivery === "1" || opt.dataset.esDelivery === "true";
@@ -12,7 +12,7 @@
     return /delivery/i.test(opt.textContent || "");
   }
 
-  //SIN optional chaining en el lado izquierdo de asignaciones
+  // Cambia entre "guardada" / "otra" y sincroniza radios, visibilidad y required/disabled
   function setEnvioModo(modo) {
     const guardada = (modo === 'guardada');
 
@@ -24,11 +24,21 @@
     const inpTel    = document.getElementById('envioTelefono');
     const inpDir    = document.getElementById('envioDireccion');
 
+    // Marcar el radio adecuado
+    const rG = document.querySelector('input[name="envioModo"][value="guardada"]');
+    const rO = document.querySelector('input[name="envioModo"][value="otra"]');
+    if (guardada && rG) rG.checked = true;
+    if (!guardada && rO) rO.checked = true;
+
+    // Mostrar/ocultar bloques
     if (wrapGuard) wrapGuard.style.display = guardada ? 'block' : 'none';
     if (wrapOtra)  wrapOtra.style.display  = guardada ? 'none'  : 'block';
 
+    // Habilitar/validar controles
     if (selGuard) { selGuard.disabled = !guardada; selGuard.required = guardada; }
     [inpNom, inpTel, inpDir].forEach(i => { if (i) { i.disabled = guardada; i.required = !guardada; } });
+
+    validarReadyParaRegistrar();
   }
 
   function updateEnvioPanelVisibility() {
@@ -39,6 +49,7 @@
     panel.style.display = esDel ? 'block' : 'none';
 
     if (!esDel) {
+      // No es delivery: limpia y deja todo listo para siguiente vez
       const nom = document.getElementById('envioNombre');
       const tel = document.getElementById('envioTelefono');
       const dir = document.getElementById('envioDireccion');
@@ -46,16 +57,20 @@
       if (nom) nom.value = '';
       if (tel) tel.value = '';
       if (dir) dir.value = '';
-      if (chk) chk.checked = false;
+      if (chk) chk.checked = true; // default marcado
+      setEnvioModo('otra');        // deja “otra” por defecto
     } else {
-      const modo = document.querySelector('input[name="envioModo"]:checked')?.value || 'otra';
-      setEnvioModo(modo);
+      // Es delivery: si no hay selección, fuerza “otra” y marca guardar por defecto
+      const selected = document.querySelector('input[name="envioModo"]:checked')?.value;
+      setEnvioModo(selected || 'otra');
+      const chk = document.getElementById('chkGuardarDireccion');
+      if (chk) chk.checked = true; // default marcado
     }
     validarReadyParaRegistrar();
   }
 
   function validarReadyParaRegistrar() {
-    const cant = Number($("#txtCantProd")?.value || 0);
+    const cant = Number(document.getElementById('txtCantProd')?.value || 0);
     let ok = cant > 0;
 
     if (ok && isDeliverySelected()) {
@@ -66,8 +81,8 @@
         const nom = (document.getElementById('envioNombre')?.value || "").trim();
         const tel = (document.getElementById('envioTelefono')?.value || "").trim();
         const dir = (document.getElementById('envioDireccion')?.value || "").trim();
-        const telOk = /^\d{9}$/.test(tel); 
-        ok = nom !== "" && dir !== "" && telOk; 
+        const telOk = /^\d{9}$/.test(tel); // 9 dígitos exactos
+        ok = nom !== "" && dir !== "" && telOk;
       }
     }
     const btn = document.getElementById('btnRegistrar');
@@ -85,9 +100,11 @@
       opt.value = m.Id_MetodoEntrega;
       opt.textContent = m.Descripcion;
       opt.dataset.costo = m.Costo;
+      // opt.dataset.esDelivery = m.EsDelivery ? "1" : "0"; // cuando esté en backend
       cbo.appendChild(opt);
     });
 
+    // Selección por defecto: tienda
     const idx = Array.from(cbo.options).findIndex((o) => /tienda/i.test(o.textContent));
     cbo.selectedIndex = idx >= 0 ? idx : 0;
 
@@ -198,8 +215,9 @@
     updateEnvioPanelVisibility();
   }
 
-  // eventos de radios (si no lo haces en main)
+  // Eventos de radios + máscara del teléfono
   document.addEventListener('DOMContentLoaded', () => {
+    // Radios
     document.querySelectorAll('input[name="envioModo"]').forEach(r => {
       r.addEventListener('change', (e) => {
         setEnvioModo(e.target.value);
@@ -207,9 +225,19 @@
         setDirty(true);
       });
     });
+
+    // Teléfono: sólo números y máx 9 dígitos
+    const tel = document.getElementById('envioTelefono');
+    if (tel) {
+      tel.addEventListener('input', (e) => {
+        const v = (e.target.value || "").replace(/\D/g, "").slice(0, 9);
+        if (e.target.value !== v) e.target.value = v;
+        validarReadyParaRegistrar();
+      });
+    }
   });
 
-  // ✅ export
+  // export
   window.Orden = {
     cargarMetodosEntrega,
     vaciarConsolidado,

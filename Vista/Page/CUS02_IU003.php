@@ -154,8 +154,7 @@ $fecha = date('Y-m-d');
 
             <div class="row mt-8">
               <label class="checkbox">
-                <input type="checkbox" id="chkGuardarDireccion" name="guardarDireccionCliente" value="1">
-                Guardar esta dirección
+                <input type="checkbox" id="chkGuardarDireccion" name="guardarDireccionCliente" value="1" checked>Guardar esta dirección </input>
               </label>
             </div>
           </div>

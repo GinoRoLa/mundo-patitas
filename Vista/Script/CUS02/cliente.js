@@ -48,6 +48,8 @@ function poblarDireccionesGuardadas(dirs) {
 
     // 4) Método de entrega → vuelve a “tienda” (o la primera opción) y recalcula costo
     const cbo = $("#cboEntrega");
+    // ahora: queda marcado por defecto
+    $("#chkGuardarDireccion") && ($("#chkGuardarDireccion").checked = true);
     if (cbo && cbo.options.length) {
       const idx = Array.from(cbo.options).findIndex(o => /tienda/i.test(o.textContent));
       cbo.selectedIndex = idx >= 0 ? idx : 0;

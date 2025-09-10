@@ -220,6 +220,37 @@ CREATE TABLE t05Boleta (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=105001;
 
+
+CREATE TABLE t70DireccionEnvioCliente (
+  Id_DireccionEnvio   INT AUTO_INCREMENT PRIMARY KEY,
+  Id_Cliente          INT NOT NULL,
+  NombreContacto      VARCHAR(120) NOT NULL,
+  TelefonoContacto    VARCHAR(20)  NOT NULL,
+  Direccion           VARCHAR(255) NOT NULL,
+  INDEX idx_t70_cliente (Id_Cliente),
+  CONSTRAINT fk_t70_cliente
+    FOREIGN KEY (Id_Cliente) REFERENCES t20cliente (Id_Cliente)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE t71OrdenDirecEnvio (
+  Id_OrdenDirecEnvio  INT AUTO_INCREMENT PRIMARY KEY,
+  Id_OrdenPedido      INT NOT NULL,
+  Id_DireccionEnvio   INT NULL,                -- si eligió una guardada; NULL si fue "otra"
+  NombreContactoSnap  VARCHAR(120) NOT NULL,
+  TelefonoSnap        VARCHAR(20)  NOT NULL,
+  DireccionSnap       VARCHAR(255) NOT NULL,
+  UNIQUE KEY uq_orden (Id_OrdenPedido),        -- 1:1 con la orden
+  INDEX idx_dir (Id_DireccionEnvio),
+  CONSTRAINT fk_orden_snap
+    FOREIGN KEY (Id_OrdenPedido) REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_dir_catalogo
+    FOREIGN KEY (Id_DireccionEnvio) REFERENCES t70DireccionEnvioCliente (Id_DireccionEnvio)
+    ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
 -- ==========================================================
 -- 5) Compras / Ingresos / Kardex / Salidas / Incidencias
 -- ==========================================================

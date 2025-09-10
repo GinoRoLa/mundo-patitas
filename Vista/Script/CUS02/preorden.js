@@ -61,31 +61,5 @@
     }, { once: true });
   }
 
-  /* function idsSeleccionadas() {
-    return Array.from($$(".chk-pre:checked"))
-      .map((c) => parseInt(c.value, 10))
-      .filter(Number.isInteger);
-  } */
-
-  /* async function consolidar() {
-    const dni = ($("#txtDni").value || "").trim();
-    const val = window.Utils.validarDni(dni);
-    if (!val.ok) { msg(val.msg, true); $("#txtDni").focus(); return; }
-
-    const ids = idsSeleccionadas();
-    if (!ids.length) { msg("Debe seleccionar al menos una preorden para generar la orden.", true); return; }
-
-    const body = new URLSearchParams({ dni });
-    ids.forEach((v, i) => body.append(`ids[${i}]`, String(v)));
-
-    const r = await fetchJSON(url.consolidar, { method: "POST", body });
-    if (!r.ok && r.error) { msg(r.error, true); return; }
-
-    window.Orden.pintarItemsConsolidados(r);
-    setDirty(true); // ← hubo acción relevante
-    msg("Preórdenes consolidadas correctamente.");
-    log("Consolidación ←", r);
-  } */
-
   window.Preorden = { pintarPreordenes, idsSeleccionadas, consolidar };
 })();

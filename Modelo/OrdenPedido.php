@@ -1,6 +1,6 @@
 <?php
 // /Modelo/OrdenPedido.php
-require_once __DIR__ . '/../Controlador/Conexion.php';
+//include_once '../Controlador/Conexion.php';
 
 final class OrdenPedido {
     private $cn;
@@ -63,40 +63,4 @@ final class OrdenPedido {
             throw $e;
         }
     }
-
-    /* private function resolverCliente(array $payload): ?array {
-        // A) Si viene idCliente, úsalo directo
-        if (isset($payload['idCliente']) && (int)$payload['idCliente'] > 0) {
-            $sql = "SELECT Id_Cliente, des_apepatCliente, des_apematCliente, des_nombreCliente
-                      FROM t20Cliente
-                     WHERE Id_Cliente = ?";
-            $st = mysqli_prepare($this->cn, $sql);
-            if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
-            $id = (int)$payload['idCliente'];
-            mysqli_stmt_bind_param($st, "i", $id);
-            mysqli_stmt_execute($st);
-            $rs = mysqli_stmt_get_result($st);
-            $row = mysqli_fetch_assoc($rs) ?: null;
-            mysqli_stmt_close($st);
-            return $row;
-        }
-
-        // B) Legacy: buscar por DNI
-        if (!empty($payload['dni'])) {
-            $sql = "SELECT Id_Cliente, des_apepatCliente, des_apematCliente, des_nombreCliente
-                      FROM t20Cliente
-                     WHERE DniCli = ?";
-            $st = mysqli_prepare($this->cn, $sql);
-            if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
-            $dni = (string)$payload['dni'];
-            mysqli_stmt_bind_param($st, "s", $dni);
-            mysqli_stmt_execute($st);
-            $rs = mysqli_stmt_get_result($st);
-            $row = mysqli_fetch_assoc($rs) ?: null;
-            mysqli_stmt_close($st);
-            return $row;
-        }
-
-        return null;
-    } */
 }

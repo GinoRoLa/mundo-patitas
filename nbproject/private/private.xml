@@ -3,12 +3,16 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
+<<<<<<< HEAD
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Page/CUS04_IU004.php</file>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Script/CUS04/registarSalidaAlmacen.js</file>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Vista/Ajax/CUS04/registarSalidaAlmacen.php</file>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Controlador/CUS01Negocio.php</file>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Modelo/Cliente.php</file>
             <file>file:/C:/xampp/htdocs/Taller_2_Implementacion/Controlador/ControladorCUS02.php</file>
+=======
+            <file>file:/C:/xampp/htdocs/mundo-patitas/index.php</file>
+>>>>>>> e1455512351349bafaf296246e84a8bfae53c2ee
         </group>
     </open-files>
 </project-private>

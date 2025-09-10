@@ -15,7 +15,8 @@
 
       <div class="menu-actions">
         <a href="/Vista/Page/CUS01_IU001.php" class="btn">CUS01 – Generar Preorden</a>
-        <a href="/Vista/Page/CUS02_OrdenPedido.php" class="btn btn-primary">CUS02 – Generar Orden de Pedido</a> 
+        <a href="/Vista/Page/CUS02_IU003.php" class="btn btn-primary">CUS02 – Generar Orden de Pedido</a>
+        <a href="/Vista/Page/CUS04_IU004.php" class="btn">CUS04 – Preparar pedido de venta</a>
       </div>
     </section>
   </main>

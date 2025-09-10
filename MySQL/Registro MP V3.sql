@@ -106,7 +106,7 @@ VALUES
 INSERT INTO t02OrdenPedido
   (Id_OrdenPedido, Fecha, Id_Cliente, Id_MetodoEntrega, CostoEntrega, Descuento, Total, Estado)
 VALUES
-  (10001, CURDATE(), 60001, 9002, 8.00, 5.00, 118.50, 'Generada');
+  (10001, NOW(), 60001, 9002, 8.00, 5.00, 118.50, 'Generada');
 
 -- Vincular la preorden 13 a la orden 10001 ahora que la orden existe
 UPDATE t01preordenpedido

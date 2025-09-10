@@ -1,6 +1,6 @@
 <?php
 // /Modelo/Cliente.php
-require_once __DIR__ . '/../Controlador/Conexion.php';
+//include_once '../Controlador/Conexion.php';
 
 final class Cliente {
 

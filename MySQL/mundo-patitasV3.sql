@@ -152,7 +152,7 @@ CREATE TABLE t27MetodoEntrega (
 
 CREATE TABLE t02OrdenPedido (
   Id_OrdenPedido INT NOT NULL AUTO_INCREMENT,
-  Fecha DATE,
+  Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Id_Cliente INT NOT NULL,
   Id_MetodoEntrega INT,
   CostoEntrega DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (CostoEntrega >= 0),
@@ -647,6 +647,23 @@ CREATE TABLE t405IncidenciaEntrega (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=85001;
 
+CREATE TABLE t62notadistribucion (
+  Id_NotaDistribucion INT NOT NULL AUTO_INCREMENT,
+  Id_Cliente INT NOT NULL,
+  Id_OrdenPedido INT NOT NULL,
+  Fecha DATE NOT NULL,
+  PRIMARY KEY (Id_NotaDistribucion),
+  KEY fk_t62_cliente (Id_Cliente),
+  KEY fk_t62_orden (Id_OrdenPedido),
+  CONSTRAINT fk_t62_cliente FOREIGN KEY (Id_Cliente)
+      REFERENCES t20cliente (Id_Cliente)
+      ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t62_orden FOREIGN KEY (Id_OrdenPedido)
+      REFERENCES t02ordenpedido (Id_OrdenPedido)
+      ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB 
+  AUTO_INCREMENT=4000  -- 👈 aquí defines desde dónde empieza
+  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ==========================================================
 -- 11) Índices útiles

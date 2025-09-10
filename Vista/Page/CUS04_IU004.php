@@ -52,11 +52,11 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                                 <span class="checkmark"></span>
                                 <span class="textSpanCheckmark">Código de orden pedido</span>
                             </label>
-                            <label class="checkbox-container">
+                            <!--<label class="checkbox-container">
                                 <input type="radio" name="filtroOrden" value="dniCliente">
                                 <span class="checkmark"></span>
                                 <span class="textSpanCheckmark">DNI cliente</span>
-                            </label>
+                            </label>-->
                         </div>
                     </div>
                     <div class="input-search">

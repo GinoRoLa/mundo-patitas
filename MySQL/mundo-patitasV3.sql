@@ -320,8 +320,6 @@ CREATE TABLE t11OrdenSalida (
 CREATE TABLE t10Kardex (
   Id_Kardex INT NOT NULL AUTO_INCREMENT,
   Fec_Transaccion DATE NOT NULL,
-  tipo_doc VARCHAR(20) NOT NULL,
-  Num_doc VARCHAR(30) NOT NULL,
   id_Producto INT NOT NULL,
   Cantidad INT NOT NULL CHECK (Cantidad >= 0),
   Estado VARCHAR(15) NOT NULL,
@@ -683,6 +681,7 @@ CREATE TABLE t62notadistribucion (
   Id_Cliente INT NOT NULL,
   Id_OrdenPedido INT NOT NULL,
   Fecha DATE NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
   PRIMARY KEY (Id_NotaDistribucion),
   KEY fk_t62_cliente (Id_Cliente),
   KEY fk_t62_orden (Id_OrdenPedido),
@@ -693,7 +692,7 @@ CREATE TABLE t62notadistribucion (
       REFERENCES t02ordenpedido (Id_OrdenPedido)
       ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB 
-  AUTO_INCREMENT=4000  -- 👈 aquí defines desde dónde empieza
+  AUTO_INCREMENT=4000 
   DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- ==========================================================

@@ -210,7 +210,7 @@ SELECT
 FROM t02ordenpedido op
 JOIN t20cliente c 
   ON op.Id_Cliente = c.Id_Cliente
-WHERE op.Id_MetodoEntrega = 9001;
+WHERE op.Id_MetodoEntrega = 9001 and op.Estado = "Pagado";
 
 CREATE OR REPLACE VIEW ordenesCSE AS
 SELECT
@@ -228,7 +228,7 @@ JOIN t20cliente c
   ON op.Id_Cliente = c.Id_Cliente
 LEFT JOIN t62notadistribucion nd
   ON op.Id_OrdenPedido = nd.Id_OrdenPedido
-WHERE op.Id_MetodoEntrega <> 9001;
+WHERE op.Id_MetodoEntrega <> 9001 and nd.Estado = "Pendiente";
 
 DELIMITER $$
 
@@ -265,6 +265,16 @@ BEGIN
     INNER JOIN t02ordenpedido o
         ON pre.t02OrdenPedido_Id_OrdenPedido = o.Id_OrdenPedido
     WHERE o.Id_OrdenPedido = p_Id_OrdenPedido;
+
+    -- 3. Actualizar el estado de la nota de distribución
+    UPDATE t62notadistribucion
+    SET Estado = 'Procesado'
+    WHERE Id_OrdenPedido = p_Id_OrdenPedido;
+
+    -- 4. Actualizar el estado de la orden de pedido
+    UPDATE t02ordenpedido
+    SET Estado = 'Cerrada'
+    WHERE Id_OrdenPedido = p_Id_OrdenPedido;
 END$$
 
 DELIMITER ;

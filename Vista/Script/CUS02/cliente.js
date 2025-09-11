@@ -70,9 +70,8 @@ function poblarDireccionesGuardadas(dirs) {
     // 6) Botones / flags / mensajes
     $("#btnRegistrar").disabled = true;
     const btnAgregar = $("#btnAgregar"); if (btnAgregar) btnAgregar.disabled = true;
-    window.Preorden?.resetStale?.();           // si implementaste la bandera "stale"
+    window.Preorden?.resetStale?.();
     setDirty(false);
-    //msg("");                                   // borra cualquier mensaje
     $("#txtDni")?.focus();
   }
 

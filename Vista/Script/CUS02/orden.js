@@ -81,7 +81,7 @@
         const nom = (document.getElementById('envioNombre')?.value || "").trim();
         const tel = (document.getElementById('envioTelefono')?.value || "").trim();
         const dir = (document.getElementById('envioDireccion')?.value || "").trim();
-        const telOk = /^\d{9}$/.test(tel); // 9 dígitos exactos
+        const telOk = /^\d{9}$/.test(tel);
         ok = nom !== "" && dir !== "" && telOk;
       }
     }

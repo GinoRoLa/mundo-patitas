@@ -28,10 +28,11 @@ function dni_ok($dni)
 
 function desc_hu002(int $cant): float
 {
-  if ($cant >= 10) return 12.0;
-  if ($cant >= 6)  return 5.0;
-  return 0.0;
+  if ($cant > 8) return 0.15;
+  if ($cant >= 5) return 0.10;
+  return 0.00;
 }
+
 
 
 try {
@@ -71,16 +72,21 @@ try {
       if (count($validas) !== count($ids)) err('Hay preórdenes no vigentes o que no pertenecen al cliente. Refresca la lista.', 422);
 
       $items = $preM->consolidarProductos($validas);
-      $cant  = array_sum(array_map(fn($r) => (int)$r['Cantidad'], $items));
+      $cant  = array_sum(array_map(fn($r) => (int)$r['Cantidad'],  $items));
       $subt  = array_sum(array_map(fn($r) => (float)$r['Subtotal'], $items));
-      $desc  = desc_hu002($cant);
+
+      $rate  = desc_hu002($cant);
+      $desc  = round($subt * $rate, 2);
+
       ok([
-        'items' => $items,
-        'cantidadProductos' => $cant,
-        'subtotal' => $subt,
-        'descuento' => $desc,
-        'total' => max(0, $subt - $desc)
+        'items'               => $items,
+        'cantidadProductos'   => $cant,
+        'subtotal'            => $subt,
+        'descuento'           => $desc,      // monto en S/
+        'descuentoRate'       => $rate,      // (opcional) 0.10 / 0.15
+        'total'               => max(0, $subt - $desc)
       ]);
+
 
     case 'registrar':
       if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
@@ -106,7 +112,8 @@ try {
 
       $cant = array_sum(array_map(fn($r) => (int)$r['Cantidad'], $items));
       $subt = array_sum(array_map(fn($r) => (float)$r['Subtotal'], $items));
-      $desc = desc_hu002($cant);
+      $rate  = desc_hu002($cant);
+      $desc  = round($subt * $rate, 2);
       $total = max(0, $subt - $desc + $costoEntrega);
 
       // Cliente

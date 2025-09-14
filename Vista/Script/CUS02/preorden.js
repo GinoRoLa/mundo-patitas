@@ -1,14 +1,16 @@
 // /Vista/Script/CUS02/preorden.js
 (function () {
-  const { $, $$, log, to2, setDirty, Messages } = window.Utils;
+  const { $, $$, to2, setDirty, Messages } = window.Utils;
   const { fetchJSON, url } = window.API;
 
+  /** Devuelve IDs de preórdenes seleccionadas (números). */
   function idsSeleccionadas() {
     return Array.from($$(".chk-pre:checked"))
       .map((c) => parseInt(c.value, 10))
       .filter(Number.isInteger);
   }
 
+  /** Envía IDs para consolidar y pinta el consolidado en la orden. */
   async function consolidar() {
     const dni = ($("#txtDni").value || "").trim();
     const val = window.Utils.validarDni(dni);
@@ -28,7 +30,7 @@
     let r;
     try {
       r = await fetchJSON(url.consolidar, { method: "POST", body });
-    } catch (e) {
+    } catch {
       Messages.preorden.error("No se pudo consolidar. Verifica tu conexión e inténtalo otra vez.", { autoclear: 6000 });
       return;
     }
@@ -39,6 +41,7 @@
     Messages.preorden.ok("Preórdenes consolidadas correctamente.", { autoclear: 1300 });
   }
 
+  /** Pinta la tabla de preórdenes y habilita/deshabilita el botón “Agregar”. */
   function pintarPreordenes(rows) {
     const tb = $("#tblPreorden tbody");
     tb.innerHTML = "";
@@ -62,11 +65,12 @@
 
     if (!hayFilas) {
       Messages.preorden.error("No hay preórdenes vigentes en las últimas 24 horas.", { persist: true });
-    } /* else {
-      Messages.preorden.ok(`${rows.length} preórden${rows.length>1?"es":"e"} disponible${rows.length>1?"s":""}.`, { autoclear: 1500 });
-    } */
+    } else {
+      // Limpia mensaje previo si había uno de error
+      Messages.preorden.clear();
+    }
 
-    // Limpiar mensajes viejos cuando cambian selecciones
+    // Marcar “dirty” y limpiar mensajes al cambiar selecciones (una sola vez)
     tb.addEventListener("change", (e) => {
       if (e.target && e.target.classList.contains("chk-pre")) {
         setDirty(true);
@@ -75,5 +79,6 @@
     }, { once: true });
   }
 
+  // Export
   window.Preorden = { pintarPreordenes, idsSeleccionadas, consolidar };
 })();

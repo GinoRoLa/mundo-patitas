@@ -23,94 +23,69 @@
   }
   function setNum(el, val) { if (el) el.value = to2(val); }
 
-  // ================== Mensaje global (legacy) ==================
-  function msg(texto = "", isError = false) {
-    const m = $("#msg");
-    if (!m) return;
-    m.textContent = texto;
-    m.className = "msg" + (texto ? (isError ? " error" : " ok") : "");
-    if (texto) m.scrollIntoView({ behavior: "smooth", block: "nearest" });
-  }
-
-  // ================== Mensajes por sección (con autocierre) ==================
-  const _timers = new WeakMap();
-
-// ====== helpers de mensajes suaves, sin layout shift ======
-function _applyMsg(el, text, kind){
-  // No hacemos scroll para evitar saltos en la página
-  el.textContent = text || "";
-  // base: "msg", sumamos "ok" | "error" si aplica
-  el.className = "msg" + (kind ? " " + kind : "");
-  if (text) {
-    el.classList.remove("hiding");
-    el.classList.add("show");
-  } else {
-    // si te llaman con "" usamos softHide para animar salida
-    softHide(el);
-  }
-}
-
-// oculta con animación (fade + micro desplazamiento)
-function softHide(el){
-  if (!el.classList.contains("show")) return; // ya está oculto
-  el.classList.add("hiding");                 // activa transición de salida
-
-  const onEnd = (ev) => {
-    // aseguramos que sea el final de opacidad del propio elemento
-    if (ev.target !== el || ev.propertyName !== "opacity") return;
+  // ================== Mensajes con fade suave (sin layout shift) ==================
+  // .msg.show => visible; .msg.hiding => transición de salida
+  function softHide(el){
+    if (!el.classList.contains("show")) return;
+    el.classList.add("hiding");
+    const onEnd = (ev) => {
+      if (ev.target !== el || ev.propertyName !== "opacity") return;
+      el.removeEventListener("transitionend", onEnd);
+      el.classList.remove("show", "hiding");
+      el.textContent = "";
+    };
     el.removeEventListener("transitionend", onEnd);
-    el.classList.remove("show", "hiding");    // queda invisible y sin estilos visibles
-    el.textContent = "";                      // limpiamos texto al final de la animación
-  };
-  // por si ya había un listener previo
-  el.removeEventListener("transitionend", onEnd);
-  el.addEventListener("transitionend", onEnd, { once: true });
-}
+    el.addEventListener("transitionend", onEnd, { once: true });
+  }
 
-function makeMsg(selector, defaults = { ok:2500, error:6500, info:3000 }){
-  const getEl = () => (typeof selector === "string" ? document.querySelector(selector) : selector);
-  const _timers = new WeakMap();
-
-  function show(text = "", opts = {}){
-    const el = getEl(); if (!el) return;
-    const kind    = opts.kind || (opts.isError ? "error" : "ok"); // ok | error | info
-    const autoclr = opts.persist ? 0 : (opts.autoclear ?? (kind === "error" ? defaults.error : defaults.ok));
-
-    // limpia timer anterior
-    const prev = _timers.get(el);
-    if (prev){ clearTimeout(prev); _timers.delete(el); }
-
-    if (!text) {
-      // si es limpiar, anima salida
+  function _applyMsg(el, text, kind){
+    el.textContent = text || "";
+    el.className = "msg" + (kind ? " " + kind : "");
+    if (text) {
+      el.classList.remove("hiding");
+      el.classList.add("show");
+    } else {
       softHide(el);
-      return;
-    }
-
-    // mostrar (sin mover layout)
-    _applyMsg(el, text, kind);
-
-    if (autoclr > 0){
-      const t = setTimeout(() => softHide(el), autoclr);
-      _timers.set(el, t);
-
-      // pausa el autocierre con hover
-      el.onmouseenter = () => { const tt = _timers.get(el); if (tt) { clearTimeout(tt); _timers.delete(el); } };
-      el.onmouseleave = () => {
-        if (!el.classList.contains("show")) return;
-        const t2 = setTimeout(() => softHide(el), 1200);
-        _timers.set(el, t2);
-      };
     }
   }
 
-  show.ok    = (t, o={}) => show(t, { ...o, kind:"ok" });
-  show.error = (t, o={}) => show(t, { ...o, kind:"error" });
-  show.info  = (t, o={}) => show(t, { ...o, kind:"info" });
-  show.clear = ()        => show("");
+  function makeMsg(selector, defaults = { ok:2500, error:6500, info:3000 }){
+    const getEl = () => (typeof selector === "string" ? document.querySelector(selector) : selector);
+    const timers = new WeakMap(); // timers POR instancia
 
-  return show;
-}
+    function show(text = "", opts = {}){
+      const el = getEl(); if (!el) return;
+      const kind    = opts.kind || (opts.isError ? "error" : "ok"); // ok|error|info
+      const autoclr = opts.persist ? 0 : (opts.autoclear ?? (kind === "error" ? defaults.error : defaults.ok));
 
+      // limpia timer previo
+      const prev = timers.get(el);
+      if (prev){ clearTimeout(prev); timers.delete(el); }
+
+      if (!text) { softHide(el); return; }
+      _applyMsg(el, text, kind);
+
+      if (autoclr > 0){
+        const t = setTimeout(() => softHide(el), autoclr);
+        timers.set(el, t);
+
+        // pausa con hover
+        el.onmouseenter = () => { const tt = timers.get(el); if (tt){ clearTimeout(tt); timers.delete(el); } };
+        el.onmouseleave = () => {
+          if (!el.classList.contains("show")) return;
+          const t2 = setTimeout(() => softHide(el), 1200);
+          timers.set(el, t2);
+        };
+      }
+    }
+
+    show.ok    = (t, o={}) => show(t, { ...o, kind:"ok" });
+    show.error = (t, o={}) => show(t, { ...o, kind:"error" });
+    show.info  = (t, o={}) => show(t, { ...o, kind:"info" });
+    show.clear = ()        => show("");
+
+    return show;
+  }
 
   const Messages = {
     global:   makeMsg("#msg"),
@@ -118,9 +93,30 @@ function makeMsg(selector, defaults = { ok:2500, error:6500, info:3000 }){
     preorden: makeMsg("#msgPreorden"),
   };
 
-  // ================== Dirty flag global ==================
+  // ================== msg() legacy (compat) ==================
+  // Redirige al contenedor global, sin scroll y con autocierre
+  function msg(texto = "", isError = false) {
+    if (!texto) { Messages.global.clear(); return; }
+    if (isError) Messages.global.error(texto, { autoclear: 6500 });
+    else         Messages.global.ok(texto,    { autoclear: 2500 });
+  }
+
+  // ================== Dirty flag + beforeunload ==================
   let _dirty = false;
-  function setDirty(v = true) { _dirty = !!v; }
+
+  function onBeforeUnload(e){
+    e.preventDefault();
+    e.returnValue = ""; // fuerza el prompt nativo del navegador
+  }
+
+  function setDirty(v = true) {
+    const next = !!v;
+    if (next === _dirty) return;  // evita toggles innecesarios
+    _dirty = next;
+    if (next) window.addEventListener("beforeunload", onBeforeUnload);
+    else      window.removeEventListener("beforeunload", onBeforeUnload);
+  }
+
   function isDirty() { return _dirty; }
 
   // ================== Export ==================
@@ -129,9 +125,9 @@ function makeMsg(selector, defaults = { ok:2500, error:6500, info:3000 }){
     log, warn, error,
     validarDni,
     to2, setNum,
-    msg,                // global (compatibilidad)
+    msg,                // compat
     setDirty, isDirty,
-    Messages           // 👈 helpers con autocierre
+    Messages            // nuevo sistema de mensajes
   };
   window.Messages = Messages;
 })();

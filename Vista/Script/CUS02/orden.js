@@ -217,7 +217,6 @@
     AppDialog.alert(`Orden #${r.ordenId} generada.`, {
       title: "Orden generada",
       onClose: () => {
-        
         document.getElementById("btnRegistrar").disabled = true;
         setDirty(false);
         window.Cliente.limpiarCliente();
@@ -227,26 +226,7 @@
     });
   }
 
-  document.addEventListener("DOMContentLoaded", () => {
-    document.querySelectorAll('input[name="envioModo"]').forEach((r) => {
-      r.addEventListener("change", (e) => {
-        setEnvioModo(e.target.value);
-        validarReadyParaRegistrar();
-        setDirty(true);
-        Messages.preorden.clear();
-      });
-    });
-
-    const tel = document.getElementById("envioTelefono");
-    if (tel) {
-      tel.addEventListener("input", (e) => {
-        const v = (e.target.value || "").replace(/\D/g, "").slice(0, 9);
-        if (e.target.value !== v) e.target.value = v;
-        validarReadyParaRegistrar();
-      });
-    }
-  });
-
+  // Export sólo funciones (los listeners están en main.js)
   window.Orden = {
     cargarMetodosEntrega,
     vaciarConsolidado,

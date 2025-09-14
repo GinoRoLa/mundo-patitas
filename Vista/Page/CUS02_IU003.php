@@ -189,7 +189,7 @@ $fecha = date('Y-m-d');
 
       <div class="acciones">
         <button id="btnRegistrar" disabled>Generar Orden</button>
-        <button id="btnSalir" type="button" onclick="window.location.href='/'">Salir</button>
+        <button id="btnSalir" type="button">Salir</button>
       </div>
 
       <div id="msg" class="msg"></div>

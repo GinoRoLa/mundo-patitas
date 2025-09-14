@@ -202,3 +202,164 @@ input:-webkit-autofill{
 }
 
 input[type="radio"]{ width: 16px; height: 16px; vertical-align: middle; }
+
+/* ===== Modal base ===== */
+.modal {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 32rem;
+  width: 92%;
+}
+.modal::backdrop {
+  background: rgba(15, 23, 42, .45);
+  backdrop-filter: blur(2px);
+}
+
+/* Tarjeta interna */
+.modal__card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.25rem 1.25rem 1rem;
+  box-shadow: var(--shadow, 0 10px 30px rgba(15,23,42,.12));
+  min-width: 260px;
+}
+.modal__title {
+  margin: 0 0 .5rem 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--text-strong, #273043);
+}
+.modal__msg {
+  margin: 0 0 1rem 0;
+  color: #334155;
+  line-height: 1.45;
+}
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: .5rem;
+}
+.btn {
+  border: 1px solid var(--border,#e5e7eb);
+  background: #fff;
+  border-radius: 10px;
+  padding: .55rem .9rem;
+  cursor: pointer;
+}
+.btn-primary {
+  background: var(--primary,#feabab);
+  border-color: var(--primary-600,#fc7171);
+  color: #111827;
+  font-weight: 600;
+}
+.btn-primary:focus { outline: 2px solid var(--primary-50,#ffe9e9); }
+
+/* ===== Evitar layout shift en mensajes ===== */
+:root { --msg-min-lines: 1; } /* súbelo a 2 si a veces el mensaje ocupa 2 líneas */
+
+.msg{
+  /* mantiene el espacio reservado aunque esté oculto */
+  min-height: calc(1.25em * var(--msg-min-lines) + .8rem);
+  margin-top:14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+
+  /* oculto por defecto sin colapsar */
+  opacity: 0;
+  visibility: hidden;
+
+  /* no mostrar borde/fondo cuando está oculto */
+  border: 1px solid transparent;
+  background: transparent;
+
+  transition: opacity .18s ease;
+}
+
+/* visible solo cambiando opacidad: no mueve nada */
+.msg.show{
+  opacity: 1;
+  visibility: visible;
+}
+
+/* estados solo cuando está visible */
+.msg.show.ok{
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-color: var(--ok-border);
+}
+.msg.show.error{
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error-border);
+}
+
+/* seguridad extra: si por cascada .ok/.error pintan, anula cuando esté oculto */
+.msg:not(.show){
+  background: transparent !important;
+  border-color: transparent !important;
+}
+
+/* (opcional) líneas reservadas por sección */
+#msgCliente { --msg-min-lines: 1; }
+#msgPreorden{ --msg-min-lines: 1; }
+#msg       { --msg-min-lines: 1; } /* global */
+
+
+/* ===== Suavizado de aparición/desaparición de mensajes ===== */
+:root{
+  --msg-min-lines: 1;          /* si a veces ocupan 2 líneas: sube a 2 */
+  --msg-ease: cubic-bezier(.22,.61,.36,1);  /* easeOut suave */
+  --msg-dur: 260ms;            /* duración de animación */
+  --msg-shift: 2px;            /* leve desplazamiento visual */
+}
+
+/* bloque con espacio reservado; oculto por opacidad (sin CLS) */
+.msg{
+  min-height: calc(1.25em * var(--msg-min-lines) + .8rem);
+  margin-top: 14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border: 1px solid transparent;
+  background: transparent;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(0);
+
+  transition:
+    opacity var(--msg-dur) var(--msg-ease),
+    transform var(--msg-dur) var(--msg-ease),
+    background-color 160ms ease,
+    border-color 160ms ease;
+  will-change: opacity, transform;
+}
+
+/* visible (sin mover layout) */
+.msg.show{
+  opacity: 1;
+  visibility: visible;
+}
+
+/* estados de color SOLO cuando está visible */
+.msg.show.ok{
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-color: var(--ok-border);
+}
+.msg.show.error{
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error-border);
+}
+
+/* animación de salida: se desvanece y sube 2px (suave) */
+.msg.hiding{
+  opacity: 0;
+  transform: translateY(calc(-1 * var(--msg-shift)));
+}
+
+/* accesibilidad: si el usuario prefiere menos movimiento */
+@media (prefers-reduced-motion: reduce){
+  .msg{ transition: opacity .2s linear, background-color .01s, border-color .01s; }
+  .msg.hiding{ transform: none; }
+}

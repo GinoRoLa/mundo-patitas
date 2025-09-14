@@ -166,55 +166,6 @@
     display: block;
 }
 
-/* **********  TITLE  *************** */
-
-.title {
-    width: 100%;
-    display: grid;
-    align-items: start;
-    padding: 1.5rem 3rem;
-}
-
-.title h1 {
-    font-size: 2rem;
-}
-
-/* **********  DATA  *************** */
-
-.data {
-    display: flex;
-    /*flex-direction: row;
-    flex-wrap: wrap;*/
-    flex-flow: row wrap;
-    justify-content: space-between;
-    padding: 1.5rem 1rem;
-    border-top: 1px solid #cccccc;
-    border-bottom: 1px solid #cccccc;
-}
-
-.data div {
-    /*border: 1px solid var(--primary-color);
-    border-radius: 1rem;*/
-    padding: 1rem 1.5rem;
-    display: flex;
-    flex-flow: row wrap;
-    gap: 1rem;
-    /*flex: 1 1 200px;*/
-}
-
-.data h2 {
-    padding: 4px;
-}
-
-.data input {
-    text-decoration: none;
-    border: 2px solid var(--dark-color);
-    border-radius: 8px;
-    height: 100%;
-    padding: 0.3rem;
-    text-align: center;
-}
-
 /* **********    CUSTOMER    *********** */
 
 .customer {

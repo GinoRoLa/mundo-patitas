@@ -24,7 +24,7 @@ $(document).ready(function () {
                 alert(`El producto ${nombre} tiene solo ${stockActual} en stock. No se agregó.`);
                 return;
             }
-            
+
             stockDisponible[codigo] -= cantidad;
             checkbox.closest("tr").find("td:eq(3)").text(stockDisponible[codigo]);
             if (stockDisponible[codigo] < 0) {
@@ -73,11 +73,14 @@ $(document).ready(function () {
                 productosSeleccionados.push({codigo, cantidad, precio});
             }
         });
-        
+
         $("input[name='productosSeleccionados[]']").prop("checked", false);
         $(".quantity input[type='number']").val(1);
         actualizarTablaOrdenada();
         actualizarBotonPreorden();
+        const btn = $(".button-search");
+        btn.prop("disabled", true);
+        btn.removeClass("style-button").addClass("style-button-disabled");
     });
 
     $(document).on("click", ".btn-eliminar", function () {
@@ -142,13 +145,17 @@ $(document).ready(function () {
             const celdas = $(this).find("td");
             return celdas.length === 5 && celdas.eq(0).text().trim() !== " ";
         }).length;
-
+        const btn = $(".button-search");
         if (productosEnCarrito > 0) {
             generarPreordenBtn.removeClass("style-button-disabled").addClass("style-button");
             generarPreordenBtn.prop("disabled", false);
+            btn.prop("disabled", true);
+            btn.removeClass("style-button").addClass("style-button-disabled");
         } else {
             generarPreordenBtn.removeClass("style-button").addClass("style-button-disabled");
             generarPreordenBtn.prop("disabled", true);
+            btn.prop("disabled", false);
+            btn.removeClass("style-button-disabled").addClass("style-button");
         }
     }
 

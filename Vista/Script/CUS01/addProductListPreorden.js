@@ -4,38 +4,57 @@ $(document).ready(function () {
     const minRows = 5;
     const tbody2 = document.getElementById("table-body2");
     const generarPreordenBtn = $("#generar-preorden");
-    
+
     $(".button-add-product").on("click", function () {
-        const selected = $("input[name='productoSeleccionado']:checked");
-        if (selected.length === 0) {
-            alert("Seleccione un producto primero.");
+        const seleccionados = $("input[name='productosSeleccionados[]']:checked");
+        if (seleccionados.length === 0) {
+            alert("Seleccione al menos un producto.");
             return;
         }
 
-        const codigo = selected.attr("codigo-producto");
-        const nombre = selected.attr("nombre-producto");
-        const precio = parseFloat(selected.attr("precio-producto"));
-        const cantidad = parseInt($(".quantity input[type='number']").val()) || 1;
+        seleccionados.each(function () {
+            const checkbox = $(this);
+            const codigo = checkbox.attr("codigo-producto");
+            const nombre = checkbox.attr("nombre-producto");
+            const precio = parseFloat(checkbox.attr("precio-producto"));
+            const cantidad = parseInt($(".quantity input[type='number']").val()) || 1;
+            const stockActual = stockDisponible[codigo];
 
-        stockDisponible[codigo] -= cantidad;
-        if (stockDisponible[codigo] < 0)
-            stockDisponible[codigo] = 0;
-
-        renderTabla(productosOriginales);
-
-        let existente = false;
-        $("#table-body2 tr").each(function () {
-            const codigoExistente = $(this).find("td:eq(0)").text();
-            if (codigoExistente === codigo) {
-                let cantidadActual = parseInt($(this).find("td:eq(3)").text());
-                cantidadActual += cantidad;
-                $(this).find("td:eq(3)").text(cantidadActual);
-                existente = true;
+            if (cantidad > stockActual) {
+                alert(`El producto ${nombre} tiene solo ${stockActual} en stock. No se agregó.`);
+                return;
             }
-        });
 
-        if (!existente) {
-            const nuevaFila = `
+            stockDisponible[codigo] -= cantidad;
+            checkbox.closest("tr").find("td:eq(3)").text(stockDisponible[codigo]);
+            if (stockDisponible[codigo] < 0) {
+                stockDisponible[codigo] = 0;
+            }
+
+            $(`#table-body input[value='${codigo}']`)
+                    .closest("tr")
+                    .find("td:eq(3)")
+                    .text(stockDisponible[codigo]);
+
+            if (stockDisponible[codigo] <= 0) {
+                $(`#table-body input[value='${codigo}']`)
+                        .prop("disabled", true)
+                        .prop("checked", false);
+            }
+
+            let existente = false;
+            $("#table-body2 tr").each(function () {
+                const codigoExistente = $(this).find("td:eq(0)").text();
+                if (codigoExistente === codigo) {
+                    let cantidadActual = parseInt($(this).find("td:eq(3)").text());
+                    cantidadActual += cantidad;
+                    $(this).find("td:eq(3)").text(cantidadActual);
+                    existente = true;
+                }
+            });
+
+            if (!existente) {
+                const nuevaFila = `
                 <tr>
                     <td>${codigo}</td>
                     <td>${nombre}</td>
@@ -44,18 +63,24 @@ $(document).ready(function () {
                     <td><button class="style-button btn-eliminar">❌</button></td>
                 </tr>
             `;
-            $("#table-body2").append(nuevaFila);
-        }
-        
-        const productoEnArray = productosSeleccionados.find(p => p.codigo === codigo);
-        if (productoEnArray) {
-            productoEnArray.cantidad += cantidad;
-        } else {
-            productosSeleccionados.push({ codigo, cantidad, precio });
-        }
-        
+                $("#table-body2").append(nuevaFila);
+            }
+
+            const productoEnArray = productosSeleccionados.find(p => p.codigo === codigo);
+            if (productoEnArray) {
+                productoEnArray.cantidad += cantidad;
+            } else {
+                productosSeleccionados.push({codigo, cantidad, precio});
+            }
+        });
+
+        $("input[name='productosSeleccionados[]']").prop("checked", false);
+        $(".quantity input[type='number']").val(1);
         actualizarTablaOrdenada();
         actualizarBotonPreorden();
+        const btn = $(".button-search");
+        btn.prop("disabled", true);
+        btn.removeClass("style-button").addClass("style-button-disabled");
     });
 
     $(document).on("click", ".btn-eliminar", function () {
@@ -65,10 +90,18 @@ $(document).ready(function () {
 
         stockDisponible[codigo] += cantidad;
 
+        $(`#table-body input[value='${codigo}']`)
+                .closest("tr")
+                .find("td:eq(3)")
+                .text(stockDisponible[codigo]);
+
+        if (stockDisponible[codigo] > 0) {
+            $(`#table-body input[value='${codigo}']`).prop("disabled", false);
+        }
+
         fila.remove();
         productosSeleccionados = productosSeleccionados.filter(p => p.codigo !== codigo);
         actualizarTablaOrdenada();
-        renderTabla(productosOriginales);
         actualizarBotonPreorden();
     });
 
@@ -112,13 +145,17 @@ $(document).ready(function () {
             const celdas = $(this).find("td");
             return celdas.length === 5 && celdas.eq(0).text().trim() !== " ";
         }).length;
-
+        const btn = $(".button-search");
         if (productosEnCarrito > 0) {
             generarPreordenBtn.removeClass("style-button-disabled").addClass("style-button");
             generarPreordenBtn.prop("disabled", false);
+            btn.prop("disabled", true);
+            btn.removeClass("style-button").addClass("style-button-disabled");
         } else {
             generarPreordenBtn.removeClass("style-button").addClass("style-button-disabled");
             generarPreordenBtn.prop("disabled", true);
+            btn.prop("disabled", false);
+            btn.removeClass("style-button-disabled").addClass("style-button");
         }
     }
 

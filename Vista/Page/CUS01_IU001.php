@@ -8,6 +8,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <meta charset="UTF-8">
         <link href="../Style/Style.css" rel="stylesheet" type="text/css"/>
         <link href="../Style/CUS01/CUS01_IU001.css" rel="stylesheet" type="text/css"/>
+        <link href="../Style/CUS01/StyleTittleGeneral.css" rel="stylesheet" type="text/css"/>
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
         <title>CUS01 - Generar Preorden de Pedido</title>
     </head>
@@ -31,7 +32,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         </script>
         <main class="container main-content">
             <?php
-            include "../Componentes/TituloRolResponsableFechaHora.php";
+                include "../Componentes/TituloRolResponsableFechaHora.php";
             ?>
             <section class="customer">
                 <div class="customer-crud">
@@ -100,6 +101,9 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <div class="button-filter">
                             <button class="style-button" type="submit">Filtrar</button>
                         </div>
+                        <div class="button-filter">
+                            <button class="style-button" type="button" id="btn-clear-filters">Limpiar filtros</button>
+                        </div>
                     </form>
                 </div>
                 <div class="product-table filter-product-table">
@@ -167,6 +171,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <script src="../Script/buscarClienteJquery.js" type="text/javascript"></script>
         <script src="../Script/CUS01/cargarProductos.js" type="text/javascript"></script>
         <script src="../Script/CUS01/filtroProducto.js" type="text/javascript"></script>
+        <script src="../Script/CUS01/limpiarFiltros.js" type="text/javascript"></script>
         <script src="../Script/CUS01/addProductListPreorden.js" type="text/javascript"></script>
         <script src="../Script/CUS01/cantidadConfig.js" type="text/javascript"></script>
         <script src="../Script/CUS01/registrarPreorden.js" type="text/javascript"></script>

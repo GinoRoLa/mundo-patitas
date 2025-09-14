@@ -30,11 +30,11 @@
     width: 100%;
     display: grid;
     align-items: start;
-    padding: 1.5rem 3rem;
+    padding: 0.5rem 3rem;
 }
 
 .title h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
 }
 
 /* **********  DATA  *************** */
@@ -49,21 +49,22 @@
 }
 
 .data div {
-    padding: 1rem 1.5rem;
+    padding: 0 1.5rem;
     display: flex;
     flex-flow: row wrap;
     gap: 1rem;
 }
 
 .data h2 {
+    font-size: 12px;
     padding: 4px;
 }
 
 .data input {
     text-decoration: none;
+    font-size: 10px;
     border: 2px solid var(--dark-color);
     border-radius: 8px;
-    height: 100%;
     padding: 0.3rem;
     text-align: center;
 }

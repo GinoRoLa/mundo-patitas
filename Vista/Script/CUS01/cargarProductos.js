@@ -20,7 +20,9 @@ window.renderTabla = function (lista) {
           <td>${stock}</td>
           <td>
             <label class="checkbox-container">
-              <input type="radio" name="productoSeleccionado"
+              <input type="checkbox" 
+                name="productosSeleccionados[]"
+                value="${p.Id_Producto}"
                 codigo-producto="${String(p.Id_Producto).padStart(3,"0")}"
                 nombre-producto="${p.NombreProducto}"
                 precio-producto="${parseFloat(p.PrecioUnitario).toFixed(2)}"

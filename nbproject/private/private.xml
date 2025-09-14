@@ -3,13 +3,12 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/index.php</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/CUS02/api.js</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Page/CUS01_IU001.php</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/CUS01/registrarPreorden.js</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Controlador/CUS01Negocio.php</file>
             <file>file:/C:/xampp/htdocs/mundo-patitas/MySQL/Procedure-view%20MP%20V3.sql</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Page/CUS04_IU004.php</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/CUS04/registarSalidaAlmacen.js</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Ajax/CUS04/registarSalidaAlmacen.php</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/MySQL/mundo-patitasV3.sql</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/CUS01/addProductListPreorden.js</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/buscarClienteJquery.js</file>
         </group>
     </open-files>
 </project-private>

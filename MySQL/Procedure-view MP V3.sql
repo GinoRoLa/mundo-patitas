@@ -50,7 +50,7 @@ BEGIN
     UPDATE t01preordenpedido
     SET Total = v_totalPreorden
     WHERE Id_PreOrdenPedido = v_preordenId;
-
+    SELECT v_preordenId AS idPreorden;
 END$$
 DELIMITER ;
 

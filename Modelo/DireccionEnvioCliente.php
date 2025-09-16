@@ -3,12 +3,11 @@ final class DireccionEnvioCliente {
   private $cn;
   public function __construct() { $this->cn = (new Conexion())->conecta(); }
 
-  // /Modelo/DireccionEnvioCliente.php (método listarPorClienteId)
 public function listarPorClienteId(int $idCliente): array {
     $sql = "SELECT Id_DireccionEnvio, Id_Cliente, NombreContacto, TelefonoContacto, Direccion
               FROM t70DireccionEnvioCliente
              WHERE Id_Cliente = ?
-             ORDER BY Id_DireccionEnvio DESC"; // o EsPrincipal DESC, Id_DireccionEnvio DESC si agregas el flag
+             ORDER BY Id_DireccionEnvio DESC";
     $st = mysqli_prepare($this->cn, $sql);
     mysqli_stmt_bind_param($st, "i", $idCliente);
     mysqli_stmt_execute($st);

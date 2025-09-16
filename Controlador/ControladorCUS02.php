@@ -82,8 +82,8 @@ try {
         'items'               => $items,
         'cantidadProductos'   => $cant,
         'subtotal'            => $subt,
-        'descuento'           => $desc,      // monto en S/
-        'descuentoRate'       => $rate,      // (opcional) 0.10 / 0.15
+        'descuento'           => $desc,
+        'descuentoRate'       => $rate,
         'total'               => max(0, $subt - $desc)
       ]);
 

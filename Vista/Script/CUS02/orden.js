@@ -220,7 +220,7 @@
         document.getElementById("btnRegistrar").disabled = true;
         setDirty(false);
         window.Cliente.limpiarCliente();
-        Messages.global.ok(`Orden #${r.ordenId} generada.`, { autoclear: 2500 });
+        Messages.global.ok(`Orden #${r.ordenId} generada.`, { autoclear: 1500 });
         updateEnvioPanelVisibility();
       },
     });

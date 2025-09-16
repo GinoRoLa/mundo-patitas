@@ -38,7 +38,7 @@
 
     window.Orden.pintarItemsConsolidados(r);
     setDirty(true);
-    Messages.preorden.ok("Preórdenes consolidadas correctamente.", { autoclear: 1300 });
+    Messages.preorden.ok("Preórdenes consolidadas correctamente.", { autoclear: 1100 });
   }
 
   /** Pinta la tabla de preórdenes y habilita/deshabilita el botón “Agregar”. */

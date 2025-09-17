@@ -1,7 +1,7 @@
 -- ==========================================================
 -- Procedimientos Preorden CUS01
 -- ==========================================================
-
+Use mundo_patitas2;
 DROP PROCEDURE IF EXISTS sp_registrarPreorden;
 DELIMITER $$
 CREATE PROCEDURE sp_registrarPreorden(

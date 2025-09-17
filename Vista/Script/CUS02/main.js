@@ -87,19 +87,31 @@
 
     // 9) Confirmación nativa al pulsar "Salir"
     const btnSalir = document.getElementById("btnSalir");
-    if (btnSalir) {
-      btnSalir.addEventListener("click", () => {
+    if (!btnSalir) return;
+
+    // URL destino
+    const DESTINO = `${window.SERVICIOURL}/mundo-patitas/`; // http://localhost:8080/mundo-patitas/
+
+    // Neutraliza handlers previos/inlines
+    btnSalir.removeAttribute("onclick");
+    btnSalir.onclick = null;
+
+    btnSalir.addEventListener(
+      "click",
+      (e) => {
+        e.preventDefault();
+        e.stopImmediatePropagation(); // evita que corran otros handlers (incl. inline)
         if (window.Utils.isDirty()) {
           const ok = window.confirm(
             "¿Quieres salir de este sitio? Es posible que los cambios no se guarden."
           );
           if (!ok) return;
         }
-        // apaga beforeunload para no ver doble prompt
-        window.Utils.setDirty(false);
-        window.location.href = "/";
-      });
-    }
+        window.Utils.setDirty(false); // quita beforeunload para no ver doble prompt
+        window.location.assign(DESTINO); // o replace() si no quieres volver con Back
+      },
+      { capture: true }
+    );
 
     // 10) Manejo global de errores
     window.addEventListener("error", (ev) =>

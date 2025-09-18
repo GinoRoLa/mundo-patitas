@@ -69,7 +69,19 @@ INSERT INTO t20Cliente
 VALUES
   (60001, '12345678', 'Quispe', 'Huamán', 'Ana',  '987654321', 'ana.quispe@correo.com',  'Av. Los Olivos 456', 'Activo'),
   (60002, '87654321', 'Flores', 'Rojas',  'Pedro','981234567', 'pedro.flores@correo.com','Jr. San Martín 789', 'Activo'),
-  (60003, '11223344', 'Soto',   'Méndez', 'Luisa','980112233', 'luisa.soto@correo.com',  'Calle Norte 101',    'Inactivo');
+  (60003, '11223344', 'Soto',   'Méndez', 'Luisa','980112233', 'luisa.soto@correo.com',  'Calle Norte 101',    'Inactivo'),
+  (60004,'33445566','Ramírez','Poma','Jorge','986543210','jorge.ramirez@correo.com','Av. Arequipa 1234','Activo'),
+  (60005,'99887766','García','Luna','María','989112233','maria.garcia@correo.com','Jr. Las Magnolias 350','Activo'),
+  (60006,'55667788','Torres','Campos','Carlos','981223344','carlos.torres@correo.com','Calle Los Cedros 220','Activo'),
+  (60007,'44556677','Pérez','Saldaña','Rocío','984556677','rocio.perez@correo.com','Av. El Ejército 765','Activo'),
+  (60008,'22334455','López','Vega','Hugo','982334455','hugo.lopez@correo.com','Mz. B Lote 12 Urb. Progreso','Activo'),
+  (60009,'77889911','Mendoza','Ríos','Karla','983778899','karla.mendoza@correo.com','Psje. Los Olivos 114','Activo'),
+  (60010,'66778899','Rojas','Cárdenas','Diego','985667788','diego.rojas@correo.com','Av. Universitaria 1020','Activo'),
+  (60011,'12121212','Salazar','Quispe','Elena','986121212','elena.salazar@correo.com','Jr. Puno 456','Activo'),
+  (60012,'34343434','Valdez','Núñez','Marco','987343434','marco.valdez@correo.com','Calle Lima 890','Activo'),
+  (60013,'56565656','Castillo','Zapata','Patricia','989565656','patricia.castillo@correo.com','Av. Brasil 1500','Activo'),
+  (60014,'78787878','Aguilar','Sánchez','Bruno','981787878','bruno.aguilar@correo.com','Av. La Marina 700','Activo'),
+  (60015,'90909090','Chávez','Ibarra','Verónica','983909090','veronica.chavez@correo.com','Jr. Ancash 210','Activo');
   
   -- Ana (Activa)
 INSERT INTO t70DireccionEnvioCliente (Id_Cliente, NombreContacto, TelefonoContacto, Direccion)
@@ -80,7 +92,19 @@ VALUES
 -- Pedro (Activo)
 INSERT INTO t70DireccionEnvioCliente (Id_Cliente, NombreContacto, TelefonoContacto, Direccion)
 VALUES
-  (60002, 'Pedro Flores','981234567', 'Jr. San Martín 789 Int. 201');
+  (60002, 'Pedro Flores','981234567', 'Jr. San Martín 789 Int. 201'),
+  (60004,'Jorge Ramírez Poma','986543210','Av. Arequipa 1234'),
+  (60005,'María García Luna','989112233','Jr. Las Magnolias 350'),
+  (60006,'Carlos Torres Campos','981223344','Calle Los Cedros 220'),
+  (60007,'Rocío Pérez Saldaña','984556677','Av. El Ejército 765'),
+  (60008,'Hugo López Vega','982334455','Mz. B Lote 12 Urb. Progreso'),
+  (60009,'Karla Mendoza Ríos','983778899','Psje. Los Olivos 114'),
+  (60010,'Diego Rojas Cárdenas','985667788','Av. Universitaria 1020'),
+  (60011,'Elena Salazar Quispe','986121212','Jr. Puno 456'),
+  (60012,'Marco Valdez Núñez','987343434','Calle Lima 890'),
+  (60013,'Patricia Castillo Zapata','989565656','Av. Brasil 1500'),
+  (60014,'Bruno Aguilar Sánchez','981787878','Av. La Marina 700'),
+  (60015,'Verónica Chávez Ibarra','983909090','Jr. Ancash 210');
 
 
 -- ==========================================================

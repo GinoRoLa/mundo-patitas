@@ -19,27 +19,31 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
     </head>
     <body>
         <?php
-        include_once '../../Controlador/CUS04Negocio.php';
-        $obj = new CUS04Negocio();
+        include_once '../../Controlador/Negocio.php';
+        $obj = new Negocio();
         $titulo = "IU004 - Preparar pedido de venta";
         $trabajador = "Egoavil Camacho Giro";
-        $rol = "Responsable de almacén";
+        $rol = "Responsanble de almacén";
         $parametrosComponenteTitulo = [
             "titulo" => $titulo,
             "trabajador" => $trabajador,
             "rol" => $rol
         ];
-        $pedidos = $obj->listaOrdenesPedidoSSE();
         ?>
-        <script>
-            window.ordenesPedido = <?php echo json_encode($pedidos); ?>;
-        </script>
         <main class="container main-content">
             <?php
             include "../Componentes/TituloRolResponsableFechaHora.php";
             ?>
             <section class="orden-pedido">
-                <div id="buscarPreorden" class="form-search-orden">
+                <form method="post" id="buscarPreorden" class="form-search-orden">
+                    <div class="orden-cse">
+                        <label class="labelText">Con servicio de entrega:</label>
+                        <label class="checkbox-container">
+                            <input type="radio" name="filtroOrden" value="notaDistribucion">
+                            <span class="checkmark"></span>
+                            <span class="textSpanCheckmark">Nota de distribución</span>
+                        </label>
+                    </div>
                     <div class="orden-sse">
                         <label class="labelText">Sin servicio de entrega:</label>
                         <div class="checkbox-option">
@@ -48,17 +52,34 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                                 <span class="checkmark"></span>
                                 <span class="textSpanCheckmark">Código de orden pedido</span>
                             </label>
-                            <label class="checkbox-container">
+                            <!--<label class="checkbox-container">
                                 <input type="radio" name="filtroOrden" value="dniCliente">
                                 <span class="checkmark"></span>
                                 <span class="textSpanCheckmark">DNI cliente</span>
-                            </label>
+                            </label>-->
                         </div>
                     </div>
                     <div class="input-search">
                         <input type="number" name="filtroOrdenPedido" class="input-style-number-spinner" min="0">
-                        <button class="style-button button-search-orden" type="submit">Filtrar</button>
-                        <button class="style-button button-clear-filters" type="submit">Limpiar filtro</button>
+                        <button class="style-button button-search-orden" type="submit">Buscar</button>
+                    </div>                        
+                </form>
+                <div class="form-data-information">
+                    <div class="form-data-details">
+                        <h2>Código Orden:</h2>
+                        <input type="text" readonly id="codigoOrden">
+                    </div>
+                    <div class="form-data-details">
+                        <h2>Total:</h2>
+                        <input type="text" readonly id="totalOrden">
+                    </div>
+                    <div class="form-data-details">
+                        <h2>Fecha:</h2>
+                        <input type="text" readonly id="fechaOrden">
+                    </div>
+                    <div class="form-data-details">
+                        <h2>DNI cliente:</h2>
+                        <input type="text" readonly id="dniCliente">
                     </div>
                 </div>
                 <div class="product-table">
@@ -66,32 +87,12 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <thead>
                             <tr>
                                 <th>Código</th>
-                                <th>DNI cliente</th>
-                                <th>Fecha</th>
-                                <th>Estado</th>
-                                <th>Total (S/)</th>
-                                <th>Seleccionar</th>
+                                <th>Descripción</th>
+                                <th>Precio (S/)</th>
+                                <th>Cantidad</th>
                             </tr>
                         </thead>
                         <tbody id="table-body3">
-
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-            <section>
-                <div class="product-table">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Código</th>
-                                <th>DNI cliente</th>
-                                <th>Fecha</th>
-                                <th>Total (S/)</th>
-                                <th>Quitar</th>
-                            </tr>
-                        </thead>
-                        <tbody id="table-body2">
 
                         </tbody>
                     </table>
@@ -112,8 +113,5 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <script src="../Script/CUS01/salirBoton.js" type="text/javascript"></script>
         <script src="../Script/CUS04/buscarOrdenPedidoJQuery.js" type="text/javascript"></script>
         <script src="../Script/CUS04/registarSalidaAlmacen.js" type="text/javascript"></script>
-        <script src="../Script/CUS04/cargarOrdenesPedido.js" type="text/javascript"></script>
     </body>
-
-
 </html>

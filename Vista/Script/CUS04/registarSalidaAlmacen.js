@@ -2,27 +2,31 @@ $(function () {
 
     $('#register-orden').on('submit', function (e) {
         e.preventDefault();
+        // recolectar los ids de la tabla 2
+        const ids = [];
+        $("#table-body2 tr[data-id]").each(function () {
+            ids.push($(this).data("id"));
+        });
 
-        const idOrden = $("input[name='codigoOrdenHidden']").val();
-
-        if (!idOrden) {
-            alert("No se encontró un código de orden válido.");
+        if (ids.length === 0) {
+            alert("Debe seleccionar al menos una orden.");
             return;
         }
-
         $.ajax({
             type: "POST",
             url: "../Ajax/CUS04/registarSalidaAlmacen.php",
-            data: { idOrden: idOrden },
+            data: {listaOrdenes: JSON.stringify(ids)},
             dataType: "json",
             success: function (res) {
                 if (res.success) {
                     alert("Salida de almacén registrada correctamente.");
                     $('#register-orden')[0].reset();
                     $(".generar-preorden-button")
-                        .prop("disabled", true)
-                        .removeClass("style-button")
-                        .addClass("style-button-disabled");
+                            .prop("disabled", true)
+                            .removeClass("style-button")
+                            .addClass("style-button-disabled");
+                    ordenesSeleccionadas = [];
+                    location.reload();
                 } else {
                     alert("Error: " + res.message);
                 }

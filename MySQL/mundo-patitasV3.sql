@@ -676,25 +676,6 @@ CREATE TABLE t405IncidenciaEntrega (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=85001;
 
-CREATE TABLE t62notadistribucion (
-  Id_NotaDistribucion INT NOT NULL AUTO_INCREMENT,
-  Id_Cliente INT NOT NULL,
-  Id_OrdenPedido INT NOT NULL,
-  Fecha DATE NOT NULL,
-  Estado VARCHAR(15) NOT NULL,
-  PRIMARY KEY (Id_NotaDistribucion),
-  KEY fk_t62_cliente (Id_Cliente),
-  KEY fk_t62_orden (Id_OrdenPedido),
-  CONSTRAINT fk_t62_cliente FOREIGN KEY (Id_Cliente)
-      REFERENCES t20cliente (Id_Cliente)
-      ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t62_orden FOREIGN KEY (Id_OrdenPedido)
-      REFERENCES t02ordenpedido (Id_OrdenPedido)
-      ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB 
-  AUTO_INCREMENT=4000 
-  DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
 -- ==========================================================
 -- 11) Índices útiles
 -- ==========================================================

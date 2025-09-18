@@ -197,84 +197,63 @@ BEGIN
 END$$
 DELIMITER ;
 
-CREATE OR REPLACE VIEW ordenesSSE AS
-SELECT
-  op.Id_OrdenPedido,
-  op.Fecha,
-  c.DniCli,
-  op.Id_MetodoEntrega,
-  op.CostoEntrega,
-  op.Descuento,
-  op.Total,
-  op.Estado
-FROM t02ordenpedido op
-JOIN t20cliente c 
-  ON op.Id_Cliente = c.Id_Cliente
-WHERE op.Id_MetodoEntrega = 9001 and op.Estado = "Pagado";
-
-CREATE OR REPLACE VIEW ordenesCSE AS
-SELECT
-  op.Id_OrdenPedido,
-  op.Fecha,
-  c.DniCli,
-  op.Id_MetodoEntrega,
-  op.CostoEntrega,
-  op.Descuento,
-  op.Total,
-  op.Estado,
-  nd.Id_NotaDistribucion
-FROM t02ordenpedido op
-JOIN t20cliente c 
-  ON op.Id_Cliente = c.Id_Cliente
-LEFT JOIN t62notadistribucion nd
-  ON op.Id_OrdenPedido = nd.Id_OrdenPedido
-WHERE op.Id_MetodoEntrega <> 9001 and nd.Estado = "Pendiente";
-
+DROP PROCEDURE IF EXISTS registrarMovimiento;
 DELIMITER $$
 
 CREATE PROCEDURE registrarMovimiento (
-    IN p_Id_OrdenPedido INT,
+    IN p_ListaOrdenes JSON,
     IN p_Estado VARCHAR(15)
 )
 BEGIN
+    DECLARE v_Id_OrdenPedido INT;
     DECLARE v_Id_OrdenSalida INT;
+    DECLARE done INT DEFAULT FALSE;
 
-    -- 1. Registrar la Orden de Salida
-    INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido)
-    VALUES (p_Id_OrdenPedido);
+    DECLARE cur CURSOR FOR 
+        SELECT CAST(jt.id AS UNSIGNED)
+        FROM JSON_TABLE(p_ListaOrdenes, "$[*]" COLUMNS (id INT PATH "$")) jt;
 
-    SET v_Id_OrdenSalida = LAST_INSERT_ID();
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
 
-    -- 2. Insertar productos en el Kardex con el estado dinámico
-    INSERT INTO t10kardex (
-        Fec_Transaccion,
-        id_Producto,
-        Cantidad,
-        Estado,
-        t11OrdenSalida_Id_ordenSalida
-    )
-    SELECT 
-        CURDATE() AS Fec_Transaccion,
-        d.t18CatalogoProducto_Id_Producto,
-        d.Cantidad,
-        p_Estado AS Estado,
-        v_Id_OrdenSalida
-    FROM t61detapreorden d
-    INNER JOIN t01preordenpedido pre 
-        ON d.t01PreOrdenPedido_Id_PreOrdenPedido = pre.Id_PreOrdenPedido
-    INNER JOIN t02ordenpedido o
-        ON pre.t02OrdenPedido_Id_OrdenPedido = o.Id_OrdenPedido
-    WHERE o.Id_OrdenPedido = p_Id_OrdenPedido;
+    OPEN cur;
+    read_loop: LOOP
+        FETCH cur INTO v_Id_OrdenPedido;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
 
-    -- 3. Actualizar el estado de la nota de distribución
-    UPDATE t62notadistribucion
-    SET Estado = 'Procesado'
-    WHERE Id_OrdenPedido = p_Id_OrdenPedido;
+        -- 1. Registrar la Orden de Salida
+        INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido)
+        VALUES (v_Id_OrdenPedido);
 
-    -- 4. Actualizar el estado de la orden de pedido
+        SET v_Id_OrdenSalida = LAST_INSERT_ID();
+
+        -- 2. Insertar productos en el Kardex
+        INSERT INTO t10kardex (
+            Fec_Transaccion,
+            id_Producto,
+            Cantidad,
+            Estado,
+            t11OrdenSalida_Id_ordenSalida
+        )
+        SELECT 
+            CURDATE(),
+            d.t18CatalogoProducto_Id_Producto,
+            d.Cantidad,
+            p_Estado,
+            v_Id_OrdenSalida
+        FROM t61detapreorden d
+        INNER JOIN t01preordenpedido pre 
+            ON d.t01PreOrdenPedido_Id_PreOrdenPedido = pre.Id_PreOrdenPedido
+        INNER JOIN t02ordenpedido o
+            ON pre.t02OrdenPedido_Id_OrdenPedido = o.Id_OrdenPedido
+        WHERE o.Id_OrdenPedido = v_Id_OrdenPedido;
+    
     UPDATE t02ordenpedido
-    SET Estado = 'Cerrada'
-    WHERE Id_OrdenPedido = p_Id_OrdenPedido;
+        SET Estado = 'Entregado'
+        WHERE Id_OrdenPedido = v_Id_OrdenPedido;
+    END LOOP;
+    CLOSE cur;
 END$$
 
 DELIMITER ;

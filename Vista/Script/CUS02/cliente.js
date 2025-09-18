@@ -127,7 +127,7 @@
     }
     if (!r.found) {
       limpiarCliente(); // ← OJO: limpia primero
-      Messages.cliente.error("Cliente no encontrado.", { persist: true }); // y luego muestra
+      Messages.cliente.error("Cliente no encontrado o inactivo.", { persist: true }); // y luego muestra
       return;
     }
 

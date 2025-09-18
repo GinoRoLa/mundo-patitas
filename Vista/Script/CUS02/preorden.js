@@ -63,12 +63,12 @@
     const btn = $("#btnAgregar");
     if (btn) btn.disabled = !hayFilas;
 
-    if (!hayFilas) {
+   /*  if (!hayFilas) {
       Messages.preorden.error("No hay preórdenes vigentes en las últimas 24 horas.", { persist: true });
     } else {
       // Limpia mensaje previo si había uno de error
       Messages.preorden.clear();
-    }
+    } */
 
     // Marcar “dirty” y limpiar mensajes al cambiar selecciones (una sola vez)
     tb.addEventListener("change", (e) => {

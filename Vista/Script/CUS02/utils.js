@@ -23,8 +23,7 @@
   }
   function setNum(el, val) { if (el) el.value = to2(val); }
 
-  // ================== Mensajes con fade suave (sin layout shift) ==================
-  // .msg.show => visible; .msg.hiding => transición de salida
+  // ================== Mensajes ==================
   function softHide(el){
     if (!el.classList.contains("show")) return;
     el.classList.add("hiding");

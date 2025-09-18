@@ -1,7 +1,7 @@
 -- ==========================================================
 -- Procedimientos Preorden CUS01
 -- ==========================================================
-
+Use mundo_patitas2;
 DROP PROCEDURE IF EXISTS sp_registrarPreorden;
 DELIMITER $$
 CREATE PROCEDURE sp_registrarPreorden(
@@ -144,6 +144,61 @@ END$$
 
 DELIMITER ;
 
+DELIMITER $$
+CREATE PROCEDURE sp_orden_crear_con_detalle(
+  IN p_id_cliente   INT,
+  IN p_metodo_id    INT,
+  IN p_costo        DECIMAL(10,2),
+  IN p_descuento    DECIMAL(10,2),
+  IN p_total        DECIMAL(10,2),
+  IN p_items        JSON      -- [{ "IdProducto": 1, "Cantidad": 2 }, ...]
+)
+BEGIN
+  DECLARE v_orden_id INT;
+  DECLARE v_items_cnt INT;
+
+  -- Validaciones básicas
+  SET v_items_cnt = JSON_LENGTH(p_items);
+  IF v_items_cnt IS NULL OR v_items_cnt = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Items vacíos o inválidos';
+  END IF;
+
+  START TRANSACTION;
+
+  INSERT INTO t02OrdenPedido
+    (Fecha, Id_Cliente, Id_MetodoEntrega, CostoEntrega, Descuento, Total, Estado)
+  VALUES
+    (NOW(), p_id_cliente, p_metodo_id, p_costo, p_descuento, p_total, 'Generada');
+
+  SET v_orden_id = LAST_INSERT_ID();
+
+  -- Inserta el detalle en bloque desde el JSON
+  INSERT INTO t60DetOrdenPedido
+    (t18CatalogoProducto_Id_Producto, t02OrdenPedido_Id_OrdenPedido, Id_Cliente, Cantidad)
+  SELECT
+    jt.IdProducto, v_orden_id, p_id_cliente, jt.Cantidad
+  FROM JSON_TABLE(p_items, '$[*]' COLUMNS (
+    IdProducto INT PATH '$.IdProducto',
+    Cantidad   INT PATH '$.Cantidad'
+  )) AS jt
+  WHERE jt.IdProducto > 0 AND jt.Cantidad > 0;
+
+  -- Seguridad: si no se insertó nada, revierte
+  IF ROW_COUNT() = 0 THEN
+    ROLLBACK;
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se insertó detalle';
+  END IF;
+
+  COMMIT;
+
+  -- Devuelve el id de la orden en un resultset (fácil de leer desde PHP)
+  SELECT v_orden_id AS ordenId;
+END$$
+DELIMITER ;
+
+-- ==========================================================
+-- Procedimientos Preorden CUS01
+-- ==========================================================
 
 DROP PROCEDURE IF EXISTS sp_registrarPreorden;
 DELIMITER $$

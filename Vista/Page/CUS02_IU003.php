@@ -81,6 +81,7 @@ $fecha = date('Y-m-d');
         <label>Apellido materno:</label>
         <input id="txtApeMat" readonly />
       </div>
+      <div id="msgCliente" class="msg"></div>
 
       <hr />
       <div class="row">
@@ -100,6 +101,7 @@ $fecha = date('Y-m-d');
             <tbody></tbody>
           </table>
           <button id="btnAgregar">Agregar a la orden</button>
+          <div id="msgPreorden" class="msg"></div>
         </div>
 
         <div class="col-4">
@@ -187,20 +189,35 @@ $fecha = date('Y-m-d');
 
       <div class="acciones">
         <button id="btnRegistrar" disabled>Generar Orden</button>
-        <button id="btnSalir" type="button" onclick="window.location.href='/'">Salir</button>
+        <button id="btnSalir" type="button">Salir</button>
       </div>
 
       <div id="msg" class="msg"></div>
     </section>
 
   </main>
+<!-- Modal genérico -->
+<dialog id="appDialog" class="modal">
+  <form method="dialog" class="modal__card">
+    <h3 id="appDialogTitle" class="modal__title">Orden generada</h3>
+    <p id="appDialogMsg" class="modal__msg">Mensaje…</p>
+    <div class="modal__actions">
+      <button id="appDialogOk" value="ok" class="btn btn-primary">Aceptar</button>
+    </div>
+  </form>
+</dialog>
+
+
+
   <script src="../Script/CUS02/api.js"></script>
   <script src="../Script/CUS02/utils.js"></script>
   <script src="../Script/CUS02/cliente.js"></script>
   <script src="../Script/CUS02/preorden.js"></script>
   <script src="../Script/CUS02/orden.js"></script>
   <script src="../Script/CUS02/main.js"></script>
+  <script src="../Script/CUS02/dialog.js"></script>
   <script src="../Script/actualizarHora.js" type="text/javascript"></script>
+
 
 </body>
 

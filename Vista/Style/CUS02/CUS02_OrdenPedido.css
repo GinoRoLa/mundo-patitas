@@ -131,3 +131,8 @@ section.has-meta{ position: relative; padding-top: 72px; }
   width: 100%;
   max-width: 460px;   /* ajusta este número a tu gusto */
 }
+
+
+.msg { transition: opacity .18s ease, transform .18s ease, margin .18s ease, padding .18s ease; opacity: 1; }
+.msg.fading { opacity: 0; transform: translateY(-2px); }
+.msg.is-hidden { opacity: 0; margin: 0; padding: 0; border-width: 0; height: 0; overflow: hidden; }

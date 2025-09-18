@@ -1,11 +1,9 @@
 // /Vista/Script/CUS02/api.js
 (function () {
   window.SERVICIOURL = "http://localhost:8080";
-
   //window.SERVICIOURL = "http://localhost";
 
-  const BASE = `${window.SERVICIOURL}/Controlador/ControladorCUS02.php`;
-
+  const BASE = `${window.SERVICIOURL}/mundo-patitas/Controlador/ControladorCUS02.php`;
   //const BASE = `${window.SERVICIOURL}/mundo-patitas/Controlador/ControladorCUS02.php`;
 
   async function fetchJSON(url, opts = {}) {

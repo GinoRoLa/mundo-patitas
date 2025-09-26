@@ -3,7 +3,7 @@
   const { $, log, setNum, setDirty, Messages } = window.Utils;
   const { fetchJSON, url } = window.API;
 
-  const NO_ADDR = "— Sin direcciones: busca un cliente —";
+  const NO_ADDR = "— Sin direcciones de envío —";
 
   /** Pinta un placeholder en el combo de direcciones guardadas y lo deshabilita. */
   function setGuardadaPlaceholder(text = NO_ADDR) {
@@ -23,34 +23,62 @@
     wrap.hidden  = false;
   }
 
-  /** Llena el combo de direcciones guardadas y setea el modo de envío por defecto. */
+  /** Llena el combo de direcciones guardadas (t70) y deja data-* para prefill/validación. */
   function poblarDireccionesGuardadas(dirs) {
-    const wrap = $("#envioGuardada");
-    const cbo  = $("#cboDireccionGuardada");
-    const radioGuardada = document.querySelector('input[name="envioModo"][value="guardada"]');
-    const radioOtra     = document.querySelector('input[name="envioModo"][value="otra"]');
+    const wrap   = $("#envioGuardada");
+    const cbo    = $("#cboDireccionGuardada");
+    const rGuard = document.querySelector('input[name="envioModo"][value="guardada"]');
+    const rOtra  = document.querySelector('input[name="envioModo"][value="otra"]');
     if (!wrap || !cbo) return;
 
+    // Limpiar siempre
     cbo.innerHTML = "";
-    if (dirs && dirs.length) {
+
+    if (Array.isArray(dirs) && dirs.length > 0) {
       dirs.forEach((d) => {
         const opt = document.createElement("option");
         opt.value = d.Id_DireccionEnvio;
-        opt.textContent = `${d.NombreContacto} — ${d.Direccion} (${d.TelefonoContacto})`;
+
+        const nombre    = d.NombreContacto    ?? "";
+        const telefono  = d.TelefonoContacto  ?? "";
+        const direccion = d.Direccion         ?? "";
+        const distrito  = d.Distrito          ?? "";
+        const dniRec    = d.DniReceptor       ?? "";
+
+        // Texto visible
+        opt.textContent = `${direccion} — ${distrito} (${nombre} / ${telefono})`;
+
+        // Data para snapshot / validaciones
+        opt.dataset.nombre   = nombre;
+        opt.dataset.telefono = telefono;
+        opt.dataset.dir      = direccion;
+        opt.dataset.distrito = distrito;
+        opt.dataset.dni      = dniRec; // siempre set, aunque esté vacío
+
         cbo.appendChild(opt);
       });
+
+      // (debug opcional) imprime el primero para verificar
+      if (cbo.options.length > 0) {
+        const o0 = cbo.options[0];
+        console.log("[t70] option#0 dataset:", {dni:o0.dataset.dni, distrito:o0.dataset.distrito, dir:o0.dataset.dir});
+      }
+
       cbo.disabled = false;
       wrap.hidden  = false;
 
-      if (radioGuardada) { radioGuardada.disabled = false; radioGuardada.checked = true; }
-      if (radioOtra)     { radioOtra.checked = false; }
+      // Modo por defecto: guardada
+      if (rGuard) { rGuard.disabled = false; rGuard.checked = true; }
+      if (rOtra)  { rOtra.checked = false; }
       window.Orden.setEnvioModo("guardada");
     } else {
+      // Sin direcciones: placeholder y modo "otra"
       setGuardadaPlaceholder(NO_ADDR);
-      if (radioGuardada) { radioGuardada.disabled = false; radioGuardada.checked = true; }
-      if (radioOtra)     { radioOtra.checked = false; }
-      window.Orden.setEnvioModo("guardada");
+      if (rGuard) rGuard.checked = false;
+      if (rOtra)  { rOtra.checked = true; rOtra.disabled = false; }
+      window.Orden.setEnvioModo("otra");
     }
+
     window.Orden.validarReadyParaRegistrar();
   }
 
@@ -79,9 +107,9 @@
     }
     setNum($("#txtTotal"), 0);
 
-    poblarDireccionesGuardadas([]); // deja "guardada" con placeholder visible
-    const radioOtra = document.querySelector('input[name="envioModo"][value="otra"]');
-    if (radioOtra) radioOtra.checked = true;
+    poblarDireccionesGuardadas([]); // placeholder
+    const rOtra = document.querySelector('input[name="envioModo"][value="otra"]');
+    if (rOtra) rOtra.checked = true;
     window.Orden.setEnvioModo("otra");
     window.Orden.updateEnvioPanelVisibility();
 
@@ -92,7 +120,6 @@
     setDirty(false);
     $("#txtDni")?.focus();
 
-    // limpia mensajes por sección
     Messages.cliente.clear();
     Messages.preorden.clear();
   }
@@ -126,8 +153,8 @@
       return;
     }
     if (!r.found) {
-      limpiarCliente(); // ← OJO: limpia primero
-      Messages.cliente.error("Cliente no encontrado o inactivo.", { persist: true }); // y luego muestra
+      limpiarCliente();
+      Messages.cliente.error("Cliente no encontrado o inactivo.", { persist: true });
       return;
     }
 
@@ -140,7 +167,10 @@
 
     Messages.cliente.ok("Cliente encontrado.", { autoclear: 1300 });
 
+    // Direcciones guardadas (t70) con distrito y DNI receptor en data-*
     poblarDireccionesGuardadas(r.direcciones || []);
+
+    // Preórdenes
     const preos = r.preordenes || [];
     window.Preorden.pintarPreordenes(preos);
 
@@ -152,5 +182,10 @@
   }
 
   // Export API pública
-  window.Cliente = { limpiarCliente, buscarCliente, poblarDireccionesGuardadas };
+  window.Cliente = {
+    limpiarCliente,
+    buscarCliente,
+    poblarDireccionesGuardadas,
+    setGuardadaPlaceholder,
+  };
 })();

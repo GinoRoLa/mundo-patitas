@@ -113,6 +113,27 @@ $fecha = date('Y-m-d');
         <fieldset id="envioPanel" class="envio-panel" style="display:none;">
           <legend>Dirección de entrega</legend>
 
+          <!-- <div class="row grid-2 mt-8">
+            <div>
+              <label for="envioReceptorDni">DNI de quien recibe</label>
+              <input id="envioReceptorDni"
+                maxlength="8"
+                pattern="\d{8}"
+                inputmode="numeric"
+                placeholder="8 dígitos"
+                autocomplete="off">
+              <small class="hint">Obligatorio para programar la entrega.</small>
+            </div>
+            <div>
+              <label for="envioDistrito">Distrito</label>
+              <input id="envioDistrito"
+                maxlength="120"
+                placeholder="Ej: Los Olivos"
+                autocomplete="address-level2">
+              <small class="hint">Se usa para planificar las rutas.</small>
+            </div>
+          </div> -->
+
           <div class="envio-modo" role="radiogroup" aria-label="Modo de dirección de entrega">
             <label class="radio">
               <input type="radio" name="envioModo" value="guardada" aria-controls="envioGuardada">
@@ -128,7 +149,8 @@ $fecha = date('Y-m-d');
           <div id="envioGuardada" class="envio-guardada" hidden>
             <label for="cboDireccionGuardada" class="sr-only">Dirección guardada</label>
             <select id="cboDireccionGuardada">
-              <!-- opciones dinámicas -->
+              <!-- opciones dinámicas: cada <option> idealmente con
+           data-nombre, data-tel, data-dir, data-dni, data-dist -->
             </select>
             <small class="hint">Selecciona una dirección previamente guardada para este cliente.</small>
           </div>
@@ -138,29 +160,41 @@ $fecha = date('Y-m-d');
             <div class="row grid-2">
               <div>
                 <label for="envioNombre">Nombre contacto</label>
-                <input id="envioNombre" maxlength="120" placeholder="Ej: Juan Pérez"
-                  name="envioNombre" autocomplete="name">
+                <input id="envioNombre" maxlength="120" placeholder="Ej: Juan Pérez" name="envioNombre" autocomplete="name">
               </div>
               <div>
                 <label for="envioTelefono">Teléfono</label>
-                <input id="envioTelefono" maxlength="20" inputmode="tel"
-                  placeholder="Ej: 999888777" name="envioTelefono" autocomplete="tel">
+                <input id="envioTelefono" maxlength="20" inputmode="tel" placeholder="Ej: 999888777" name="envioTelefono" autocomplete="tel">
               </div>
             </div>
 
             <div class="row mt-8">
               <label for="envioDireccion">Dirección</label>
-              <input id="envioDireccion" maxlength="255" placeholder="Calle/Av, número, distrito"
-                name="envioDireccion" autocomplete="street-address">
+              <input id="envioDireccion" maxlength="255" placeholder="Calle/Av, número" name="envioDireccion" autocomplete="street-address">
+            </div>
+
+            <!-- 🔹 SOLO visible en “otra” -->
+            <div class="row grid-2 mt-8">
+              <div>
+                <label for="envioReceptorDni">DNI de quien recibe</label>
+                <input id="envioReceptorDni" maxlength="8" pattern="\d{8}" inputmode="numeric" placeholder="8 dígitos" autocomplete="off">
+              </div>
+              <div>
+                <label for="envioDistrito">Distrito</label>
+                <input id="envioDistrito" maxlength="120" placeholder="Ej: Los Olivos">
+              </div>
             </div>
 
             <div class="row mt-8">
               <label class="checkbox">
-                <input type="checkbox" id="chkGuardarDireccion" name="guardarDireccionCliente" value="1" checked>Guardar esta dirección </input>
+                <input type="checkbox" id="chkGuardarDireccion" name="guardarDireccionCliente" value="1" checked>
+                Guardar esta dirección
               </label>
             </div>
           </div>
+
         </fieldset>
+
 
       </div>
 
@@ -196,16 +230,16 @@ $fecha = date('Y-m-d');
     </section>
 
   </main>
-<!-- Modal genérico -->
-<dialog id="appDialog" class="modal">
-  <form method="dialog" class="modal__card">
-    <h3 id="appDialogTitle" class="modal__title">Orden generada</h3>
-    <p id="appDialogMsg" class="modal__msg">Mensaje…</p>
-    <div class="modal__actions">
-      <button id="appDialogOk" value="ok" class="btn btn-primary">Aceptar</button>
-    </div>
-  </form>
-</dialog>
+  <!-- Modal genérico -->
+  <dialog id="appDialog" class="modal">
+    <form method="dialog" class="modal__card">
+      <h3 id="appDialogTitle" class="modal__title">Orden generada</h3>
+      <p id="appDialogMsg" class="modal__msg">Mensaje…</p>
+      <div class="modal__actions">
+        <button id="appDialogOk" value="ok" class="btn btn-primary">Aceptar</button>
+      </div>
+    </form>
+  </dialog>
 
 
 

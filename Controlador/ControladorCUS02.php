@@ -139,6 +139,7 @@ try {
       }
 
       // === Delivery: snapshot (igual que antes) ===
+      // === Delivery: snapshot (igual que antes, pero con distrito y DNI de recepción) ===
       $esDelivery = isset($met['EsDelivery'])
         ? ((int)$met['EsDelivery'] === 1)
         : (stripos($met['Descripcion'] ?? '', 'delivery') !== false);
@@ -149,22 +150,26 @@ try {
 
         try {
           if ($direccionEnvioId > 0) {
-            $dirM->crearSnapshotDesdeGuardada($ordenId, $idClienteInt, $direccionEnvioId);
+            // GUARDADA: llega dni del receptor desde el front (option.data-dni)
+            $dniRec = trim($_POST['envioReceptorDni'] ?? '');
+            if (!preg_match('/^\d{8}$/', $dniRec)) err('DNI receptor inválido.', 422);
+
+            $dirM->crearSnapshotDesdeGuardada($ordenId, $idClienteInt, $direccionEnvioId, $dniRec);
           } else {
-            $guardar = isset($_POST['guardarDireccionCliente']) && (int)$_POST['guardarDireccionCliente'] === 1;
-            $dirM->crearSnapshotDesdeOtra(
-              $ordenId,
-              $idClienteInt,
-              trim($_POST['envioNombre']    ?? ''),
-              trim($_POST['envioTelefono']  ?? ''),
-              trim($_POST['envioDireccion'] ?? ''),
-              $guardar
-            );
+            // OTRA: requiere distrito + dni receptor + (opcional) guardar en catálogo
+            $guardar  = isset($_POST['guardarDireccionCliente']) && (int)$_POST['guardarDireccionCliente'] === 1;
+            $nombre   = trim($_POST['envioNombre']    ?? '');
+            $tel      = trim($_POST['envioTelefono']  ?? '');
+            $dir      = trim($_POST['envioDireccion'] ?? '');
+            $distrito = trim($_POST['envioDistrito']  ?? '');
+            $dniRec   = trim($_POST['envioReceptorDni'] ?? '');
+            $dirM->crearSnapshotDesdeOtra($ordenId, $idClienteInt, $nombre, $tel, $dir, $distrito, $dniRec, $guardar);
           }
         } catch (InvalidArgumentException $e) {
           err($e->getMessage(), 422);
         }
       }
+
 
       ok(['ordenId' => $ordenId, 'msg' => 'Orden generada y preórdenes procesadas.']);
 

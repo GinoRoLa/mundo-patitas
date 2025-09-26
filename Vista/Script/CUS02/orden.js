@@ -12,6 +12,35 @@
     return /delivery/i.test(opt.textContent || "");
   }
 
+  // === Prefill desde dirección guardada + LOG ===
+  function _prefillDesdeGuardada(debug = true) {
+    const opt = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+    if (!opt) return;
+
+    const dni      = opt.dataset?.dni || "";
+    const distrito = opt.dataset?.distrito || "";
+    const dir      = opt.dataset?.dir || "";
+    const nombre   = opt.dataset?.nombre || "";
+    const tel      = opt.dataset?.telefono || "";
+
+    if (debug) {
+      console.log("[ENVIO:GUARDADA] id=%s", opt.value);
+      console.log("  DNI receptor :", dni);
+      console.log("  Distrito     :", distrito);
+      console.log("  Dirección    :", dir);
+      console.log("  Contacto/Tel :", nombre, "/", tel);
+      console.log("  dataset full :", opt.dataset);
+      if (!dni || !distrito) {
+        console.warn("⚠ Falta data-dni o data-distrito en el <option>. Revisa cliente.js / backend.");
+      }
+    }
+
+    const dniRec        = document.getElementById("envioReceptorDni");
+    const distritoInput = document.getElementById("envioDistrito");
+    if (dniRec)        { dniRec.value = dni; dniRec.readOnly = true; }
+    if (distritoInput) { distritoInput.value = distrito; distritoInput.readOnly = true; }
+  }
+
   function setEnvioModo(modo) {
     const guardada = modo === "guardada";
 
@@ -23,29 +52,52 @@
     const inpTel    = document.getElementById("envioTelefono");
     const inpDir    = document.getElementById("envioDireccion");
 
+    // Mostrar/ocultar secciones
     if (wrapGuard) wrapGuard.hidden = !guardada;
     if (wrapOtra)  wrapOtra.style.display = guardada ? "none" : "block";
 
+    // Combo de guardadas
     if (selGuard) {
       selGuard.disabled = !guardada;
       selGuard.required = guardada;
 
-      if (guardada && (selGuard.options.length === 0 || (selGuard.options.length === 1 && selGuard.options[0].value === ""))) {
+      if (
+        guardada &&
+        (selGuard.options.length === 0 ||
+         (selGuard.options.length === 1 && selGuard.options[0].value === ""))
+      ) {
         if (selGuard.options.length === 0) {
           const opt = document.createElement("option");
           opt.value = ""; opt.disabled = true; opt.selected = true;
-          opt.textContent = "— Sin direcciones de envio —";
+          opt.textContent = "— Sin direcciones de envío —";
           selGuard.appendChild(opt);
         } else {
-          selGuard.options[0].textContent = "— Sin direcciones de envio —";
+          selGuard.options[0].textContent = "— Sin direcciones de envío —";
           selGuard.options[0].disabled = true;
           selGuard.options[0].selected = true;
         }
         selGuard.disabled = true;
       }
+
+      // DNI/Distrito según modo
+      const dniRec   = document.getElementById("envioReceptorDni");
+      const distrito = document.getElementById("envioDistrito");
+      if (guardada) {
+        _prefillDesdeGuardada(true);
+        if (dniRec)   dniRec.readOnly = true;
+        if (distrito) distrito.readOnly = true;
+      } else {
+        if (dniRec)   { dniRec.readOnly = false; dniRec.value = ""; }
+        if (distrito) { distrito.readOnly = false; distrito.value = ""; }
+      }
     }
 
-    [inpNom, inpTel, inpDir].forEach((i) => { if (i) { i.disabled = guardada; i.required = !guardada; } });
+    // Inputs de “otra” dirección
+    [inpNom, inpTel, inpDir].forEach((i) => {
+      if (i) { i.disabled = guardada; i.required = !guardada; }
+    });
+
+    validarReadyParaRegistrar();
   }
 
   function updateEnvioPanelVisibility() {
@@ -55,16 +107,49 @@
     const esDel = isDeliverySelected();
     panel.style.display = esDel ? "block" : "none";
 
+    const dniRec   = document.getElementById("envioReceptorDni");
+    const distrito = document.getElementById("envioDistrito");
+
     if (!esDel) {
-      ["envioNombre", "envioTelefono", "envioDireccion"].forEach((id) => { const el = document.getElementById(id); if (el) el.value = ""; });
-      const chk = document.getElementById("chkGuardarDireccion"); if (chk) chk.checked = true;
+      ["envioNombre","envioTelefono","envioDireccion","envioReceptorDni","envioDistrito"]
+        .forEach((id) => { const el = document.getElementById(id); if (el) el.value = ""; });
+
+      if (dniRec)   dniRec.required = false;
+      if (distrito) distrito.required = false;
+
+      const chk = document.getElementById("chkGuardarDireccion");
+      if (chk) chk.checked = true;
     } else {
+      // Selección automática
       const cbo = document.getElementById("cboDireccionGuardada");
       const hayGuardadas = cbo && !cbo.disabled && cbo.options.length > 0;
-      const defaultModo = hayGuardadas ? "guardada" : "otra";
+      const defaultModo  = hayGuardadas ? "guardada" : "otra";
       const radio = document.querySelector(`input[name="envioModo"][value="${defaultModo}"]`);
       if (radio) radio.checked = true;
-      window.Orden.setEnvioModo(defaultModo);
+      setEnvioModo(defaultModo);
+
+      // Atributos de validación en delivery
+      if (dniRec) {
+        dniRec.required   = true;
+        dniRec.maxLength  = 8;
+        dniRec.pattern    = "\\d{8}";
+        dniRec.setAttribute("inputmode", "numeric");
+      }
+      if (distrito) {
+        distrito.required = true;
+        distrito.maxLength = 120;
+      }
+
+      // Listener del combo para prefill + validar
+      if (hayGuardadas && !cbo._listenerApplied) {
+        cbo.addEventListener("change", () => {
+          if (document.querySelector('input[name="envioModo"]:checked')?.value === "guardada") {
+            _prefillDesdeGuardada(true);
+          }
+          validarReadyParaRegistrar();
+        });
+        cbo._listenerApplied = true;
+      }
     }
 
     validarReadyParaRegistrar();
@@ -76,18 +161,33 @@
 
     if (ok && isDeliverySelected()) {
       const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
+
       if (modo === "guardada") {
-        ok = !!document.getElementById("cboDireccionGuardada")?.value;
+        const opt    = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+        const idSel  = opt?.value;
+        const dni    = opt?.dataset?.dni || "";
+        const dist   = opt?.dataset?.distrito || "";
+        ok = !!idSel && /^\d{8}$/.test(dni) && dist !== "";
+
+        // Refleja en inputs (por si estaban vacíos)
+        const dniRec   = document.getElementById("envioReceptorDni");
+        const distrito = document.getElementById("envioDistrito");
+        if (dniRec)   { dniRec.value = dni; dniRec.readOnly = true; }
+        if (distrito) { distrito.value = dist; distrito.readOnly = true; }
       } else {
-        const nom = (document.getElementById("envioNombre")?.value || "").trim();
-        const tel = (document.getElementById("envioTelefono")?.value || "").trim();
-        const dir = (document.getElementById("envioDireccion")?.value || "").trim();
-        const telOk = /^\d{9}$/.test(tel);
-        ok = nom !== "" && dir !== "" && telOk;
+        const dniRec   = (document.getElementById("envioReceptorDni")?.value || "").trim();
+        const distrito = (document.getElementById("envioDistrito")?.value || "").trim();
+        const nom      = (document.getElementById("envioNombre")?.value || "").trim();
+        const tel      = (document.getElementById("envioTelefono")?.value || "").trim();
+        const dir      = (document.getElementById("envioDireccion")?.value || "").trim();
+        const telOk    = /^\d{9}$/.test(tel);
+        ok = /^\d{8}$/.test(dniRec) && distrito !== "" && nom !== "" && dir !== "" && telOk;
       }
     }
+
     const btn = document.getElementById("btnRegistrar");
     if (btn) btn.disabled = !ok;
+    return ok;
   }
 
   async function cargarMetodosEntrega() {
@@ -184,7 +284,9 @@
     }
 
     const metodoEntregaId = Number(document.getElementById("cboEntrega").value);
-    const descuento = Number(document.getElementById("txtDesc").value || 0);
+    const descuento       = Number(document.getElementById("txtDesc").value || 0);
+
+    if (!validarReadyParaRegistrar()) return;
 
     const payload = new URLSearchParams();
     payload.append("dni", dni);
@@ -195,19 +297,30 @@
     if (isDeliverySelected()) {
       const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
       if (modo === "guardada") {
-        const idSel = document.getElementById("cboDireccionGuardada")?.value;
-        if (!idSel) { Messages.preorden.error("Selecciona una dirección guardada o elige 'otra'.", { persist: true }); return; }
+        const opt   = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+        const idSel = opt?.value;
+        if (!idSel) {
+          Messages.preorden.error("Selecciona una dirección guardada o elige 'otra'.", { persist: true });
+          return;
+        }
         payload.append("direccionEnvioId", String(idSel));
+        payload.append("envioReceptorDni", opt?.dataset?.dni || "");
+        payload.append("envioDistrito",   opt?.dataset?.distrito || "");
       } else {
         const nom = (document.getElementById("envioNombre")?.value || "").trim();
         const tel = (document.getElementById("envioTelefono")?.value || "").trim();
         const dir = (document.getElementById("envioDireccion")?.value || "").trim();
-        const telOk = /^\d{9}$/.test(tel);
-        if (!nom || !telOk || !dir) { Messages.preorden.error("Completa nombre, teléfono (9 dígitos) y dirección de envío.", { persist: true }); return; }
+        const dniRec = (document.getElementById("envioReceptorDni")?.value || "").trim();
+        const dis    = (document.getElementById("envioDistrito")?.value || "").trim();
+
         payload.append("envioNombre", nom);
         payload.append("envioTelefono", tel);
         payload.append("envioDireccion", dir);
-        if (document.getElementById("chkGuardarDireccion")?.checked) payload.append("guardarDireccionCliente", "1");
+        payload.append("envioReceptorDni", dniRec);
+        payload.append("envioDistrito", dis);
+        if (document.getElementById("chkGuardarDireccion")?.checked) {
+          payload.append("guardarDireccionCliente", "1");
+        }
       }
     }
 
@@ -226,7 +339,7 @@
     });
   }
 
-  // Export sólo funciones (los listeners están en main.js)
+  // Export
   window.Orden = {
     cargarMetodosEntrega,
     vaciarConsolidado,

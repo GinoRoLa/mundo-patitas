@@ -220,6 +220,21 @@ CREATE TABLE t03ComprobantePago (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=103001;
 
+CREATE TABLE t59OrdenServicioEntrega (
+  Id_OSE           INT NOT NULL AUTO_INCREMENT,
+  Id_OrdenPedido   INT NOT NULL,
+  FechaProgramada  DATE NOT NULL,
+  Estado           VARCHAR(20),
+  FecCreacion      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  FecModificacion  DATETIME NULL,
+
+  CONSTRAINT pk_t59 PRIMARY KEY (Id_OSE),
+  CONSTRAINT uq_t59_orden UNIQUE (Id_OrdenPedido),
+  CONSTRAINT fk_t59_orden FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 CREATE TABLE t04Factura (
   Id_Factura INT NOT NULL AUTO_INCREMENT,
   Nro_ComproPago INT,
@@ -238,32 +253,43 @@ CREATE TABLE t05Boleta (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=105001;
 
-
--- Catálogo del cliente (sin cambios)
+-- ============================================
+-- Catálogo de direcciones del cliente (t70)
+-- ============================================
 CREATE TABLE IF NOT EXISTS t70DireccionEnvioCliente (
   Id_DireccionEnvio INT AUTO_INCREMENT PRIMARY KEY,
   Id_Cliente        INT NOT NULL,
   NombreContacto    VARCHAR(120) NOT NULL,
   TelefonoContacto  VARCHAR(20)  NOT NULL,
   Direccion         VARCHAR(255) NOT NULL,
-  INDEX idx_t70_cliente (Id_Cliente),
+  Distrito          VARCHAR(120) NOT NULL,
+  DniReceptor    VARCHAR(8)   NOT NULL,
+  INDEX idx_t70_cliente  (Id_Cliente),
+  INDEX idx_t70_distrito (Distrito),
   CONSTRAINT fk_t70_cliente
-    FOREIGN KEY (Id_Cliente) REFERENCES t20Cliente (Id_Cliente)
+    FOREIGN KEY (Id_Cliente)
+    REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Snapshot por orden (SIEMPRE completo, sin NULLs, y SIN FK a t70)
+-- =====================================================
+-- Snapshot por orden (t71) 1:1 con la orden de pedido
+-- =====================================================
 CREATE TABLE IF NOT EXISTS t71OrdenDirecEnvio (
   Id_OrdenDirecEnvio INT AUTO_INCREMENT PRIMARY KEY,
   Id_OrdenPedido     INT NOT NULL,
   NombreContactoSnap VARCHAR(120) NOT NULL,
   TelefonoSnap       VARCHAR(20)  NOT NULL,
   DireccionSnap      VARCHAR(255) NOT NULL,
-  UNIQUE KEY uq_t71_orden (Id_OrdenPedido), -- 1:1 con la orden
+  DistritoSnap       VARCHAR(120) NOT NULL,
+  ReceptorDniSnap    VARCHAR(8)   NOT NULL,
+  UNIQUE KEY uq_t71_orden (Id_OrdenPedido),
   CONSTRAINT fk_t71_orden
-    FOREIGN KEY (Id_OrdenPedido) REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 
 CREATE TABLE IF NOT EXISTS t92Ref_Snapshot_DirCatalogo (

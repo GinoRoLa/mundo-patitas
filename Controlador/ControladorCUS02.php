@@ -119,34 +119,38 @@ try {
       // Cliente
       $cli = (new Cliente())->buscarPorDni($dni);
       if (!$cli) err('Cliente no encontrado por DNI', 422);
+      $idClienteInt = (int)$cli['Id_Cliente'];
 
-      // Crear orden + detalle
+      // Crear orden + detalle (igual que antes; puedes mantener tu método PHP)
       $ordenId = (new OrdenPedido())->crearOrdenConDetalle([
-        'idCliente'       => (int)$cli['Id_Cliente'],
+        'idCliente'       => $idClienteInt,
         'metodoEntregaId' => $metodoId,
         'costoEntrega'    => $costoEntrega,
         'descuento'       => $desc,
         'total'           => $total,
         'items'           => $items
       ]);
-      $preM->procesarYVincular($validas, $ordenId);
 
-      // === Delivery: snapshot (y opcional guardar en t70) ===
+      // NUEVO: Vincular preórdenes a la orden en t90 y marcar Procesado en t01 (SP)
+      // (el método del modelo ahora llama a sp_vincular_preordenes_a_orden)
+      $res = $preM->procesarYVincular($validas, $ordenId);
+      if (($res['vinculadas'] ?? 0) <= 0) {
+        err('No se pudieron marcar/vincular las preórdenes.', 422);
+      }
+
+      // === Delivery: snapshot (igual que antes) ===
       $esDelivery = isset($met['EsDelivery'])
         ? ((int)$met['EsDelivery'] === 1)
         : (stripos($met['Descripcion'] ?? '', 'delivery') !== false);
 
       if ($esDelivery) {
         $dirM = new DireccionEnvioCliente();
-        $idClienteInt     = (int)$cli['Id_Cliente'];
         $direccionEnvioId = (int)($_POST['direccionEnvioId'] ?? 0);
 
         try {
           if ($direccionEnvioId > 0) {
-            // Usar dirección GUARDADA (valida pertenencia y crea snapshot)
             $dirM->crearSnapshotDesdeGuardada($ordenId, $idClienteInt, $direccionEnvioId);
           } else {
-            // Usar OTRA; opcional guardar en catálogo
             $guardar = isset($_POST['guardarDireccionCliente']) && (int)$_POST['guardarDireccionCliente'] === 1;
             $dirM->crearSnapshotDesdeOtra(
               $ordenId,
@@ -161,8 +165,9 @@ try {
           err($e->getMessage(), 422);
         }
       }
-      // ← Solo UNA respuesta (después de todo lo anterior)
+
       ok(['ordenId' => $ordenId, 'msg' => 'Orden generada y preórdenes procesadas.']);
+
 
 
     default:

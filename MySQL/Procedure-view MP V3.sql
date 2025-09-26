@@ -196,6 +196,44 @@ BEGIN
 END$$
 DELIMITER ;
 
+DROP PROCEDURE IF EXISTS sp_vincular_preordenes_a_orden;
+DELIMITER $$
+CREATE PROCEDURE sp_vincular_preordenes_a_orden(
+  IN p_orden_id INT,
+  IN p_ids_json JSON
+)
+BEGIN
+  DECLARE v_ins INT DEFAULT 0;
+  DECLARE v_upd INT DEFAULT 0;
+  DECLARE v_cnt INT;
+
+  SET v_cnt = JSON_LENGTH(p_ids_json);
+  IF v_cnt IS NULL OR v_cnt = 0 THEN
+    SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Lista de preórdenes vacía o inválida';
+  END IF;
+
+  START TRANSACTION;
+
+  INSERT INTO t90PreOrden_OrdenPedido (Id_OrdenPedido, Id_PreOrdenPedido, Fec_Vinculo)
+  SELECT p_orden_id, jt.id, NOW()
+  FROM JSON_TABLE(p_ids_json, '$[*]' COLUMNS (id INT PATH '$')) jt;
+  SET v_ins = ROW_COUNT();
+
+  UPDATE t01PreOrdenPedido p
+  JOIN (
+    SELECT CAST(j.id AS SIGNED) AS Id_PreOrdenPedido
+    FROM JSON_TABLE(p_ids_json, '$[*]' COLUMNS (id INT PATH '$')) j
+  ) i ON i.Id_PreOrdenPedido = p.Id_PreOrdenPedido
+  SET p.Estado = 'Procesado'
+  WHERE p.Estado = 'Emitido';
+  SET v_upd = ROW_COUNT();   -- ← guarda filas actualizadas
+
+  COMMIT;
+
+  SELECT v_ins AS preordenes_vinculadas, v_upd AS preordenes_marcadas;
+END$$
+DELIMITER ;
+
 -- ==========================================================
 -- Procedimientos Preorden CUS01
 -- ==========================================================

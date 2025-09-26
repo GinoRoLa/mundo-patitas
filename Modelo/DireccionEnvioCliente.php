@@ -44,40 +44,50 @@ public function listarPorClienteId(int $idCliente): array {
     return $id;
   }
 
-  /** Inserta snapshot por orden en t71OrdenDirecEnvio. Retorna Id_OrdenDirecEnvio. */
-  public function insertarSnapshotOrden(int $ordenId,?int $idDireccionEnvio,string $nombreSnap,string $telSnap,string $dirSnap
+  private function insertarSnapshotConOrden(
+    int $ordenId,
+    string $nombreSnap,
+    string $telSnap,
+    string $dirSnap
   ): int {
     $sql = "INSERT INTO t71OrdenDirecEnvio
-              (Id_OrdenPedido, Id_DireccionEnvio, NombreContactoSnap, TelefonoSnap, DireccionSnap)
-            VALUES (?,?,?,?,?)";
+              (Id_OrdenPedido, NombreContactoSnap, TelefonoSnap, DireccionSnap)
+            VALUES (?,?,?,?)";
     $st = mysqli_prepare($this->cn, $sql);
-    // Nota: pasar NULL en bind_param es válido; MySQL guardará NULL
-    mysqli_stmt_bind_param($st, "iisss", $ordenId, $idDireccionEnvio, $nombreSnap, $telSnap, $dirSnap);
+    if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
+    mysqli_stmt_bind_param($st, "isss", $ordenId, $nombreSnap, $telSnap, $dirSnap);
     mysqli_stmt_execute($st);
     $id = mysqli_insert_id($this->cn);
     mysqli_stmt_close($st);
     return $id;
   }
 
-  /** Toma una dirección GUARDADA del cliente, valida pertenencia y crea snapshot. */
+  /** Vincular snapshot (t71) con catálogo (t70) en t92 (opcional) */
+  private function vincularCatalogoASnapshot(int $ordenDirecEnvioId, int $idDireccionEnvio): void {
+    $sql = "INSERT INTO t92Ref_Snapshot_DirCatalogo (Id_OrdenDirecEnvio, Id_DireccionEnvio) VALUES (?,?)";
+    $st  = mysqli_prepare($this->cn, $sql);
+    if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
+    mysqli_stmt_bind_param($st, "ii", $ordenDirecEnvioId, $idDireccionEnvio);
+    mysqli_stmt_execute($st);
+    mysqli_stmt_close($st);
+  }
+
+  /** GUARDADA: valida pertenencia, crea snapshot, y vincula en t92 */
   public function crearSnapshotDesdeGuardada(int $ordenId, int $idCliente, int $idDireccionEnvio): int {
     $row = $this->obtenerDeCliente($idCliente, $idDireccionEnvio);
-    if (!$row) {
-      throw new InvalidArgumentException('Dirección guardada inválida para este cliente.');
-    }
-    return $this->insertarSnapshotOrden(
+    if (!$row) throw new InvalidArgumentException('Dirección guardada inválida para este cliente.');
+
+    $snapId = $this->insertarSnapshotConOrden(
       $ordenId,
-      $idDireccionEnvio,
       $row['NombreContacto'],
       $row['TelefonoContacto'],
       $row['Direccion']
     );
+    $this->vincularCatalogoASnapshot($snapId, $idDireccionEnvio); // 👈 vínculo opcional
+    return $snapId;
   }
 
-  /**
-   * Usa una "otra dirección" (no guardada). Valida campos; si $guardarEnCatalogo=true,
-   * inserta en t70 y usa ese id. Siempre crea el snapshot en t71.
-   */
+  /** OTRA: opcional guardar en t70 y vincular; siempre snapshot completo */
   public function crearSnapshotDesdeOtra(
     int $ordenId,
     int $idCliente,
@@ -86,18 +96,18 @@ public function listarPorClienteId(int $idCliente): array {
     string $dir,
     bool $guardarEnCatalogo = false
   ): int {
-    $nombre = trim($nombre);
-    $tel    = trim($tel);
-    $dir    = trim($dir);
+    $nombre = trim($nombre); $tel = trim($tel); $dir = trim($dir);
     if ($nombre === '' || $tel === '' || $dir === '') {
       throw new InvalidArgumentException('Faltan datos de envío (nombre, teléfono, dirección).');
     }
 
-    $idDireccionEnvio = null;
+    $snapId = $this->insertarSnapshotConOrden($ordenId, $nombre, $tel, $dir);
+
     if ($guardarEnCatalogo) {
-      $idDireccionEnvio = $this->insertar($idCliente, $nombre, $tel, $dir);
+      $idDir = $this->insertar($idCliente, $nombre, $tel, $dir);  // t70
+      $this->vincularCatalogoASnapshot($snapId, $idDir);          // t92
     }
 
-    return $this->insertarSnapshotOrden($ordenId, $idDireccionEnvio, $nombre, $tel, $dir);
+    return $snapId;
   }
 }

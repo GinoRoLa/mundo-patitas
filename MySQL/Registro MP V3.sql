@@ -87,11 +87,7 @@ VALUES
 INSERT INTO t70DireccionEnvioCliente (Id_Cliente, NombreContacto, TelefonoContacto, Direccion)
 VALUES
   (60001, 'Ana Quispe',  '987654321', 'Av. Los Olivos 456 Dpto. 302'),
-  (60001, 'Ana Quispe',  '987654321', 'Jr. Los Sauces 120');
-
--- Pedro (Activo)
-INSERT INTO t70DireccionEnvioCliente (Id_Cliente, NombreContacto, TelefonoContacto, Direccion)
-VALUES
+  (60001, 'Ana Quispe',  '987654321', 'Jr. Los Sauces 120'),
   (60002, 'Pedro Flores','981234567', 'Jr. San Martín 789 Int. 201'),
   (60004,'Jorge Ramírez Poma','986543210','Av. Arequipa 1234'),
   (60005,'María García Luna','989112233','Jr. Las Magnolias 350'),
@@ -112,12 +108,12 @@ VALUES
 --     10 y 11: vigentes; 12: no vigente; 13: procesada (luego se vincula)
 -- ==========================================================
 INSERT INTO t01preordenpedido
-  (Id_PreOrdenPedido, t02OrdenPedido_Id_OrdenPedido, t20Cliente_Id_Cliente, Fec_Emision, Estado, Total)
+  (Id_PreOrdenPedido, t20Cliente_Id_Cliente, Fec_Emision, Estado, Total)
 VALUES
-  (10, NULL, 60001, NOW(), 'Emitido',   73.50),
-  (11, NULL, 60001, NOW(), 'Emitido',   42.00),
-  (12, NULL, 60001, NOW(),  'Emitido',   18.00),
-  (13, NULL, 60001, NOW(), 'Procesado', 27.90);
+  (10, 60001, NOW(), 'Emitido',   73.50),
+  (11, 60001, NOW(), 'Emitido',   42.00),
+  (12, 60001, NOW(),  'Emitido',   18.00),
+  (13, 60001, NOW(), 'Procesado', 27.90);
 
 -- ==========================================================
 -- 7) Detalle de preórdenes (alineado con los totales)
@@ -144,10 +140,6 @@ INSERT INTO t02OrdenPedido
 VALUES
   (10001, NOW(), 60001, 9002, 8.00, 5.00, 118.50, 'Generada');
 
--- Vincular la preorden 13 a la orden 10001 ahora que la orden existe
-UPDATE t01preordenpedido
-   SET t02OrdenPedido_Id_OrdenPedido = 10001
- WHERE Id_PreOrdenPedido = 13;
 
 -- ==========================================================
 -- 9) Detalle de la Orden (resultado de la consolidación de 10 y 11)

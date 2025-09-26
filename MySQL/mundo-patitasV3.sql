@@ -169,9 +169,8 @@ CREATE TABLE t02OrdenPedido (
 ) ENGINE=InnoDB AUTO_INCREMENT=10001;
 
 -- Preorden (versión dump + ajustes de FKs y FK faltante a t02)
-CREATE TABLE t01preordenpedido (
+CREATE TABLE t01PreOrdenPedido (
   Id_PreOrdenPedido INT NOT NULL AUTO_INCREMENT,
-  t02OrdenPedido_Id_OrdenPedido INT NULL,
   t20Cliente_Id_Cliente INT NULL,
   Fec_Emision DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Estado VARCHAR(15) NOT NULL DEFAULT 'Emitido',
@@ -181,12 +180,31 @@ CREATE TABLE t01preordenpedido (
   CONSTRAINT fk_t01_cliente
     FOREIGN KEY (t20Cliente_Id_Cliente)
     REFERENCES t20Cliente (Id_Cliente)
-    ON UPDATE RESTRICT ON DELETE SET NULL,
-  CONSTRAINT fk_t01_t02
-    FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
-    REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=10;
+
+-- =======================
+-- t90PreOrden_OrdenPedido
+-- =======================
+CREATE TABLE t90PreOrden_OrdenPedido (
+  Id                INT NOT NULL AUTO_INCREMENT,
+  Id_OrdenPedido    INT NOT NULL,
+  Id_PreOrdenPedido INT NOT NULL,
+  Fec_Vinculo       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (Id),
+  UNIQUE KEY uq_t90_par (Id_OrdenPedido, Id_PreOrdenPedido),
+  UNIQUE KEY uq_t90_preorden_unica (Id_PreOrdenPedido),
+  CONSTRAINT fk_t90_orden
+    FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+  CONSTRAINT fk_t90_preorden
+    FOREIGN KEY (Id_PreOrdenPedido)
+    REFERENCES t01PreOrdenPedido (Id_PreOrdenPedido)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+
 
 CREATE TABLE t03ComprobantePago (
   Nro_ComproPago INT NOT NULL AUTO_INCREMENT,
@@ -221,34 +239,47 @@ CREATE TABLE t05Boleta (
 ) ENGINE=InnoDB AUTO_INCREMENT=105001;
 
 
-CREATE TABLE t70DireccionEnvioCliente (
-  Id_DireccionEnvio   INT AUTO_INCREMENT PRIMARY KEY,
-  Id_Cliente          INT NOT NULL,
-  NombreContacto      VARCHAR(120) NOT NULL,
-  TelefonoContacto    VARCHAR(20)  NOT NULL,
-  Direccion           VARCHAR(255) NOT NULL,
+-- Catálogo del cliente (sin cambios)
+CREATE TABLE IF NOT EXISTS t70DireccionEnvioCliente (
+  Id_DireccionEnvio INT AUTO_INCREMENT PRIMARY KEY,
+  Id_Cliente        INT NOT NULL,
+  NombreContacto    VARCHAR(120) NOT NULL,
+  TelefonoContacto  VARCHAR(20)  NOT NULL,
+  Direccion         VARCHAR(255) NOT NULL,
   INDEX idx_t70_cliente (Id_Cliente),
   CONSTRAINT fk_t70_cliente
-    FOREIGN KEY (Id_Cliente) REFERENCES t20cliente (Id_Cliente)
+    FOREIGN KEY (Id_Cliente) REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE t71OrdenDirecEnvio (
-  Id_OrdenDirecEnvio  INT AUTO_INCREMENT PRIMARY KEY,
-  Id_OrdenPedido      INT NOT NULL,
-  Id_DireccionEnvio   INT NULL,                -- si eligió una guardada; NULL si fue "otra"
-  NombreContactoSnap  VARCHAR(120) NOT NULL,
-  TelefonoSnap        VARCHAR(20)  NOT NULL,
-  DireccionSnap       VARCHAR(255) NOT NULL,
-  UNIQUE KEY uq_orden (Id_OrdenPedido),        -- 1:1 con la orden
-  INDEX idx_dir (Id_DireccionEnvio),
-  CONSTRAINT fk_orden_snap
+-- Snapshot por orden (SIEMPRE completo, sin NULLs, y SIN FK a t70)
+CREATE TABLE IF NOT EXISTS t71OrdenDirecEnvio (
+  Id_OrdenDirecEnvio INT AUTO_INCREMENT PRIMARY KEY,
+  Id_OrdenPedido     INT NOT NULL,
+  NombreContactoSnap VARCHAR(120) NOT NULL,
+  TelefonoSnap       VARCHAR(20)  NOT NULL,
+  DireccionSnap      VARCHAR(255) NOT NULL,
+  UNIQUE KEY uq_t71_orden (Id_OrdenPedido), -- 1:1 con la orden
+  CONSTRAINT fk_t71_orden
     FOREIGN KEY (Id_OrdenPedido) REFERENCES t02OrdenPedido (Id_OrdenPedido)
-    ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_dir_catalogo
-    FOREIGN KEY (Id_DireccionEnvio) REFERENCES t70DireccionEnvioCliente (Id_DireccionEnvio)
-    ON UPDATE CASCADE ON DELETE SET NULL
+    ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE IF NOT EXISTS t92Ref_Snapshot_DirCatalogo (
+  Id                  INT AUTO_INCREMENT PRIMARY KEY,
+  Id_OrdenDirecEnvio  INT NOT NULL,
+  Id_DireccionEnvio   INT NOT NULL,
+  UNIQUE KEY uq_t92_snapshot (Id_OrdenDirecEnvio), -- a lo más 1 vínculo
+  INDEX idx_t92_dir (Id_DireccionEnvio),
+  CONSTRAINT fk_t92_t71
+    FOREIGN KEY (Id_OrdenDirecEnvio) REFERENCES t71OrdenDirecEnvio (Id_OrdenDirecEnvio)
+    ON UPDATE CASCADE ON DELETE CASCADE,
+  CONSTRAINT fk_t92_t70
+    FOREIGN KEY (Id_DireccionEnvio)  REFERENCES t70DireccionEnvioCliente (Id_DireccionEnvio)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 
 -- ==========================================================

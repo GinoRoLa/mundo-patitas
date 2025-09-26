@@ -70,7 +70,7 @@ public function consolidarProductos(array $ids): array {
 
 
   // Marcar como procesadas y vincular a la orden
-  public function procesarYVincular(array $idsPreorden, int $ordenId): int{
+  /* public function procesarYVincular(array $idsPreorden, int $ordenId): int{
     if (empty($idsPreorden)) return 0;
     $idsPreorden = array_values(array_unique(array_map('intval', $idsPreorden)));
 
@@ -91,5 +91,38 @@ public function consolidarProductos(array $ids): array {
     $aff = mysqli_stmt_affected_rows($st);
     mysqli_stmt_close($st);
     return $aff;
-  }
+  } */
+
+  public function procesarYVincular(array $idsPreorden, int $ordenId): array {
+    if (empty($idsPreorden)) return ['vinculadas' => 0, 'marcadas' => 0];
+
+    $ids     = array_values(array_unique(array_map('intval', $idsPreorden)));
+    $idsJson = json_encode($ids);
+
+    $st = mysqli_prepare($this->cn, "CALL sp_vincular_preordenes_a_orden(?, ?)");
+    if (!$st) throw new RuntimeException(mysqli_error($this->cn));
+
+    mysqli_stmt_bind_param($st, "is", $ordenId, $idsJson);
+    mysqli_stmt_execute($st);
+
+    $rs = mysqli_stmt_get_result($st);
+    $vinculadas = 0; $marcadas = 0;
+    if ($rs) {
+        $row = mysqli_fetch_assoc($rs);
+        if ($row) {
+            $vinculadas = (int)($row['preordenes_vinculadas'] ?? 0);
+            $marcadas   = (int)($row['preordenes_marcadas'] ?? 0);
+        }
+        mysqli_free_result($rs);
+    }
+    mysqli_stmt_close($st);
+    while (mysqli_more_results($this->cn)) { mysqli_next_result($this->cn); }
+
+    return ['vinculadas' => $vinculadas, 'marcadas' => $marcadas];
+}
+
+
+
+
+
 }

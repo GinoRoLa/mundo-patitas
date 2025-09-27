@@ -1,6 +1,7 @@
 <?php
 include_once '../../Controlador/Conexion.php';
 include_once '../../Modelo/Trabajador.php';
+include_once '../../Modelo/DistritoEnvio.php';
 $trabajadorRow = (new Trabajador())->buscarPorDni('22222222');
 
 $actor = [
@@ -10,6 +11,10 @@ $actor = [
   'rol' => $trabajadorRow['cargo'] ?? '(Desconocido)'
 ];
 $fecha = date('Y-m-d');
+
+$t77 = (new DistritoEnvio())->listarActivos();
+
+
 ?>
 
 <!doctype html>
@@ -181,7 +186,11 @@ $fecha = date('Y-m-d');
               </div>
               <div>
                 <label for="envioDistrito">Distrito</label>
-                <input id="envioDistrito" maxlength="120" placeholder="Ej: Los Olivos">
+                <input id="envioDistrito" maxlength="120" placeholder="Distrito" autocomplete="address-level2">
+<datalist id="dlDistritos"></datalist>
+<small id="distritoHint" class="hint"></small>
+
+                
               </div>
             </div>
 
@@ -245,7 +254,11 @@ $fecha = date('Y-m-d');
 
   <script src="../Script/CUS02/api.js"></script>
   <script src="../Script/CUS02/utils.js"></script>
+  <script>
+  window.T77 = <?= json_encode($t77, JSON_UNESCAPED_UNICODE) ?>;
+</script>
   <script src="../Script/CUS02/cliente.js"></script>
+  <script src="../Script/CUS02/distritos.js"></script>
   <script src="../Script/CUS02/preorden.js"></script>
   <script src="../Script/CUS02/orden.js"></script>
   <script src="../Script/CUS02/main.js"></script>

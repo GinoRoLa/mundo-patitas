@@ -444,88 +444,134 @@ CREATE TABLE IF NOT EXISTS t73DireccionOrigen (
 -- ==========================================
 -- t72: Guía de Remisión (cabecera)
 -- ==========================================
+-- ==========================================
+-- t72: Guía de Remisión (cabecera)
+--  - NO referencia pedidos ni orden de salida
+--  - SÍ referencia dirección de origen (t73)
+-- ==========================================
 CREATE TABLE IF NOT EXISTS t72GuiaRemision (
-  Id_Guia         INT NOT NULL AUTO_INCREMENT,
-  Id_ordenSalida  INT NOT NULL,        -- FK -> t11OrdenSalida
-  Id_OrdenPedido  INT NOT NULL,        -- FK -> t02OrdenPedido
+  Id_Guia              INT NOT NULL AUTO_INCREMENT,
+  -- Numeración (puedes usar también Id_Guia como número)
+  Numero               INT NOT NULL,
+  Fec_Emision          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Estado               VARCHAR(20) NOT NULL DEFAULT 'Emitida',
 
-  -- Numeración (correlativo global, sin series)
-  Numero          INT NOT NULL,        -- puedes usar Id_Guia como Numero si quieres
+  -- Remitente (snapshot básico)
+  RemitenteRUC         VARCHAR(11)  NOT NULL,
+  RemitenteRazonSocial VARCHAR(120) NOT NULL,
 
-  Fec_Emision     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  Estado          VARCHAR(20) NOT NULL DEFAULT 'Emitida',
-
-  -- Remitente (snapshot)
-  RemitenteRUC          VARCHAR(11)  NOT NULL,
-  RemitenteRazonSocial  VARCHAR(120) NOT NULL,
-
-  -- Destinatario (desde snapshot t71)
-  DestinatarioIdCliente INT NOT NULL,
+  -- Destino (snapshot típico desde t71 de la orden)
+  DestinatarioIdCliente INT         NOT NULL,
   DestinatarioNombre    VARCHAR(120) NOT NULL,
   DniReceptor           VARCHAR(8)   NOT NULL,
   DireccionDestino      VARCHAR(255) NOT NULL,
   DistritoDestino       VARCHAR(120) NOT NULL,
 
-  -- Origen (referencia a catálogo de almacenes)
-  Id_DireccionOrigen INT NOT NULL,
+  -- Origen
+  Id_DireccionOrigen   INT NOT NULL,  -- FK -> t73DireccionOrigen
 
-  -- Transporte
-  ModalidadTransporte ENUM('PROPIO','TERCERO') NOT NULL DEFAULT 'PROPIO',
-  Id_Repartidor INT NULL,                 -- FK -> t16CatalogoTrabajadores (si transporte propio)
-  Placa     VARCHAR(10),
-  Conductor VARCHAR(120),
-  Licencia  VARCHAR(20),
+  -- Transporte (opcional, puedes ampliar)
+  ModalidadTransporte  ENUM('PROPIO','TERCERO') NOT NULL DEFAULT 'PROPIO',
+  Placa                VARCHAR(10)  NULL,
+  Conductor            VARCHAR(120) NULL,
+  Licencia             VARCHAR(20)  NULL,
 
   -- Traslado
-  Motivo              VARCHAR(30) NOT NULL DEFAULT 'Venta',
-  FechaInicioTraslado DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Motivo               VARCHAR(30) NOT NULL DEFAULT 'Venta',
+  FechaInicioTraslado  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (Id_Guia),
   UNIQUE KEY uq_t72_numero (Numero),
 
-  CONSTRAINT fk_t72_guia_t11 FOREIGN KEY (Id_ordenSalida)
-    REFERENCES t11OrdenSalida (Id_ordenSalida)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
-
-  CONSTRAINT fk_t72_guia_t02 FOREIGN KEY (Id_OrdenPedido)
-    REFERENCES t02OrdenPedido (Id_OrdenPedido)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
-
-  CONSTRAINT fk_t72_guia_origen FOREIGN KEY (Id_DireccionOrigen)
+  CONSTRAINT fk_t72_origen
+    FOREIGN KEY (Id_DireccionOrigen)
     REFERENCES t73DireccionOrigen (Id_DireccionOrigen)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-  CONSTRAINT fk_t72_guia_repartidor FOREIGN KEY (Id_Repartidor)
-    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
-    ON UPDATE RESTRICT ON DELETE SET NULL
-) ENGINE=InnoDB;
+CREATE INDEX idx_t72_estado_emision ON t72GuiaRemision (Estado, Fec_Emision);
 
-CREATE INDEX idx_t72_orden ON t72GuiaRemision (Id_OrdenPedido);
 
 -- ==========================================
 -- t74: Detalle de Guía
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t74DetalleGuia (
-  Id_DetalleGuia INT NOT NULL AUTO_INCREMENT,
-  Id_Guia     INT NOT NULL,             -- FK -> t72GuiaRemision
-  Id_Producto INT NOT NULL,             -- FK -> t18CatalogoProducto
-  Descripcion VARCHAR(200) NOT NULL,    -- snapshot del nombre del producto
-  Unidad      VARCHAR(10)  NOT NULL,    -- 'UN','KG', etc. (puedes enlazar a t34 si quieres)
-  Cantidad    INT NOT NULL CHECK (Cantidad >= 0),
+  Id_DetalleGuia  INT NOT NULL AUTO_INCREMENT,
+  Id_Guia         INT NOT NULL,             -- FK -> t72GuiaRemision
+  Id_Producto     INT NOT NULL,             -- FK -> t18CatalogoProducto
+
+  -- Snapshots para imprimir (no dependes de cambios en catálogo)
+  Descripcion     VARCHAR(200) NOT NULL,
+  Unidad          VARCHAR(10)  NOT NULL,    -- 'UN','KG', etc.
+  Cantidad        INT NOT NULL,             -- CHECKs en MySQL son informativos
 
   PRIMARY KEY (Id_DetalleGuia),
   KEY idx_t74_guia (Id_Guia),
+  KEY idx_t74_prod (Id_Producto),
 
-  CONSTRAINT fk_t74_guia FOREIGN KEY (Id_Guia)
+  CONSTRAINT fk_t74_guia
+    FOREIGN KEY (Id_Guia)
     REFERENCES t72GuiaRemision (Id_Guia)
     ON UPDATE RESTRICT ON DELETE CASCADE,
 
-  CONSTRAINT fk_t74_prod FOREIGN KEY (Id_Producto)
+  CONSTRAINT fk_t74_prod
+    FOREIGN KEY (Id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
     ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==========================================
+-- t93: Puente Guía ↔ Pedido (N : M)
+--  - Permite que una guía agrupe ítems de varios pedidos
+--  - Mantiene trazabilidad sin fijar una FK directa en cabecera
+-- ==========================================
+CREATE TABLE IF NOT EXISTS t93Guia_OrdenPedido (
+  Id_Guia        INT NOT NULL,              -- FK -> t72GuiaRemision
+  Id_OrdenPedido INT NOT NULL,              -- FK -> t02OrdenPedido
+
+  PRIMARY KEY (Id_Guia, Id_OrdenPedido),
+
+  CONSTRAINT fk_t93_guia
+    FOREIGN KEY (Id_Guia)
+    REFERENCES t72GuiaRemision (Id_Guia)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+
+  CONSTRAINT fk_t93_orden
+    FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_t93_orden ON t93Guia_OrdenPedido (Id_OrdenPedido);
+
+
+CREATE TABLE IF NOT EXISTS t77DistritoEnvio (
+  Id_Distrito     INT AUTO_INCREMENT PRIMARY KEY,
+  NombreDistrito  VARCHAR(120) NOT NULL,
+  CostoEnvio      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
+  Estado          VARCHAR(15) NOT NULL,
+  Activo          TINYINT(1) NOT NULL DEFAULT 1,
+  NombreNorm      VARCHAR(120) NOT NULL,
+  UNIQUE KEY uq_t77_nombre_norm (NombreNorm),
+  INDEX idx_t77_activo (Activo)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+-- Permite que una guía (t72) referencie varias órdenes (t02),
+-- siempre que cliente + direccion snapshot sean iguales.
+CREATE TABLE t75GuiaOrden (
+  Id INT NOT NULL AUTO_INCREMENT,
+  Id_Guia INT NOT NULL,           -- FK -> t72GuiaRemision
+  Id_OrdenPedido INT NOT NULL,    -- FK -> t02OrdenPedido
+  PRIMARY KEY (Id),
+  UNIQUE KEY uq_t75 (Id_Guia, Id_OrdenPedido),
+  CONSTRAINT fk_t75_g FOREIGN KEY (Id_Guia)
+    REFERENCES t72GuiaRemision (Id_Guia)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+  CONSTRAINT fk_t75_o FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
-
-
 -- ==========================================================
 -- 6) Cierre de caja / Notas / Cobertura
 -- ==========================================================

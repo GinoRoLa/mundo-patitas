@@ -12,6 +12,45 @@
     return /delivery/i.test(opt.textContent || "");
   }
 
+  /** Recalcula el costo de entrega:
+   * - Si NO es delivery: usa el costo base del método (normalmente 0)
+   * - Si es delivery: intenta costo por distrito (guardada u “otra”) usando window.costoPorNombreLocal
+   * y actualiza txtCostoEnt + total.
+   */
+  function recomputeCostoEntrega() {
+    const cboEntrega = document.getElementById("cboEntrega");
+    const base = Number(cboEntrega?.selectedOptions?.[0]?.dataset?.costo || 0);
+    let costo = base;
+
+    if (isDeliverySelected()) {
+      const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
+      let distritoTxt = "";
+
+      if (modo === "guardada") {
+        const opt = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+        distritoTxt = opt?.dataset?.distrito || "";
+      } else {
+        distritoTxt = (document.getElementById("envioDistrito")?.value || "").trim();
+      }
+
+      if (distritoTxt && typeof window.costoPorNombreLocal === "function") {
+        const det = window.costoPorNombreLocal(distritoTxt);
+        if (det && typeof det.CostoEnvio !== "undefined") {
+          costo = Number(det.CostoEnvio);
+        }
+      }
+    }
+
+    setNum(document.getElementById("txtCostoEnt"), costo);
+
+    // Recalcula total si ya hay subtotal/desc
+    const subt = Number(document.getElementById("txtSubTotal")?.value || 0);
+    const desc = Number(document.getElementById("txtDesc")?.value || 0);
+    if (subt || desc) {
+      setNum(document.getElementById("txtTotal"), Math.max(0, subt - desc + costo));
+    }
+  }
+
   // === Prefill desde dirección guardada + LOG ===
   function _prefillDesdeGuardada(debug = true) {
     const opt = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
@@ -39,6 +78,21 @@
     const distritoInput = document.getElementById("envioDistrito");
     if (dniRec)        { dniRec.value = dni; dniRec.readOnly = true; }
     if (distritoInput) { distritoInput.value = distrito; distritoInput.readOnly = true; }
+  }
+
+  function _bindGuardadaChangeOnce() {
+    const selGuard = document.getElementById("cboDireccionGuardada");
+    if (!selGuard || selGuard._boundGuardChange) return;
+    selGuard._boundGuardChange = true;
+
+    selGuard.addEventListener("change", () => {
+      // Prefill de DNI/Distrito
+      _prefillDesdeGuardada(true);
+      // Recalcula costo SOLO si estamos en delivery
+      if (isDeliverySelected()) recomputeCostoEntrega();
+      // Revalida botón
+      window.Orden?.validarReadyParaRegistrar?.();
+    });
   }
 
   function setEnvioModo(modo) {
@@ -83,12 +137,21 @@
       const dniRec   = document.getElementById("envioReceptorDni");
       const distrito = document.getElementById("envioDistrito");
       if (guardada) {
+        // Prefill inmediato
         _prefillDesdeGuardada(true);
+
         if (dniRec)   dniRec.readOnly = true;
         if (distrito) distrito.readOnly = true;
+
+        _bindGuardadaChangeOnce(); // escucha cambios en el combo una sola vez
       } else {
         if (dniRec)   { dniRec.readOnly = false; dniRec.value = ""; }
         if (distrito) { distrito.readOnly = false; distrito.value = ""; }
+
+        // Activa el typeahead local para “otra” (definido en distritos.js)
+        if (typeof window.setupDistritoTypeahead === "function") {
+          window.setupDistritoTypeahead();
+        }
       }
     }
 
@@ -97,6 +160,9 @@
       if (i) { i.disabled = guardada; i.required = !guardada; }
     });
 
+    // Recalcula costo sólo si estamos en delivery
+    if (isDeliverySelected()) recomputeCostoEntrega();
+    // Revalida
     validarReadyParaRegistrar();
   }
 
@@ -140,18 +206,22 @@
         distrito.maxLength = 120;
       }
 
-      // Listener del combo para prefill + validar
-      if (hayGuardadas && !cbo._listenerApplied) {
-        cbo.addEventListener("change", () => {
+      // Listener del combo para prefill + validar (si no estaba)
+      const cboGuard = document.getElementById("cboDireccionGuardada");
+      if (hayGuardadas && cboGuard && !cboGuard._listenerApplied) {
+        cboGuard.addEventListener("change", () => {
           if (document.querySelector('input[name="envioModo"]:checked')?.value === "guardada") {
             _prefillDesdeGuardada(true);
+            if (isDeliverySelected()) recomputeCostoEntrega();
           }
           validarReadyParaRegistrar();
         });
-        cbo._listenerApplied = true;
+        cboGuard._listenerApplied = true;
       }
     }
 
+    // Centraliza el recálculo del costo y validación
+    recomputeCostoEntrega();
     validarReadyParaRegistrar();
   }
 
@@ -208,8 +278,8 @@
     const idx = Array.from(cbo.options).findIndex((o) => /tienda/i.test(o.textContent));
     cbo.selectedIndex = idx >= 0 ? idx : 0;
 
-    const costo = Number(cbo.selectedOptions[0]?.dataset.costo || 0);
-    setNum(document.getElementById("txtCostoEnt"), costo);
+    // No seteamos txtCostoEnt directo; centralizamos:
+    recomputeCostoEntrega();
     updateEnvioPanelVisibility();
     Messages.global.clear();
   }
@@ -220,8 +290,8 @@
     document.getElementById("txtCantProd").value = 0;
     setNum(document.getElementById("txtDesc"), 0);
     setNum(document.getElementById("txtSubTotal"), 0);
-    const costo = Number(document.getElementById("cboEntrega").selectedOptions[0]?.dataset.costo || 0);
-    setNum(document.getElementById("txtCostoEnt"), costo);
+    // Recalcula costo según método actual (si delivery, por distrito; sino base)
+    recomputeCostoEntrega();
     setNum(document.getElementById("txtTotal"), 0);
     const btn = document.getElementById("btnRegistrar");
     if (btn) btn.disabled = true;
@@ -247,28 +317,20 @@
     setNum(document.getElementById("txtDesc"), r.descuento);
     setNum(document.getElementById("txtSubTotal"), r.subtotal);
 
-    const costo = Number(document.getElementById("cboEntrega").selectedOptions[0]?.dataset.costo || 0);
-    setNum(document.getElementById("txtCostoEnt"), costo);
-    setNum(document.getElementById("txtTotal"), Math.max(0, (r.subtotal || 0) - (r.descuento || 0) + costo));
+    // Centraliza costo/total
+    recomputeCostoEntrega();
 
     validarReadyParaRegistrar();
     const n = Number(document.getElementById("txtCantProd").value || 0);
     if (n > 0) Messages.preorden.ok("Productos consolidados en la orden.", { autoclear: 1500 });
   }
 
-  function onMetodoEntregaChange(e) {
-    const costo = Number(e.target?.selectedOptions?.[0]?.dataset?.costo || 0);
-    setNum(document.getElementById("txtCostoEnt"), costo);
-
-    const subt = Number(document.getElementById("txtSubTotal").value || 0);
-    const desc = Number(document.getElementById("txtDesc").value || 0);
-    if (subt > 0) {
-      const total = Math.max(0, subt - desc + costo);
-      setNum(document.getElementById("txtTotal"), total);
-      setDirty(true);
-    }
+  function onMetodoEntregaChange() {
+    // Recalcula costo (si es delivery, por distrito; sino base) y luego actualiza panel
+    recomputeCostoEntrega();
     updateEnvioPanelVisibility();
     Messages.preorden.clear();
+    setDirty(true);
   }
 
   async function registrarOrden() {
@@ -307,11 +369,11 @@
         payload.append("envioReceptorDni", opt?.dataset?.dni || "");
         payload.append("envioDistrito",   opt?.dataset?.distrito || "");
       } else {
-        const nom = (document.getElementById("envioNombre")?.value || "").trim();
-        const tel = (document.getElementById("envioTelefono")?.value || "").trim();
-        const dir = (document.getElementById("envioDireccion")?.value || "").trim();
-        const dniRec = (document.getElementById("envioReceptorDni")?.value || "").trim();
-        const dis    = (document.getElementById("envioDistrito")?.value || "").trim();
+        const nom   = (document.getElementById("envioNombre")?.value || "").trim();
+        const tel   = (document.getElementById("envioTelefono")?.value || "").trim();
+        const dir   = (document.getElementById("envioDireccion")?.value || "").trim();
+        const dniRec= (document.getElementById("envioReceptorDni")?.value || "").trim();
+        const dis   = (document.getElementById("envioDistrito")?.value || "").trim();
 
         payload.append("envioNombre", nom);
         payload.append("envioTelefono", tel);

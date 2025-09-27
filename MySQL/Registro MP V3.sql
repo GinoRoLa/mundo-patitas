@@ -88,22 +88,33 @@ INSERT INTO t70DireccionEnvioCliente
   (Id_Cliente, NombreContacto, TelefonoContacto, Direccion, Distrito, DniReceptor)
 VALUES
   -- Ana Quispe (2 direcciones)
-  (60001, 'Ana Quispe Huamán', '987654321', 'Av. Los Olivos 456 Dpto. 302', 'Los Olivos', '12345678'),
-  (60001, 'Ana Quispe Huamán', '987654321', 'Jr. Los Sauces 120', 'Los Olivos', '12345678'),
-  (60002, 'Pedro Flores Rojas', '981234567', 'Jr. San Martín 789 Int. 201', 'San Martín de Porres', '87654321'),
-  (60004, 'Jorge Ramírez Poma', '986543210', 'Av. Arequipa 1234', 'Lince', '33445566'),
-  (60005, 'María García Luna', '989112233', 'Jr. Las Magnolias 350', 'San Borja', '99887766'),
-  (60006, 'Carlos Torres Campos', '981223344', 'Calle Los Cedros 220', 'Santiago de Surco', '55667788'),
-  (60007, 'Rocío Pérez Saldaña', '984556677', 'Av. El Ejército 765', 'Jesús María', '44556677'),
-  (60008, 'Hugo López Vega', '982334455', 'Mz. B Lote 12 Urb. Progreso', 'Comas', '22334455'),
-  (60009, 'Karla Mendoza Ríos', '983778899', 'Psje. Los Olivos 114', 'Independencia', '77889911'),
-  (60010, 'Diego Rojas Cárdenas', '985667788', 'Av. Universitaria 1020', 'San Miguel', '66778899'),
-  (60011, 'Elena Salazar Quispe', '986121212', 'Jr. Puno 456', 'Cercado de Lima', '12121212'),
-  (60012, 'Marco Valdez Núñez', '987343434', 'Calle Lima 890', 'Breña', '34343434'),
-  (60013, 'Patricia Castillo Zapata', '989565656', 'Av. Brasil 1500', 'Jesús María', '56565656'),
-  (60014, 'Bruno Aguilar Sánchez', '981787878', 'Av. La Marina 700', 'Pueblo Libre', '78787878'),
-  (60015, 'Verónica Chávez Ibarra', '983909090', 'Jr. Ancash 210', 'Cercado de Lima', '90909090');
+  (60001, 'Ana Quispe Huamán', '987654321', 'Av. Los Olivos 456 Dpto. 302', 'LOS OLIVOS', '12345678'),
+  (60001, 'Ana Quispe Huamán', '987654321', 'Jr. Los Sauces 120', 'LOS OLIVOS', '12345678'),
+  (60002, 'Pedro Flores Rojas', '981234567', 'Jr. San Martín 789 Int. 201', 'SAN MARTÍN DE PORRES', '87654321'),
+  (60004, 'Jorge Ramírez Poma', '986543210', 'Av. Arequipa 1234', 'LINCE', '33445566'),
+  (60005, 'María García Luna', '989112233', 'Jr. Las Magnolias 350', 'SAN BORJA', '99887766'),
+  (60006, 'Carlos Torres Campos', '981223344', 'Calle Los Cedros 220', 'SANTIAGO DE SURCO', '55667788'),
+  (60007, 'Rocío Pérez Saldaña', '984556677', 'Av. El Ejército 765', 'JESÚS MARÍA', '44556677'),
+  (60008, 'Hugo López Vega', '982334455', 'Mz. B Lote 12 Urb. Progreso', 'COMAS', '22334455'),
+  (60009, 'Karla Mendoza Ríos', '983778899', 'Psje. Los Olivos 114', 'INDEPENDENCIA', '77889911'),
+  (60010, 'Diego Rojas Cárdenas', '985667788', 'Av. Universitaria 1020', 'SAN MIGUEL', '66778899'),
+  (60011, 'Elena Salazar Quispe', '986121212', 'Jr. Puno 456', 'CERCADO DE LIMA', '12121212'),
+  (60012, 'Marco Valdez Núñez', '987343434', 'Calle Lima 890', 'BREÑA', '34343434'),
+  (60013, 'Patricia Castillo Zapata', '989565656', 'Av. Brasil 1500', 'JESÚS MARÍA', '56565656'),
+  (60014, 'Bruno Aguilar Sánchez', '981787878', 'Av. La Marina 700', 'PUEBLO LIBRE', '78787878'),
+  (60015, 'Verónica Chávez Ibarra', '983909090', 'Jr. Ancash 210', 'CERCADO DE LIMA', '90909090');
 
+
+INSERT INTO t77DistritoEnvio (NombreDistrito, CostoEnvio, Estado, Activo, NombreNorm) VALUES
+('LOS OLIVOS',           15.00, 'ACTIVO', 1, 'LOS OLIVOS'),
+('SAN MARTÍN DE PORRES', 16.00, 'ACTIVO', 1, 'SAN MARTIN DE PORRES'),
+('LINCE',                13.00, 'ACTIVO', 1, 'LINCE'),
+('SAN BORJA',            14.50, 'ACTIVO', 1, 'SAN BORJA'),
+('SANTIAGO DE SURCO',    15.50, 'ACTIVO', 1, 'SANTIAGO DE SURCO'),
+('COMAS',                18.00, 'ACTIVO', 1, 'COMAS'),
+('INDEPENDENCIA',        17.00, 'ACTIVO', 1, 'INDEPENDENCIA'),
+('CERCADO DE LIMA',      12.00, 'ACTIVO', 1, 'CERCADO DE LIMA'),
+('BREÑA',                13.50, 'ACTIVO', 1, 'BRENA');
 
 -- ==========================================================
 -- 6) Preórdenes (cliente 60001) - primero SIN vínculo a orden

@@ -11,6 +11,17 @@ USE mundo_patitas2;
 
 -- Endurecer chequeos
 SET sql_mode = 'STRICT_ALL_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+-- ==========================================
+-- t73: Direcciones de origen (almacenes)
+-- ==========================================
+CREATE TABLE IF NOT EXISTS t73DireccionAlmacen (
+  Id_DireccionAlmacen INT NOT NULL AUTO_INCREMENT,
+  NombreAlmacen VARCHAR(120) NOT NULL,
+  DireccionOrigen VARCHAR(255) NOT NULL,
+  DistritoOrigen VARCHAR(120) NOT NULL,
+  Estado VARCHAR(20) NOT NULL,
+  PRIMARY KEY (Id_DireccionAlmacen)
+) ENGINE=InnoDB;
 
 -- ==========================================================
 -- 1) Catálogos / Maestras mínimas
@@ -32,7 +43,9 @@ CREATE TABLE t20Cliente (
 ) ENGINE=InnoDB AUTO_INCREMENT=60001;
 
 -- Trabajadores con PK numérica y DNI único
-CREATE TABLE t16CatalogoTrabajadores (
+
+
+CREATE TABLE IF NOT EXISTS t16CatalogoTrabajadores (
   id_Trabajador INT NOT NULL AUTO_INCREMENT,
   DNITrabajador VARCHAR(8) NOT NULL,
   des_apepatTrabajador VARCHAR(40) NOT NULL,
@@ -43,8 +56,10 @@ CREATE TABLE t16CatalogoTrabajadores (
   email VARCHAR(100) NOT NULL,
   cargo VARCHAR(40) NOT NULL,
   estado VARCHAR(15) NOT NULL,
+  Id_DireccionAlmacen INT,
   CONSTRAINT t16CatalogoTrabajadores_pk PRIMARY KEY (id_Trabajador),
-  CONSTRAINT uq_t16_dni UNIQUE (DNITrabajador)
+  CONSTRAINT uq_t16_dni UNIQUE (DNITrabajador),
+  CONSTRAINT fk_DireccionAlmacen FOREIGN KEY (Id_DireccionAlmacen) REFERENCES t73DireccionAlmacen(Id_DireccionAlmacen)
 ) ENGINE=InnoDB AUTO_INCREMENT=50001;
 
 CREATE TABLE t31CategoriaProducto (
@@ -367,6 +382,7 @@ CREATE TABLE t12InformeIncidencia (
 
 CREATE TABLE t11OrdenSalida (
   Id_ordenSalida INT NOT NULL AUTO_INCREMENT,
+  Fec_Transaccion DATE NOT NULL,
   t02OrdenPedido_Id_OrdenPedido INT NOT NULL,
   CONSTRAINT t11OrdenSalida_pk PRIMARY KEY (Id_ordenSalida),
   CONSTRAINT fk_t11_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
@@ -429,17 +445,6 @@ CREATE TABLE t09OrdenIngresoAlmacen (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=20081;
 
--- ==========================================
--- t73: Direcciones de origen (almacenes)
--- ==========================================
-CREATE TABLE IF NOT EXISTS t73DireccionOrigen (
-  Id_DireccionOrigen INT NOT NULL AUTO_INCREMENT,
-  NombreAlmacen   VARCHAR(120) NOT NULL,
-  DireccionOrigen VARCHAR(255) NOT NULL,
-  DistritoOrigen  VARCHAR(120) NOT NULL,
-  Estado          VARCHAR(20)  NOT NULL DEFAULT 'Activo',
-  PRIMARY KEY (Id_DireccionOrigen)
-) ENGINE=InnoDB;
 
 -- ==========================================
 -- t72: Guía de Remisión (cabecera)
@@ -468,7 +473,7 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   DistritoDestino       VARCHAR(120) NOT NULL,
 
   -- Origen
-  Id_DireccionOrigen   INT NOT NULL,  -- FK -> t73DireccionOrigen
+  Id_DireccionAlmacen   INT NOT NULL,  -- FK -> t73DireccionOrigen
 
   -- Transporte (opcional, puedes ampliar)
   ModalidadTransporte  ENUM('PROPIO','TERCERO') NOT NULL DEFAULT 'PROPIO',
@@ -484,8 +489,8 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   UNIQUE KEY uq_t72_numero (Numero),
 
   CONSTRAINT fk_t72_origen
-    FOREIGN KEY (Id_DireccionOrigen)
-    REFERENCES t73DireccionOrigen (Id_DireccionOrigen)
+    FOREIGN KEY (Id_DireccionAlmacen)
+    REFERENCES t73DireccionAlmacen (Id_DireccionAlmacen)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 

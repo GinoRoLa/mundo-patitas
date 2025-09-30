@@ -11,7 +11,8 @@ final class PreOrden
   }
 
   // Preórdenes (Emitido, <24h) con total calculado
-  public function vigentesPorCliente(string $dni): array {
+  public function vigentesPorCliente(string $dni): array
+  {
     $sql = "CALL sp_preorden_vigentes_por_dni(?)";
     $st  = mysqli_prepare($this->cn, $sql);
     if (!$st) throw new RuntimeException(mysqli_error($this->cn));
@@ -24,11 +25,14 @@ final class PreOrden
 
     mysqli_stmt_close($st);
     // Muy importante: consumir resultsets sobrantes de CALL
-    while (mysqli_more_results($this->cn)) { mysqli_next_result($this->cn); }
+    while (mysqli_more_results($this->cn)) {
+      mysqli_next_result($this->cn);
+    }
     return $out;
-}
+  }
 
-public function filtrarVigentesDelCliente(string $dni, array $ids): array {
+  public function filtrarVigentesDelCliente(string $dni, array $ids): array
+  {
     if (empty($ids)) return [];
     $ids = array_values(array_unique(array_map('intval', $ids)));
     $idsJson = json_encode($ids);
@@ -44,11 +48,14 @@ public function filtrarVigentesDelCliente(string $dni, array $ids): array {
     while ($r = mysqli_fetch_row($rs)) $out[] = (int)$r[0];
 
     mysqli_stmt_close($st);
-    while (mysqli_more_results($this->cn)) { mysqli_next_result($this->cn); }
+    while (mysqli_more_results($this->cn)) {
+      mysqli_next_result($this->cn);
+    }
     return $out;
-}
+  }
 
-public function consolidarProductos(array $ids): array {
+  public function consolidarProductos(array $ids): array
+  {
     if (empty($ids)) return [];
     $ids = array_values(array_unique(array_map('intval', $ids)));
     $idsJson = json_encode($ids);
@@ -64,9 +71,11 @@ public function consolidarProductos(array $ids): array {
     while ($r = mysqli_fetch_assoc($rs)) $out[] = $r;
 
     mysqli_stmt_close($st);
-    while (mysqli_more_results($this->cn)) { mysqli_next_result($this->cn); }
+    while (mysqli_more_results($this->cn)) {
+      mysqli_next_result($this->cn);
+    }
     return $out;
-}
+  }
 
 
   // Marcar como procesadas y vincular a la orden
@@ -93,35 +102,44 @@ public function consolidarProductos(array $ids): array {
     return $aff;
   } */
 
-  public function procesarYVincular(array $idsPreorden, int $ordenId): array {
-    if (empty($idsPreorden)) return ['vinculadas' => 0, 'marcadas' => 0];
-
-    $ids     = array_values(array_unique(array_map('intval', $idsPreorden)));
-    $idsJson = json_encode($ids);
-
-    $st = mysqli_prepare($this->cn, "CALL sp_vincular_preordenes_a_orden(?, ?)");
-    if (!$st) throw new RuntimeException(mysqli_error($this->cn));
-
-    mysqli_stmt_bind_param($st, "is", $ordenId, $idsJson);
-    mysqli_stmt_execute($st);
-
-    $rs = mysqli_stmt_get_result($st);
-    $vinculadas = 0; $marcadas = 0;
-    if ($rs) {
-        $row = mysqli_fetch_assoc($rs);
-        if ($row) {
-            $vinculadas = (int)($row['preordenes_vinculadas'] ?? 0);
-            $marcadas   = (int)($row['preordenes_marcadas'] ?? 0);
-        }
-        mysqli_free_result($rs);
+public function procesarYVincular(array $ids, int $ordenId): array {
+  // normaliza a ints
+  $ids = array_values(array_unique(array_map(function($v){
+    if (is_array($v)) {
+      if (isset($v['Id_PreOrdenPedido'])) return (int)$v['Id_PreOrdenPedido'];
+      if (isset($v['id'])) return (int)$v['id'];
+      return 0;
     }
-    mysqli_stmt_close($st);
-    while (mysqli_more_results($this->cn)) { mysqli_next_result($this->cn); }
+    return (int)$v;
+  }, $ids)));
+  $ids = array_filter($ids, fn($x)=>$x>0);
+  if (!$ids) { return ['vinculadas'=>0, 'marcadas'=>0]; }
 
-    return ['vinculadas' => $vinculadas, 'marcadas' => $marcadas];
+  $json = json_encode($ids, JSON_UNESCAPED_UNICODE);
+
+  $sql = "CALL sp_vincular_preordenes_a_orden(?, ?)";
+  $st  = mysqli_prepare($this->cn, $sql);
+  if (!$st) throw new RuntimeException('Prepare failed: ' . mysqli_error($this->cn));
+  mysqli_stmt_bind_param($st, "is", $ordenId, $json);
+  mysqli_stmt_execute($st);
+
+  $out = ['vinculadas'=>0, 'marcadas'=>0];
+  if ($rs = mysqli_stmt_get_result($st)) {
+    $row = mysqli_fetch_assoc($rs) ?: [];
+    $out['vinculadas'] = (int)($row['preordenes_vinculadas'] ?? 0);
+    $out['marcadas']   = (int)($row['preordenes_marcadas'] ?? 0);
+    mysqli_free_result($rs);
+  }
+  mysqli_stmt_close($st);
+
+  // consume posibles resultsets extra del CALL
+  while (mysqli_more_results($this->cn)) {
+    mysqli_next_result($this->cn);
+    if ($tmp = mysqli_store_result($this->cn)) mysqli_free_result($tmp);
+  }
+
+  return $out;
 }
-
-
 
 
 

@@ -35,8 +35,8 @@
 
       if (distritoTxt && typeof window.costoPorNombreLocal === "function") {
         const det = window.costoPorNombreLocal(distritoTxt);
-        if (det && typeof det.CostoEnvio !== "undefined") {
-          costo = Number(det.CostoEnvio);
+        if (det && typeof det.MontoCosto !== "undefined") {
+          costo = Number(det.MontoCosto);
         }
       }
     }

@@ -18,7 +18,10 @@ function hydrateDistritos() {
   DIST_LIST = Array.isArray(window.T77) ? window.T77 : [];
   DIST_MAP = {};
   DIST_LIST.forEach(d => {
-    DIST_MAP[_norm(d.NombreDistrito)] = d;
+    // t77: DescNombre, MontoCosto, Estado
+    if ((d.Estado || "").toLowerCase() === "activo") {
+      DIST_MAP[_norm(d.DescNombre)] = d;
+    }
   });
   _buildDistritoDatalist();
 }
@@ -27,21 +30,22 @@ function _buildDistritoDatalist() {
   const dl = document.getElementById("dlDistritos");
   if (!dl) return;
   dl.innerHTML = "";
-  DIST_LIST.forEach(d => {
-    const opt = document.createElement("option");
-    opt.value = d.NombreDistrito; // lo que se coloca en el input
-    opt.label = `${d.NombreDistrito} — S/ ${Number(d.CostoEnvio).toFixed(2)}`;
-    opt.dataset.costo = d.CostoEnvio;
-    opt.dataset.almacenId = d.Id_Almacen || "";
-    dl.appendChild(opt);
-  });
+  DIST_LIST
+    .filter(d => (d.Estado || "").toLowerCase() === "activo")
+    .forEach(d => {
+      const opt = document.createElement("option");
+      opt.value = d.DescNombre; // lo que se coloca en el input
+      opt.label = `${d.DescNombre} — S/ ${Number(d.MontoCosto).toFixed(2)}`;
+      opt.dataset.monto = d.MontoCosto; // opcional
+      dl.appendChild(opt);
+    });
 }
 
 // Lookup local por nombre de distrito
 function costoPorNombreLocal(nombre) {
   const rec = DIST_MAP[_norm(nombre)];
   return rec
-    ? { CostoEnvio: Number(rec.CostoEnvio), Id_Almacen: rec.Id_Almacen, NombreDistrito: rec.NombreDistrito }
+    ? { MontoCosto: Number(rec.MontoCosto), DescNombre: rec.DescNombre }
     : null;
 }
 
@@ -73,10 +77,12 @@ function setupDistritoTypeahead() {
   const apply = () => {
     const m = costoPorNombreLocal(inp.value);
     if (m) {
-      setCostoEnvio(m.CostoEnvio);
-      if (hint) hint.textContent = `Costo por distrito: S/ ${m.CostoEnvio.toFixed(2)}`;
+      setCostoEnvio(m.MontoCosto);
+      if (hint) hint.textContent = `Costo por distrito: S/ ${m.MontoCosto.toFixed(2)}`;
     } else {
       if (hint) hint.textContent = "Distrito no encontrado en la lista.";
+      // Si quieres, puedes resetear costo a 0:
+      // setCostoEnvio(0);
     }
     window.Orden?.validarReadyParaRegistrar?.();
   };
@@ -87,3 +93,7 @@ function setupDistritoTypeahead() {
 
 // Llamar una vez en el arranque (p.ej. DOMContentLoaded)
 document.addEventListener("DOMContentLoaded", hydrateDistritos);
+
+// Exponer helpers si otros módulos los usan
+window.costoPorNombreLocal = costoPorNombreLocal;
+window.setupDistritoTypeahead = setupDistritoTypeahead;

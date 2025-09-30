@@ -23,7 +23,13 @@
     wrap.hidden  = false;
   }
 
-  /** Llena el combo de direcciones guardadas (t70) y deja data-* para prefill/validación. */
+  /**
+   * Llena el combo de direcciones guardadas (t70) y deja data-* para prefill/validación.
+   * Tolera distintos esquemas de backend:
+   *  - DniReceptor | ReceptorDni
+   *  - Distrito (nombre) | DistritoNombre | Id_Distrito (num)
+   * Si viene un ID de distrito, lo resuelve a nombre usando window.T77 (DescNombre).
+   */
   function poblarDireccionesGuardadas(dirs) {
     const wrap   = $("#envioGuardada");
     const cbo    = $("#cboDireccionGuardada");
@@ -31,37 +37,52 @@
     const rOtra  = document.querySelector('input[name="envioModo"][value="otra"]');
     if (!wrap || !cbo) return;
 
-    // Limpiar siempre
     cbo.innerHTML = "";
 
     if (Array.isArray(dirs) && dirs.length > 0) {
+      const T77 = Array.isArray(window.T77) ? window.T77 : [];
+
       dirs.forEach((d) => {
         const opt = document.createElement("option");
         opt.value = d.Id_DireccionEnvio;
 
-        const nombre    = d.NombreContacto    ?? "";
-        const telefono  = d.TelefonoContacto  ?? "";
-        const direccion = d.Direccion         ?? "";
-        const distrito  = d.Distrito          ?? "";
-        const dniRec    = d.DniReceptor       ?? "";
+        const nombre    = String(d.NombreContacto   ?? "").trim();
+        const telefono  = String(d.TelefonoContacto ?? "").trim();
+        const direccion = String(d.Direccion        ?? "").trim();
+
+        // Acepta nombre o id del distrito y resuelve a nombre si fuera necesario
+        const rawDistrito = (d.Distrito ?? d.DistritoNombre ?? d.Id_Distrito ?? d.id_distrito ?? "");
+        let distrito = "";
+        if (typeof rawDistrito === "number" || /^\d+$/.test(String(rawDistrito))) {
+          const hit = T77.find(x => Number(x.Id_Distrito) === Number(rawDistrito));
+          distrito = hit ? String(hit.DescNombre).trim() : "";
+        } else {
+          distrito = String(rawDistrito).trim();
+        }
+
+        const dniRec = String(d.DniReceptor ?? d.ReceptorDni ?? "").trim();
 
         // Texto visible
-        opt.textContent = `${direccion} — ${distrito} (${nombre} / ${telefono})`;
+        opt.textContent = `${direccion}${distrito ? ` — ${distrito}` : ""} (${nombre} / ${telefono})`;
 
-        // Data para snapshot / validaciones
+        // Data para snapshot / validaciones (siempre como nombre, no ID)
         opt.dataset.nombre   = nombre;
         opt.dataset.telefono = telefono;
         opt.dataset.dir      = direccion;
         opt.dataset.distrito = distrito;
-        opt.dataset.dni      = dniRec; // siempre set, aunque esté vacío
+        opt.dataset.dni      = dniRec;
 
         cbo.appendChild(opt);
       });
 
-      // (debug opcional) imprime el primero para verificar
+      // (debug opcional) muestra el primero
       if (cbo.options.length > 0) {
         const o0 = cbo.options[0];
-        console.log("[t70] option#0 dataset:", {dni:o0.dataset.dni, distrito:o0.dataset.distrito, dir:o0.dataset.dir});
+        console.log("[t70] option#0 dataset:", {
+          dni: o0.dataset.dni,
+          distrito: o0.dataset.distrito,
+          dir: o0.dataset.dir
+        });
       }
 
       cbo.disabled = false;
@@ -70,7 +91,12 @@
       // Modo por defecto: guardada
       if (rGuard) { rGuard.disabled = false; rGuard.checked = true; }
       if (rOtra)  { rOtra.checked = false; }
+
       window.Orden.setEnvioModo("guardada");
+      // Si ya es delivery, recalcula costo por distrito inmediatamente
+      if (window.Orden?.isDeliverySelected?.()) {
+        window.Orden.updateEnvioPanelVisibility();
+      }
     } else {
       // Sin direcciones: placeholder y modo "otra"
       setGuardadaPlaceholder(NO_ADDR);
@@ -95,16 +121,8 @@
     setNum($("#txtDesc"), 0);
     setNum($("#txtSubTotal"), 0);
 
-    const cbo = $("#cboEntrega");
-    $("#chkGuardarDireccion") && ($("#chkGuardarDireccion").checked = true);
-    if (cbo && cbo.options.length) {
-      const idx = Array.from(cbo.options).findIndex((o) => /tienda/i.test(o.textContent));
-      cbo.selectedIndex = idx >= 0 ? idx : 0;
-      const costo = Number(cbo.selectedOptions[0]?.dataset.costo || 0);
-      setNum($("#txtCostoEnt"), costo);
-    } else {
-      setNum($("#txtCostoEnt"), 0);
-    }
+    // Reinicia costo/total delegando a la lógica central (considera delivery por distrito)
+    window.Orden?.updateEnvioPanelVisibility?.();
     setNum($("#txtTotal"), 0);
 
     poblarDireccionesGuardadas([]); // placeholder
@@ -167,7 +185,7 @@
 
     Messages.cliente.ok("Cliente encontrado.", { autoclear: 1300 });
 
-    // Direcciones guardadas (t70) con distrito y DNI receptor en data-*
+    // Direcciones guardadas (t70) con distrito (nombre) y DNI receptor en data-*
     poblarDireccionesGuardadas(r.direcciones || []);
 
     // Preórdenes

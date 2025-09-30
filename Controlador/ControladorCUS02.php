@@ -8,26 +8,27 @@ include_once '../Modelo/MetodoEntrega.php';
 include_once '../Modelo/PreOrden.php';
 include_once '../Modelo/OrdenPedido.php';
 include_once '../Modelo/DireccionEnvioCliente.php';
-include_once '../Modelo/DistritoEnvio.php'; // ← NUEVO: consulta t77
+include_once '../Modelo/DistritoEnvio.php';
 
-function ok(array $d = [], int $c = 200) {
+function ok(array $d = [], int $c = 200)
+{
   http_response_code($c);
   echo json_encode(['ok' => true] + $d, JSON_UNESCAPED_UNICODE);
   exit;
 }
-function err(string $m, int $c = 400, array $x = []) {
+function err(string $m, int $c = 400, array $x = [])
+{
   http_response_code($c);
   echo json_encode(['ok' => false, 'error' => $m] + $x, JSON_UNESCAPED_UNICODE);
   exit;
 }
-function dni_ok($dni) {
+function dni_ok($dni)
+{
   return (bool)preg_match('/^\d{8}$/', (string)$dni);
 }
-
-function desc_hu002(int $cant): float {
-  if ($cant > 8) return 0.15;
-  if ($cant >= 5) return 0.10;
-  return 0.00;
+function desc_hu002(int $cant): float
+{
+  return $cant > 8 ? 0.15 : ($cant >= 5 ? 0.10 : 0.00);
 }
 
 try {
@@ -39,6 +40,7 @@ try {
       if ($_SERVER['REQUEST_METHOD'] !== 'GET') err('Method Not Allowed', 405);
       $met = (new MetodoEntrega())->listarActivos();
       ok(['metodos' => $met]);
+      break;
 
     case 'buscar-cliente':
       if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
@@ -50,8 +52,8 @@ try {
 
       $pre  = (new PreOrden())->vigentesPorCliente($dni);
       $dirs = (new DireccionEnvioCliente())->listarPorClienteId((int)$cli['Id_Cliente']);
-
       ok(['found' => true, 'cliente' => $cli, 'preordenes' => $pre, 'direcciones' => $dirs]);
+      break;
 
     case 'consolidar':
       if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
@@ -68,7 +70,6 @@ try {
       $items = $preM->consolidarProductos($validas);
       $cant  = array_sum(array_map(fn($r) => (int)$r['Cantidad'],  $items));
       $subt  = array_sum(array_map(fn($r) => (float)$r['Subtotal'], $items));
-
       $rate  = desc_hu002($cant);
       $desc  = round($subt * $rate, 2);
 
@@ -80,6 +81,7 @@ try {
         'descuentoRate'     => $rate,
         'total'             => max(0, $subt - $desc)
       ]);
+      break;
 
     case 'registrar':
       if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
@@ -92,10 +94,11 @@ try {
       if (!is_array($idsPre) || !$idsPre) err('Debe seleccionar al menos una preorden.', 422);
       $idsPre = array_values(array_map('intval', $idsPre));
 
-      // Método y costo base
+      $costoEntrega = 0.00; // ← inicializa siempre
+
+      // Método y costo base (t27 ya no tiene Costo; conservamos 0 como base)
       $met = (new MetodoEntrega())->obtenerPorId($metodoId);
       if (!$met || (isset($met['Estado']) && $met['Estado'] !== 'Activo')) err('Método de entrega inválido.', 422);
-      $costoEntrega = (float)$met['Costo']; // base
 
       // Validar/Consolidar preórdenes
       $preM = new PreOrden();
@@ -113,47 +116,49 @@ try {
       // ¿Es delivery?
       $esDelivery = isset($met['EsDelivery'])
         ? ((int)$met['EsDelivery'] === 1)
-        : (stripos($met['Descripcion'] ?? '', 'delivery') !== false);
+        : (stripos(($met['Descripcion'] ?? ''), 'delivery') !== false);
 
-      // Si es delivery, intenta sobrescribir costo por distrito desde t77
+      // Si es delivery, intenta costo por distrito desde t77 (por nombre)
       if ($esDelivery) {
         $distritoParaCosto = null;
         $direccionEnvioId  = (int)($_POST['direccionEnvioId'] ?? 0);
 
+        $cli = (new Cliente())->buscarPorDni($dni);
+        if (!$cli) err('Cliente no encontrado por DNI', 422);
+        $idClienteInt = (int)$cli['Id_Cliente'];
+
         if ($direccionEnvioId > 0) {
-          // Guardada: toma distrito desde t70 (backend)
-          $cli = (new Cliente())->buscarPorDni($dni);
-          if (!$cli) err('Cliente no encontrado por DNI', 422);
-          $rowGuard = (new DireccionEnvioCliente())->obtenerDeCliente((int)$cli['Id_Cliente'], $direccionEnvioId);
+          $rowGuard = (new DireccionEnvioCliente())->obtenerDeCliente($idClienteInt, $direccionEnvioId);
           if (!$rowGuard) err('Dirección guardada inválida para este cliente.', 422);
-          $distritoParaCosto = trim((string)($rowGuard['Distrito'] ?? ''));
+          $distritoParaCosto = trim((string)($rowGuard['DistritoNombre'] ?? ''));
         } else {
-          // Otra: usa el distrito del POST (normaliza ya validado por front)
           $distritoParaCosto = trim((string)($_POST['envioDistrito'] ?? ''));
         }
 
         if ($distritoParaCosto !== '') {
           $distM = new DistritoEnvio();
-          $costoDist = $distM->costoPorNombre($distritoParaCosto); // consulta t77
+          $costoDist = $distM->costoPorNombre($distritoParaCosto);
           if ($costoDist !== null) {
-            $costoEntrega = $costoDist; // OVERRIDE DEL COSTO
+            $costoEntrega = (float)$costoDist;
           }
         }
       }
 
-      // Total definitivo con costoEntrega correcto
+      // Total definitivo
       $total = max(0, $subt - $desc + $costoEntrega);
 
-      // Cliente
-      $cli = (new Cliente())->buscarPorDni($dni);
-      if (!$cli) err('Cliente no encontrado por DNI', 422);
-      $idClienteInt = (int)$cli['Id_Cliente'];
+      // Cliente (si no es delivery aún no lo habíamos traído)
+      if (!isset($idClienteInt)) {
+        $cli = (new Cliente())->buscarPorDni($dni);
+        if (!$cli) err('Cliente no encontrado por DNI', 422);
+        $idClienteInt = (int)$cli['Id_Cliente'];
+      }
 
       // Crear orden + detalle
       $ordenId = (new OrdenPedido())->crearOrdenConDetalle([
         'idCliente'       => $idClienteInt,
         'metodoEntregaId' => $metodoId,
-        'costoEntrega'    => $costoEntrega, // ← ya con distrito si aplica
+        'costoEntrega'    => $costoEntrega,
         'descuento'       => $desc,
         'total'           => $total,
         'items'           => $items
@@ -161,7 +166,15 @@ try {
 
       // Vincular preórdenes y marcar procesadas
       $res = $preM->procesarYVincular($validas, $ordenId);
-      if (($res['vinculadas'] ?? 0) <= 0) err('No se pudieron marcar/vincular las preórdenes.', 422);
+      if ((($res['vinculadas'] ?? 0) <= 0) && (($res['marcadas'] ?? 0) <= 0)) {
+        err('No se pudieron marcar/vincular las preórdenes.', 422, [
+          'spResult' => $res,
+          'idsSolicitados' => $idsPre,
+          'idsValidos' => $validas
+        ]);
+      }
+
+
 
       // Snapshot de envío (guardada u otra)
       if ($esDelivery) {
@@ -188,10 +201,17 @@ try {
       }
 
       ok(['ordenId' => $ordenId, 'msg' => 'Orden generada y preórdenes procesadas.']);
+      break;
 
     default:
       err('Acción no encontrada', 404, ['accion' => $accion]);
   }
 } catch (Throwable $e) {
-  err('Error inesperado', 500, ['detail' => $e->getMessage()]);
+  err('Error inesperado', 500, [
+    'detail' => $e->getMessage(),
+    'trace'  => $e->getTraceAsString()
+  ]);
+
+  /* catch (Throwable $e) {
+  err('Error inesperado', 500, ['detail' => $e->getMessage()]); */
 }

@@ -1,6 +1,7 @@
 -- ==========================================================
 -- Mundo Patitas - Script Definitivo (MySQL 8 / InnoDB / utf8mb4)
 -- Con PK numéricas (id_Trabajador, Id_Cliente) y seeds diferenciadas
+-- Versión: V3 (t27 sin costo, t77 normalizado, t71 enlazado a t77)
 -- ==========================================================
 
 DROP DATABASE IF EXISTS mundo_patitas2;
@@ -11,6 +12,7 @@ USE mundo_patitas2;
 
 -- Endurecer chequeos
 SET sql_mode = 'STRICT_ALL_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
+
 -- ==========================================
 -- t73: Direcciones de origen (almacenes)
 -- ==========================================
@@ -27,7 +29,7 @@ CREATE TABLE IF NOT EXISTS t73DireccionAlmacen (
 -- 1) Catálogos / Maestras mínimas
 -- ==========================================================
 
--- Clientes ahora con PK numérica y DNI único (de V2)
+-- Clientes ahora con PK numérica y DNI único
 CREATE TABLE t20Cliente (
   Id_Cliente INT NOT NULL AUTO_INCREMENT,
   DniCli VARCHAR(8) NOT NULL,
@@ -43,8 +45,6 @@ CREATE TABLE t20Cliente (
 ) ENGINE=InnoDB AUTO_INCREMENT=60001;
 
 -- Trabajadores con PK numérica y DNI único
-
-
 CREATE TABLE IF NOT EXISTS t16CatalogoTrabajadores (
   id_Trabajador INT NOT NULL AUTO_INCREMENT,
   DNITrabajador VARCHAR(8) NOT NULL,
@@ -59,7 +59,8 @@ CREATE TABLE IF NOT EXISTS t16CatalogoTrabajadores (
   Id_DireccionAlmacen INT,
   CONSTRAINT t16CatalogoTrabajadores_pk PRIMARY KEY (id_Trabajador),
   CONSTRAINT uq_t16_dni UNIQUE (DNITrabajador),
-  CONSTRAINT fk_DireccionAlmacen FOREIGN KEY (Id_DireccionAlmacen) REFERENCES t73DireccionAlmacen(Id_DireccionAlmacen)
+  CONSTRAINT fk_DireccionAlmacen FOREIGN KEY (Id_DireccionAlmacen)
+    REFERENCES t73DireccionAlmacen(Id_DireccionAlmacen)
 ) ENGINE=InnoDB AUTO_INCREMENT=50001;
 
 CREATE TABLE t31CategoriaProducto (
@@ -84,18 +85,19 @@ CREATE TABLE t37DetalleRequerimiento (
 -- 2) Productos / Proveedores
 -- ==========================================================
 
-CREATE TABLE t18catalogoproducto (
-  Id_Producto int NOT NULL AUTO_INCREMENT,
-  NombreProducto varchar(100) NOT NULL,
-  Descripcion varchar(200) NOT NULL,
-  Marca varchar(30) NOT NULL,
-  PrecioUnitario decimal(12,2) NOT NULL,
-  StockActual int NOT NULL,
-  StockMinimo int NOT NULL,
-  StockMaximo int NOT NULL,
-  Estado varchar(15) NOT NULL,
-  t31CategoriaProducto_Id_Categoria int NOT NULL,
-  t34UnidadMedida_Id_UnidadMedida int NOT NULL,
+-- OJO: nombre estandarizado t18CatalogoProducto (C mayúscula) para coincidir con todas las FKs
+CREATE TABLE t18CatalogoProducto (
+  Id_Producto INT NOT NULL AUTO_INCREMENT,
+  NombreProducto VARCHAR(100) NOT NULL,
+  Descripcion VARCHAR(200) NOT NULL,
+  Marca VARCHAR(30) NOT NULL,
+  PrecioUnitario DECIMAL(12,2) NOT NULL,
+  StockActual INT NOT NULL,
+  StockMinimo INT NOT NULL,
+  StockMaximo INT NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  t31CategoriaProducto_Id_Categoria INT NOT NULL,
+  t34UnidadMedida_Id_UnidadMedida INT NOT NULL,
   PRIMARY KEY (Id_Producto),
   KEY fk_t18_categoria (t31CategoriaProducto_Id_Categoria),
   KEY fk_t18_unidad (t34UnidadMedida_Id_UnidadMedida),
@@ -111,7 +113,6 @@ CREATE TABLE t18catalogoproducto (
   CONSTRAINT t18catalogoproducto_chk_3 CHECK (StockMinimo >= 0),
   CONSTRAINT t18catalogoproducto_chk_4 CHECK (StockMaximo >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=1031;
-
 
 -- (Opcional) catálogo legacy no referenciado
 CREATE TABLE t58Producto (
@@ -157,10 +158,10 @@ CREATE TABLE t30TipoBanco (
 -- 4) Ventas: Orden / Preorden / Comprobante / Pagos / Entrega
 -- ==========================================================
 
+-- t27 sin Costo (el costo lo aporta t77 + snapshot en t02)
 CREATE TABLE t27MetodoEntrega (
   Id_MetodoEntrega INT NOT NULL AUTO_INCREMENT,
   Descripcion VARCHAR(40) NOT NULL,
-  Costo DECIMAL(12,2) NOT NULL CHECK (Costo >= 0),
   Estado VARCHAR(20) NOT NULL,
   CONSTRAINT t27MetodoEntrega_pk PRIMARY KEY (Id_MetodoEntrega)
 ) ENGINE=InnoDB AUTO_INCREMENT=9001;
@@ -170,7 +171,7 @@ CREATE TABLE t02OrdenPedido (
   Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Id_Cliente INT NOT NULL,
   Id_MetodoEntrega INT,
-  CostoEntrega DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (CostoEntrega >= 0),
+  CostoEntrega DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (CostoEntrega >= 0), -- snapshot
   Descuento    DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (Descuento >= 0),
   Total        DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (Total >= 0),
   Estado VARCHAR(15),
@@ -183,7 +184,7 @@ CREATE TABLE t02OrdenPedido (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=10001;
 
--- Preorden (versión dump + ajustes de FKs y FK faltante a t02)
+-- Preorden
 CREATE TABLE t01PreOrdenPedido (
   Id_PreOrdenPedido INT NOT NULL AUTO_INCREMENT,
   t20Cliente_Id_Cliente INT NULL,
@@ -198,9 +199,7 @@ CREATE TABLE t01PreOrdenPedido (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=10;
 
--- =======================
--- t90PreOrden_OrdenPedido
--- =======================
+-- Vinculación Preorden ↔ Orden
 CREATE TABLE t90PreOrden_OrdenPedido (
   Id                INT NOT NULL AUTO_INCREMENT,
   Id_OrdenPedido    INT NOT NULL,
@@ -218,8 +217,6 @@ CREATE TABLE t90PreOrden_OrdenPedido (
     REFERENCES t01PreOrdenPedido (Id_PreOrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
-
-
 
 CREATE TABLE t03ComprobantePago (
   Nro_ComproPago INT NOT NULL AUTO_INCREMENT,
@@ -242,7 +239,6 @@ CREATE TABLE t59OrdenServicioEntrega (
   Estado           VARCHAR(20),
   FecCreacion      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FecModificacion  DATETIME NULL,
-
   CONSTRAINT pk_t59 PRIMARY KEY (Id_OSE),
   CONSTRAINT uq_t59_orden UNIQUE (Id_OrdenPedido),
   CONSTRAINT fk_t59_orden FOREIGN KEY (Id_OrdenPedido)
@@ -278,7 +274,7 @@ CREATE TABLE IF NOT EXISTS t70DireccionEnvioCliente (
   TelefonoContacto  VARCHAR(20)  NOT NULL,
   Direccion         VARCHAR(255) NOT NULL,
   Distrito          VARCHAR(120) NOT NULL,
-  DniReceptor    VARCHAR(8)   NOT NULL,
+  DniReceptor       VARCHAR(8)   NOT NULL,
   INDEX idx_t70_cliente  (Id_Cliente),
   INDEX idx_t70_distrito (Distrito),
   CONSTRAINT fk_t70_cliente
@@ -288,7 +284,20 @@ CREATE TABLE IF NOT EXISTS t70DireccionEnvioCliente (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- =====================================================
+-- t77: Distritos de Envío (normalizado + costo base)
+-- =====================================================
+DROP TABLE IF EXISTS t77DistritoEnvio;
+CREATE TABLE IF NOT EXISTS t77DistritoEnvio (
+  Id_Distrito INT NOT NULL AUTO_INCREMENT,
+  DescNombre  VARCHAR(120) NOT NULL,                 -- Ej: "San Martín de Porres"
+  MontoCosto  DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (MontoCosto >= 0),
+  Estado      VARCHAR(15)  NOT NULL,                 -- 'Activo' / 'Inactivo'
+  PRIMARY KEY (Id_Distrito)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- =====================================================
 -- Snapshot por orden (t71) 1:1 con la orden de pedido
+--  + FK opcional a t77 para reportes/tarifación
 -- =====================================================
 CREATE TABLE IF NOT EXISTS t71OrdenDirecEnvio (
   Id_OrdenDirecEnvio INT AUTO_INCREMENT PRIMARY KEY,
@@ -298,20 +307,27 @@ CREATE TABLE IF NOT EXISTS t71OrdenDirecEnvio (
   DireccionSnap      VARCHAR(255) NOT NULL,
   DistritoSnap       VARCHAR(120) NOT NULL,
   ReceptorDniSnap    VARCHAR(8)   NOT NULL,
+  Id_Distrito        INT NULL, -- nuevo enlace con t77
+
   UNIQUE KEY uq_t71_orden (Id_OrdenPedido),
+
   CONSTRAINT fk_t71_orden
     FOREIGN KEY (Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
-    ON UPDATE CASCADE ON DELETE CASCADE
+    ON UPDATE CASCADE ON DELETE CASCADE,
+
+  CONSTRAINT fk_t71_distrito
+    FOREIGN KEY (Id_Distrito)
+    REFERENCES t77DistritoEnvio (Id_Distrito)
+    ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
-
+-- Relación snapshot ↔ catálogo de dirección (opcional, se mantiene)
 CREATE TABLE IF NOT EXISTS t92Ref_Snapshot_DirCatalogo (
   Id                  INT AUTO_INCREMENT PRIMARY KEY,
   Id_OrdenDirecEnvio  INT NOT NULL,
   Id_DireccionEnvio   INT NOT NULL,
-  UNIQUE KEY uq_t92_snapshot (Id_OrdenDirecEnvio), -- a lo más 1 vínculo
+  UNIQUE KEY uq_t92_snapshot (Id_OrdenDirecEnvio),
   INDEX idx_t92_dir (Id_DireccionEnvio),
   CONSTRAINT fk_t92_t71
     FOREIGN KEY (Id_OrdenDirecEnvio) REFERENCES t71OrdenDirecEnvio (Id_OrdenDirecEnvio)
@@ -320,8 +336,6 @@ CREATE TABLE IF NOT EXISTS t92Ref_Snapshot_DirCatalogo (
     FOREIGN KEY (Id_DireccionEnvio)  REFERENCES t70DireccionEnvioCliente (Id_DireccionEnvio)
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
 
 -- ==========================================================
 -- 5) Compras / Ingresos / Kardex / Salidas / Incidencias
@@ -445,10 +459,6 @@ CREATE TABLE t09OrdenIngresoAlmacen (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=20081;
 
-
--- ==========================================
--- t72: Guía de Remisión (cabecera)
--- ==========================================
 -- ==========================================
 -- t72: Guía de Remisión (cabecera)
 --  - NO referencia pedidos ni orden de salida
@@ -456,7 +466,6 @@ CREATE TABLE t09OrdenIngresoAlmacen (
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   Id_Guia              INT NOT NULL AUTO_INCREMENT,
-  -- Numeración (puedes usar también Id_Guia como número)
   Numero               INT NOT NULL,
   Fec_Emision          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Estado               VARCHAR(20) NOT NULL DEFAULT 'Emitida',
@@ -466,16 +475,16 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   RemitenteRazonSocial VARCHAR(120) NOT NULL,
 
   -- Destino (snapshot típico desde t71 de la orden)
-  DestinatarioIdCliente INT         NOT NULL,
+  DestinatarioIdCliente INT          NOT NULL,
   DestinatarioNombre    VARCHAR(120) NOT NULL,
   DniReceptor           VARCHAR(8)   NOT NULL,
   DireccionDestino      VARCHAR(255) NOT NULL,
   DistritoDestino       VARCHAR(120) NOT NULL,
 
   -- Origen
-  Id_DireccionAlmacen   INT NOT NULL,  -- FK -> t73DireccionOrigen
+  Id_DireccionAlmacen   INT NOT NULL,  -- FK -> t73DireccionAlmacen
 
-  -- Transporte (opcional, puedes ampliar)
+  -- Transporte (opcional)
   ModalidadTransporte  ENUM('PROPIO','TERCERO') NOT NULL DEFAULT 'PROPIO',
   Placa                VARCHAR(10)  NULL,
   Conductor            VARCHAR(120) NULL,
@@ -496,7 +505,6 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
 
 CREATE INDEX idx_t72_estado_emision ON t72GuiaRemision (Estado, Fec_Emision);
 
-
 -- ==========================================
 -- t74: Detalle de Guía
 -- ==========================================
@@ -505,10 +513,10 @@ CREATE TABLE IF NOT EXISTS t74DetalleGuia (
   Id_Guia         INT NOT NULL,             -- FK -> t72GuiaRemision
   Id_Producto     INT NOT NULL,             -- FK -> t18CatalogoProducto
 
-  -- Snapshots para imprimir (no dependes de cambios en catálogo)
+  -- Snapshots para imprimir
   Descripcion     VARCHAR(200) NOT NULL,
   Unidad          VARCHAR(10)  NOT NULL,    -- 'UN','KG', etc.
-  Cantidad        INT NOT NULL,             -- CHECKs en MySQL son informativos
+  Cantidad        INT NOT NULL,
 
   PRIMARY KEY (Id_DetalleGuia),
   KEY idx_t74_guia (Id_Guia),
@@ -527,20 +535,15 @@ CREATE TABLE IF NOT EXISTS t74DetalleGuia (
 
 -- ==========================================
 -- t93: Puente Guía ↔ Pedido (N : M)
---  - Permite que una guía agrupe ítems de varios pedidos
---  - Mantiene trazabilidad sin fijar una FK directa en cabecera
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t93Guia_OrdenPedido (
   Id_Guia        INT NOT NULL,              -- FK -> t72GuiaRemision
   Id_OrdenPedido INT NOT NULL,              -- FK -> t02OrdenPedido
-
   PRIMARY KEY (Id_Guia, Id_OrdenPedido),
-
   CONSTRAINT fk_t93_guia
     FOREIGN KEY (Id_Guia)
     REFERENCES t72GuiaRemision (Id_Guia)
     ON UPDATE RESTRICT ON DELETE CASCADE,
-
   CONSTRAINT fk_t93_orden
     FOREIGN KEY (Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
@@ -549,21 +552,7 @@ CREATE TABLE IF NOT EXISTS t93Guia_OrdenPedido (
 
 CREATE INDEX idx_t93_orden ON t93Guia_OrdenPedido (Id_OrdenPedido);
 
-
-CREATE TABLE IF NOT EXISTS t77DistritoEnvio (
-  Id_Distrito     INT AUTO_INCREMENT PRIMARY KEY,
-  NombreDistrito  VARCHAR(120) NOT NULL,
-  CostoEnvio      DECIMAL(10,2) NOT NULL DEFAULT 0.00,
-  Estado          VARCHAR(15) NOT NULL,
-  Activo          TINYINT(1) NOT NULL DEFAULT 1,
-  NombreNorm      VARCHAR(120) NOT NULL,
-  UNIQUE KEY uq_t77_nombre_norm (NombreNorm),
-  INDEX idx_t77_activo (Activo)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-
--- Permite que una guía (t72) referencie varias órdenes (t02),
--- siempre que cliente + direccion snapshot sean iguales.
+-- (Adicional a pedido previo: t75GuiaOrden)
 CREATE TABLE t75GuiaOrden (
   Id INT NOT NULL AUTO_INCREMENT,
   Id_Guia INT NOT NULL,           -- FK -> t72GuiaRemision
@@ -577,6 +566,7 @@ CREATE TABLE t75GuiaOrden (
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
+
 -- ==========================================================
 -- 6) Cierre de caja / Notas / Cobertura
 -- ==========================================================
@@ -779,7 +769,7 @@ CREATE TABLE t61detapreorden (
   KEY fk_t61_t01 (t01PreOrdenPedido_Id_PreOrdenPedido),
   KEY fk_t61_t18 (t18CatalogoProducto_Id_Producto),
   CONSTRAINT fk_t61_t01 FOREIGN KEY (t01PreOrdenPedido_Id_PreOrdenPedido)
-    REFERENCES t01preordenpedido (Id_PreOrdenPedido)
+    REFERENCES t01PreOrdenPedido (Id_PreOrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t61_t18 FOREIGN KEY (t18CatalogoProducto_Id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
@@ -787,7 +777,7 @@ CREATE TABLE t61detapreorden (
   CONSTRAINT t61detapreorden_chk_1 CHECK (Cantidad >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=61019;
 
--- Detalle de la Orden (versión pedida: sin columnas des_*)
+-- Detalle de la Orden (sin columnas des_*)
 DROP TABLE IF EXISTS t60DetOrdenPedido;
 CREATE TABLE t60DetOrdenPedido (
   Id_DetOrdenPedido INT NOT NULL AUTO_INCREMENT,
@@ -889,10 +879,5 @@ CREATE INDEX idx_t02_estado ON t02OrdenPedido (Estado);
 CREATE INDEX idx_t26_estado ON t26ReporteCierreCaja (estado, Fec_emision);
 CREATE INDEX idx_t21_cmp ON t21NotaCredito (Nro_comprobantePago);
 CREATE INDEX idx_t09_fec ON t09OrdenIngresoAlmacen (fec_ingreso);
-
--- Ya existe como KEY dentro de t01preordenpedido, no repetir aquí:
--- CREATE INDEX idx_preorden_cliente_estado_fec ON t01preordenpedido (t20Cliente_Id_Cliente, Estado, Fec_Emision);
-
--- Rendimiento recomendado:
 CREATE INDEX idx_t60_orden      ON t60DetOrdenPedido (t02OrdenPedido_Id_OrdenPedido);
 CREATE INDEX idx_t61_pre_prod   ON t61detapreorden (t01PreOrdenPedido_Id_PreOrdenPedido, t18CatalogoProducto_Id_Producto);

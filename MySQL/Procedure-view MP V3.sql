@@ -183,7 +183,6 @@ BEGIN
   )) AS jt
   WHERE jt.IdProducto > 0 AND jt.Cantidad > 0;
 
-  -- Seguridad: si no se insertó nada, revierte
   IF ROW_COUNT() = 0 THEN
     ROLLBACK;
     SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No se insertó detalle';
@@ -191,7 +190,6 @@ BEGIN
 
   COMMIT;
 
-  -- Devuelve el id de la orden en un resultset (fácil de leer desde PHP)
   SELECT v_orden_id AS ordenId;
 END$$
 DELIMITER ;
@@ -214,7 +212,7 @@ BEGIN
 
   START TRANSACTION;
 
-  INSERT INTO t90PreOrden_OrdenPedido (Id_OrdenPedido, Id_PreOrdenPedido, Fec_Vinculo)
+  INSERT IGNORE INTO t90PreOrden_OrdenPedido (Id_OrdenPedido, Id_PreOrdenPedido, Fec_Vinculo)
   SELECT p_orden_id, jt.id, NOW()
   FROM JSON_TABLE(p_ids_json, '$[*]' COLUMNS (id INT PATH '$')) jt;
   SET v_ins = ROW_COUNT();
@@ -225,14 +223,15 @@ BEGIN
     FROM JSON_TABLE(p_ids_json, '$[*]' COLUMNS (id INT PATH '$')) j
   ) i ON i.Id_PreOrdenPedido = p.Id_PreOrdenPedido
   SET p.Estado = 'Procesado'
-  WHERE p.Estado = 'Emitido';
-  SET v_upd = ROW_COUNT();   -- ← guarda filas actualizadas
+  WHERE TRIM(p.Estado) = 'Emitido';
+  SET v_upd = ROW_COUNT();
 
   COMMIT;
 
   SELECT v_ins AS preordenes_vinculadas, v_upd AS preordenes_marcadas;
 END$$
 DELIMITER ;
+
 
 -- ==========================================================
 -- Procedimientos Preorden CUS01

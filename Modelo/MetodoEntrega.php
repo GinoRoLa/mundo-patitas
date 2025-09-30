@@ -7,7 +7,7 @@ final class MetodoEntrega {
     public function __construct(){ $this->cn = (new Conexion())->conecta(); }
 
     public function listarActivos(): array {
-        $sql = "SELECT Id_MetodoEntrega, Descripcion, Costo, Estado
+        $sql = "SELECT Id_MetodoEntrega, Descripcion, Estado
                   FROM t27MetodoEntrega
                  WHERE Estado='Activo'
                  ORDER BY Id_MetodoEntrega";
@@ -16,7 +16,7 @@ final class MetodoEntrega {
     }
 
     public function obtenerPorId(int $id): ?array {
-        $sql = "SELECT Id_MetodoEntrega, Descripcion, Costo, Estado
+        $sql = "SELECT Id_MetodoEntrega, Descripcion, Estado
                   FROM t27MetodoEntrega
                  WHERE Id_MetodoEntrega = ?
                  LIMIT 1";

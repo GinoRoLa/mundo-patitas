@@ -3,13 +3,20 @@
   const { $, log, setNum, to2, setDirty, Messages } = window.Utils;
   const { fetchJSON, url } = window.API;
 
-  function isDeliverySelected() {
+  /* function isDeliverySelected() {
     const opt = document.getElementById("cboEntrega")?.selectedOptions?.[0];
     if (!opt) return false;
     if (opt.dataset.esDelivery !== undefined) {
       return opt.dataset.esDelivery === "1" || opt.dataset.esDelivery === "true";
     }
     return /delivery/i.test(opt.textContent || "");
+  } */
+
+  function isDeliverySelected() {
+    const opt = document.getElementById("cboEntrega")?.selectedOptions?.[0];
+    if (!opt) return false;
+    const label = (opt.textContent || opt.label || "").trim();
+    return /delivery/i.test(label);
   }
 
   /** Recalcula el costo de entrega:
@@ -23,14 +30,19 @@
     let costo = base;
 
     if (isDeliverySelected()) {
-      const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
+      const modo =
+        document.querySelector('input[name="envioModo"]:checked')?.value ||
+        "otra";
       let distritoTxt = "";
 
       if (modo === "guardada") {
-        const opt = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+        const opt = document.getElementById("cboDireccionGuardada")
+          ?.selectedOptions?.[0];
         distritoTxt = opt?.dataset?.distrito || "";
       } else {
-        distritoTxt = (document.getElementById("envioDistrito")?.value || "").trim();
+        distritoTxt = (
+          document.getElementById("envioDistrito")?.value || ""
+        ).trim();
       }
 
       if (distritoTxt && typeof window.costoPorNombreLocal === "function") {
@@ -47,20 +59,24 @@
     const subt = Number(document.getElementById("txtSubTotal")?.value || 0);
     const desc = Number(document.getElementById("txtDesc")?.value || 0);
     if (subt || desc) {
-      setNum(document.getElementById("txtTotal"), Math.max(0, subt - desc + costo));
+      setNum(
+        document.getElementById("txtTotal"),
+        Math.max(0, subt - desc + costo)
+      );
     }
   }
 
   // === Prefill desde dirección guardada + LOG ===
   function _prefillDesdeGuardada(debug = true) {
-    const opt = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+    const opt = document.getElementById("cboDireccionGuardada")
+      ?.selectedOptions?.[0];
     if (!opt) return;
 
-    const dni      = opt.dataset?.dni || "";
+    const dni = opt.dataset?.dni || "";
     const distrito = opt.dataset?.distrito || "";
-    const dir      = opt.dataset?.dir || "";
-    const nombre   = opt.dataset?.nombre || "";
-    const tel      = opt.dataset?.telefono || "";
+    const dir = opt.dataset?.dir || "";
+    const nombre = opt.dataset?.nombre || "";
+    const tel = opt.dataset?.telefono || "";
 
     if (debug) {
       console.log("[ENVIO:GUARDADA] id=%s", opt.value);
@@ -70,14 +86,22 @@
       console.log("  Contacto/Tel :", nombre, "/", tel);
       console.log("  dataset full :", opt.dataset);
       if (!dni || !distrito) {
-        console.warn("⚠ Falta data-dni o data-distrito en el <option>. Revisa cliente.js / backend.");
+        console.warn(
+          "⚠ Falta data-dni o data-distrito en el <option>. Revisa cliente.js / backend."
+        );
       }
     }
 
-    const dniRec        = document.getElementById("envioReceptorDni");
+    const dniRec = document.getElementById("envioReceptorDni");
     const distritoInput = document.getElementById("envioDistrito");
-    if (dniRec)        { dniRec.value = dni; dniRec.readOnly = true; }
-    if (distritoInput) { distritoInput.value = distrito; distritoInput.readOnly = true; }
+    if (dniRec) {
+      dniRec.value = dni;
+      dniRec.readOnly = true;
+    }
+    if (distritoInput) {
+      distritoInput.value = distrito;
+      distritoInput.readOnly = true;
+    }
   }
 
   function _bindGuardadaChangeOnce() {
@@ -99,16 +123,16 @@
     const guardada = modo === "guardada";
 
     const wrapGuard = document.getElementById("envioGuardada");
-    const selGuard  = document.getElementById("cboDireccionGuardada");
+    const selGuard = document.getElementById("cboDireccionGuardada");
 
-    const wrapOtra  = document.getElementById("envioOtra");
-    const inpNom    = document.getElementById("envioNombre");
-    const inpTel    = document.getElementById("envioTelefono");
-    const inpDir    = document.getElementById("envioDireccion");
+    const wrapOtra = document.getElementById("envioOtra");
+    const inpNom = document.getElementById("envioNombre");
+    const inpTel = document.getElementById("envioTelefono");
+    const inpDir = document.getElementById("envioDireccion");
 
     // Mostrar/ocultar secciones
     if (wrapGuard) wrapGuard.hidden = !guardada;
-    if (wrapOtra)  wrapOtra.style.display = guardada ? "none" : "block";
+    if (wrapOtra) wrapOtra.style.display = guardada ? "none" : "block";
 
     // Combo de guardadas
     if (selGuard) {
@@ -118,11 +142,13 @@
       if (
         guardada &&
         (selGuard.options.length === 0 ||
-         (selGuard.options.length === 1 && selGuard.options[0].value === ""))
+          (selGuard.options.length === 1 && selGuard.options[0].value === ""))
       ) {
         if (selGuard.options.length === 0) {
           const opt = document.createElement("option");
-          opt.value = ""; opt.disabled = true; opt.selected = true;
+          opt.value = "";
+          opt.disabled = true;
+          opt.selected = true;
           opt.textContent = "— Sin direcciones de envío —";
           selGuard.appendChild(opt);
         } else {
@@ -134,19 +160,25 @@
       }
 
       // DNI/Distrito según modo
-      const dniRec   = document.getElementById("envioReceptorDni");
+      const dniRec = document.getElementById("envioReceptorDni");
       const distrito = document.getElementById("envioDistrito");
       if (guardada) {
         // Prefill inmediato
         _prefillDesdeGuardada(true);
 
-        if (dniRec)   dniRec.readOnly = true;
+        if (dniRec) dniRec.readOnly = true;
         if (distrito) distrito.readOnly = true;
 
         _bindGuardadaChangeOnce(); // escucha cambios en el combo una sola vez
       } else {
-        if (dniRec)   { dniRec.readOnly = false; dniRec.value = ""; }
-        if (distrito) { distrito.readOnly = false; distrito.value = ""; }
+        if (dniRec) {
+          dniRec.readOnly = false;
+          dniRec.value = "";
+        }
+        if (distrito) {
+          distrito.readOnly = false;
+          distrito.value = "";
+        }
 
         // Activa el typeahead local para “otra” (definido en distritos.js)
         if (typeof window.setupDistritoTypeahead === "function") {
@@ -157,7 +189,10 @@
 
     // Inputs de “otra” dirección
     [inpNom, inpTel, inpDir].forEach((i) => {
-      if (i) { i.disabled = guardada; i.required = !guardada; }
+      if (i) {
+        i.disabled = guardada;
+        i.required = !guardada;
+      }
     });
 
     // Recalcula costo sólo si estamos en delivery
@@ -173,14 +208,22 @@
     const esDel = isDeliverySelected();
     panel.style.display = esDel ? "block" : "none";
 
-    const dniRec   = document.getElementById("envioReceptorDni");
+    const dniRec = document.getElementById("envioReceptorDni");
     const distrito = document.getElementById("envioDistrito");
 
     if (!esDel) {
-      ["envioNombre","envioTelefono","envioDireccion","envioReceptorDni","envioDistrito"]
-        .forEach((id) => { const el = document.getElementById(id); if (el) el.value = ""; });
+      [
+        "envioNombre",
+        "envioTelefono",
+        "envioDireccion",
+        "envioReceptorDni",
+        "envioDistrito",
+      ].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.value = "";
+      });
 
-      if (dniRec)   dniRec.required = false;
+      if (dniRec) dniRec.required = false;
       if (distrito) distrito.required = false;
 
       const chk = document.getElementById("chkGuardarDireccion");
@@ -189,16 +232,18 @@
       // Selección automática
       const cbo = document.getElementById("cboDireccionGuardada");
       const hayGuardadas = cbo && !cbo.disabled && cbo.options.length > 0;
-      const defaultModo  = hayGuardadas ? "guardada" : "otra";
-      const radio = document.querySelector(`input[name="envioModo"][value="${defaultModo}"]`);
+      const defaultModo = hayGuardadas ? "guardada" : "otra";
+      const radio = document.querySelector(
+        `input[name="envioModo"][value="${defaultModo}"]`
+      );
       if (radio) radio.checked = true;
       setEnvioModo(defaultModo);
 
       // Atributos de validación en delivery
       if (dniRec) {
-        dniRec.required   = true;
-        dniRec.maxLength  = 8;
-        dniRec.pattern    = "\\d{8}";
+        dniRec.required = true;
+        dniRec.maxLength = 8;
+        dniRec.pattern = "\\d{8}";
         dniRec.setAttribute("inputmode", "numeric");
       }
       if (distrito) {
@@ -210,7 +255,10 @@
       const cboGuard = document.getElementById("cboDireccionGuardada");
       if (hayGuardadas && cboGuard && !cboGuard._listenerApplied) {
         cboGuard.addEventListener("change", () => {
-          if (document.querySelector('input[name="envioModo"]:checked')?.value === "guardada") {
+          if (
+            document.querySelector('input[name="envioModo"]:checked')?.value ===
+            "guardada"
+          ) {
             _prefillDesdeGuardada(true);
             if (isDeliverySelected()) recomputeCostoEntrega();
           }
@@ -230,28 +278,52 @@
     let ok = cant > 0;
 
     if (ok && isDeliverySelected()) {
-      const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
+      const modo =
+        document.querySelector('input[name="envioModo"]:checked')?.value ||
+        "otra";
 
       if (modo === "guardada") {
-        const opt    = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
-        const idSel  = opt?.value;
-        const dni    = opt?.dataset?.dni || "";
-        const dist   = opt?.dataset?.distrito || "";
+        const opt = document.getElementById("cboDireccionGuardada")
+          ?.selectedOptions?.[0];
+        const idSel = opt?.value;
+        const dni = opt?.dataset?.dni || "";
+        const dist = opt?.dataset?.distrito || "";
         ok = !!idSel && /^\d{8}$/.test(dni) && dist !== "";
 
         // Refleja en inputs (por si estaban vacíos)
-        const dniRec   = document.getElementById("envioReceptorDni");
+        const dniRec = document.getElementById("envioReceptorDni");
         const distrito = document.getElementById("envioDistrito");
-        if (dniRec)   { dniRec.value = dni; dniRec.readOnly = true; }
-        if (distrito) { distrito.value = dist; distrito.readOnly = true; }
+        if (dniRec) {
+          dniRec.value = dni;
+          dniRec.readOnly = true;
+        }
+        if (distrito) {
+          distrito.value = dist;
+          distrito.readOnly = true;
+        }
       } else {
-        const dniRec   = (document.getElementById("envioReceptorDni")?.value || "").trim();
-        const distrito = (document.getElementById("envioDistrito")?.value || "").trim();
-        const nom      = (document.getElementById("envioNombre")?.value || "").trim();
-        const tel      = (document.getElementById("envioTelefono")?.value || "").trim();
-        const dir      = (document.getElementById("envioDireccion")?.value || "").trim();
-        const telOk    = /^\d{9}$/.test(tel);
-        ok = /^\d{8}$/.test(dniRec) && distrito !== "" && nom !== "" && dir !== "" && telOk;
+        const dniRec = (
+          document.getElementById("envioReceptorDni")?.value || ""
+        ).trim();
+        const distrito = (
+          document.getElementById("envioDistrito")?.value || ""
+        ).trim();
+        const nom = (
+          document.getElementById("envioNombre")?.value || ""
+        ).trim();
+        const tel = (
+          document.getElementById("envioTelefono")?.value || ""
+        ).trim();
+        const dir = (
+          document.getElementById("envioDireccion")?.value || ""
+        ).trim();
+        const telOk = /^\d{9}$/.test(tel);
+        ok =
+          /^\d{8}$/.test(dniRec) &&
+          distrito !== "" &&
+          nom !== "" &&
+          dir !== "" &&
+          telOk;
       }
     }
 
@@ -262,23 +334,28 @@
 
   async function cargarMetodosEntrega() {
     const r = await fetchJSON(url.metodosEntrega);
-    if (!r.ok) { Messages.global.error("No se pudieron cargar los métodos de entrega.", { autoclear: 6000 }); return; }
+    if (!r.ok) {
+      Messages.global.error("No se pudieron cargar los métodos de entrega.", {
+        autoclear: 6000,
+      });
+      return;
+    }
 
     const cbo = document.getElementById("cboEntrega");
     cbo.innerHTML = "";
+
     (r.metodos || []).forEach((m) => {
       const opt = document.createElement("option");
       opt.value = m.Id_MetodoEntrega;
       opt.textContent = m.Descripcion;
-      opt.dataset.costo = m.Costo;
-      // opt.dataset.esDelivery = m.EsDelivery ? "1" : "0";
+      // si alguna vez mandas costo, lo tomas; si no, queda 0
+      // opt.dataset.costo = m.Costo ?? 0;
       cbo.appendChild(opt);
     });
-
-    const idx = Array.from(cbo.options).findIndex((o) => /tienda/i.test(o.textContent));
-    cbo.selectedIndex = idx >= 0 ? idx : 0;
-
-    // No seteamos txtCostoEnt directo; centralizamos:
+    const idxNoDelivery = Array.from(cbo.options).findIndex(
+      (o) => !/delivery/i.test((o.textContent || o.label || "").trim())
+    );
+    cbo.selectedIndex = idxNoDelivery >= 0 ? idxNoDelivery : 0;
     recomputeCostoEntrega();
     updateEnvioPanelVisibility();
     Messages.global.clear();
@@ -290,7 +367,7 @@
     document.getElementById("txtCantProd").value = 0;
     setNum(document.getElementById("txtDesc"), 0);
     setNum(document.getElementById("txtSubTotal"), 0);
-    // Recalcula costo según método actual (si delivery, por distrito; sino base)
+    // Recalcula costo según método actual (si delivery, por distrito)
     recomputeCostoEntrega();
     setNum(document.getElementById("txtTotal"), 0);
     const btn = document.getElementById("btnRegistrar");
@@ -322,7 +399,10 @@
 
     validarReadyParaRegistrar();
     const n = Number(document.getElementById("txtCantProd").value || 0);
-    if (n > 0) Messages.preorden.ok("Productos consolidados en la orden.", { autoclear: 1500 });
+    if (n > 0)
+      Messages.preorden.ok("Productos consolidados en la orden.", {
+        autoclear: 1500,
+      });
   }
 
   function onMetodoEntregaChange() {
@@ -336,17 +416,29 @@
   async function registrarOrden() {
     const dni = (document.getElementById("txtDni").value || "").trim();
     const v = window.Utils.validarDni(dni);
-    if (!v.ok) { Messages.cliente.error(v.msg, { persist: true }); document.getElementById("txtDni").focus(); return; }
+    if (!v.ok) {
+      Messages.cliente.error(v.msg, { persist: true });
+      document.getElementById("txtDni").focus();
+      return;
+    }
 
     const sel = window.Preorden.idsSeleccionadas();
-    if (!sel.length) { Messages.preorden.error("Debes seleccionar al menos una preorden.", { persist: true }); return; }
+    if (!sel.length) {
+      Messages.preorden.error("Debes seleccionar al menos una preorden.", {
+        persist: true,
+      });
+      return;
+    }
     if (window.Preorden.isStale && window.Preorden.isStale()) {
-      Messages.preorden.error('La selección cambió. Vuelve a presionar "Agregar a la orden".', { persist: true });
+      Messages.preorden.error(
+        'La selección cambió. Vuelve a presionar "Agregar a la orden".',
+        { persist: true }
+      );
       return;
     }
 
     const metodoEntregaId = Number(document.getElementById("cboEntrega").value);
-    const descuento       = Number(document.getElementById("txtDesc").value || 0);
+    const descuento = Number(document.getElementById("txtDesc").value || 0);
 
     if (!validarReadyParaRegistrar()) return;
 
@@ -357,23 +449,39 @@
     sel.forEach((v, i) => payload.append(`idsPreorden[${i}]`, String(v)));
 
     if (isDeliverySelected()) {
-      const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
+      const modo =
+        document.querySelector('input[name="envioModo"]:checked')?.value ||
+        "otra";
       if (modo === "guardada") {
-        const opt   = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+        const opt = document.getElementById("cboDireccionGuardada")
+          ?.selectedOptions?.[0];
         const idSel = opt?.value;
         if (!idSel) {
-          Messages.preorden.error("Selecciona una dirección guardada o elige 'otra'.", { persist: true });
+          Messages.preorden.error(
+            "Selecciona una dirección guardada o elige 'otra'.",
+            { persist: true }
+          );
           return;
         }
         payload.append("direccionEnvioId", String(idSel));
         payload.append("envioReceptorDni", opt?.dataset?.dni || "");
-        payload.append("envioDistrito",   opt?.dataset?.distrito || "");
+        payload.append("envioDistrito", opt?.dataset?.distrito || "");
       } else {
-        const nom   = (document.getElementById("envioNombre")?.value || "").trim();
-        const tel   = (document.getElementById("envioTelefono")?.value || "").trim();
-        const dir   = (document.getElementById("envioDireccion")?.value || "").trim();
-        const dniRec= (document.getElementById("envioReceptorDni")?.value || "").trim();
-        const dis   = (document.getElementById("envioDistrito")?.value || "").trim();
+        const nom = (
+          document.getElementById("envioNombre")?.value || ""
+        ).trim();
+        const tel = (
+          document.getElementById("envioTelefono")?.value || ""
+        ).trim();
+        const dir = (
+          document.getElementById("envioDireccion")?.value || ""
+        ).trim();
+        const dniRec = (
+          document.getElementById("envioReceptorDni")?.value || ""
+        ).trim();
+        const dis = (
+          document.getElementById("envioDistrito")?.value || ""
+        ).trim();
 
         payload.append("envioNombre", nom);
         payload.append("envioTelefono", tel);
@@ -387,7 +495,12 @@
     }
 
     const r = await fetchJSON(url.registrar, { method: "POST", body: payload });
-    if (!r.ok) { Messages.preorden.error(r.error || "No se pudo registrar la orden.", { autoclear: 6500 }); return; }
+    if (!r.ok) {
+      Messages.preorden.error(r.error || "No se pudo registrar la orden.", {
+        autoclear: 6500,
+      });
+      return;
+    }
 
     AppDialog.alert(`Orden #${r.ordenId} generada.`, {
       title: "Orden generada",
@@ -395,7 +508,19 @@
         document.getElementById("btnRegistrar").disabled = true;
         setDirty(false);
         window.Cliente.limpiarCliente();
-        Messages.global.ok(`Orden #${r.ordenId} generada.`, { autoclear: 1500 });
+        Messages.global.ok(`Orden #${r.ordenId} generada.`, {
+          autoclear: 1500,
+        });
+        const cbo = document.getElementById("cboEntrega");
+        if (cbo && cbo.options.length) {
+          let optRecojo = Array.from(cbo.options).find(
+            (o) => !/delivery/i.test((o.textContent || o.label || "").trim())
+          );
+          if (!optRecojo) optRecojo = cbo.options[0];
+
+          cbo.value = optRecojo.value;
+          cbo.dispatchEvent(new Event("change", { bubbles: true }));
+        }
         updateEnvioPanelVisibility();
       },
     });

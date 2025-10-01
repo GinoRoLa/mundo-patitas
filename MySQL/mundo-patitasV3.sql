@@ -337,6 +337,30 @@ CREATE TABLE IF NOT EXISTS t92Ref_Snapshot_DirCatalogo (
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
+
+
+CREATE TABLE t79AsignacionRepartidorVehiculo (
+  Id_Asignacion   INT AUTO_INCREMENT PRIMARY KEY,
+  Id_Trabajador   INT NOT NULL,   -- FK a t16catalogotrabajadores
+  Id_Vehiculo     INT NOT NULL,   -- FK a t78vehiculo
+  Fecha_Inicio    DATE NOT NULL,
+  Fecha_Fin       DATE NULL,
+  Estado          VARCHAR(15) NOT NULL DEFAULT 'Activo',
+
+  CONSTRAINT uq_t79_trabajador UNIQUE (Id_Trabajador),
+  CONSTRAINT uq_t79_vehiculo   UNIQUE (Id_Vehiculo),
+
+  CONSTRAINT fk_t79_t16
+    FOREIGN KEY (Id_Trabajador)
+    REFERENCES t16catalogotrabajadores(Id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+  CONSTRAINT fk_t79_t78
+    FOREIGN KEY (Id_Vehiculo)
+    REFERENCES t78vehiculo(Id_Vehiculo)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
 -- ==========================================================
 -- 5) Compras / Ingresos / Kardex / Salidas / Incidencias
 -- ==========================================================
@@ -461,7 +485,6 @@ CREATE TABLE t09OrdenIngresoAlmacen (
 
 -- ==========================================
 -- t72: Guía de Remisión (cabecera)
---  - NO referencia pedidos ni orden de salida
 --  - SÍ referencia dirección de origen (t73)
 -- ==========================================
 CREATE TABLE IF NOT EXISTS t72GuiaRemision (
@@ -474,8 +497,8 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   RemitenteRUC         VARCHAR(11)  NOT NULL,
   RemitenteRazonSocial VARCHAR(120) NOT NULL,
 
-  -- Destino (snapshot típico desde t71 de la orden)
-  DestinatarioIdCliente INT          NOT NULL,
+  -- Destino (snapshot desde t71 de la orden)
+  -- DestinatarioIdCliente INT          NOT NULL,
   DestinatarioNombre    VARCHAR(120) NOT NULL,
   DniReceptor           VARCHAR(8)   NOT NULL,
   DireccionDestino      VARCHAR(255) NOT NULL,
@@ -484,15 +507,16 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   -- Origen
   Id_DireccionAlmacen   INT NOT NULL,  -- FK -> t73DireccionAlmacen
 
-  -- Transporte (opcional)
-  ModalidadTransporte  ENUM('PROPIO','TERCERO') NOT NULL DEFAULT 'PROPIO',
-  Placa                VARCHAR(10)  NULL,
-  Conductor            VARCHAR(120) NULL,
-  Licencia             VARCHAR(20)  NULL,
+  -- Transporte
+  Id_Asignacion         INT NULL,      -- FK -> t79AsignacionRepartidorVehiculo
+  ModalidadTransporte   VARCHAR(20) NOT NULL DEFAULT 'PROPIO',
+  Placa                 VARCHAR(10)  NULL,     -- Snapshot
+  Conductor             VARCHAR(120) NULL,     -- Snapshot
+  Licencia              VARCHAR(20)  NULL,     -- Snapshot
 
   -- Traslado
-  Motivo               VARCHAR(30) NOT NULL DEFAULT 'Venta',
-  FechaInicioTraslado  DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Motivo                VARCHAR(30) NOT NULL DEFAULT 'Venta',
+  FechaInicioTraslado   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
   PRIMARY KEY (Id_Guia),
   UNIQUE KEY uq_t72_numero (Numero),
@@ -500,7 +524,13 @@ CREATE TABLE IF NOT EXISTS t72GuiaRemision (
   CONSTRAINT fk_t72_origen
     FOREIGN KEY (Id_DireccionAlmacen)
     REFERENCES t73DireccionAlmacen (Id_DireccionAlmacen)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+  CONSTRAINT fk_t72_asignacion
+    FOREIGN KEY (Id_Asignacion)
+    REFERENCES t79AsignacionRepartidorVehiculo (Id_Asignacion)
     ON UPDATE RESTRICT ON DELETE RESTRICT
+
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE INDEX idx_t72_estado_emision ON t72GuiaRemision (Estado, Fec_Emision);
@@ -832,12 +862,17 @@ CREATE TABLE t402HojaRuta (
 ) ENGINE=InnoDB AUTO_INCREMENT=82001;
 
 CREATE TABLE t403OrdenSalidaEntrega (
-  IDOrdenSalidaEntrega INT NOT NULL AUTO_INCREMENT,
-  Id_OrdenPedido INT NOT NULL,
-  Estado VARCHAR(15),
-  CONSTRAINT t403OrdenSalidaEntrega_pk PRIMARY KEY (IDOrdenSalidaEntrega),
-  CONSTRAINT fk_t403_t02 FOREIGN KEY (Id_OrdenPedido)
+  Id_ordenSalida INT NOT NULL AUTO_INCREMENT,
+  t02OrdenPedido_Id_OrdenPedido INT NOT NULL,
+  Fec_Transaccion DATE NOT NULL,
+  Tipo_Movimiento VARCHAR(10) NOT NULL,
+  id_Trabajador INT NOT NULL,
+  CONSTRAINT t11OrdenSalida_pk PRIMARY KEY (Id_ordenSalida),
+  CONSTRAINT fk_t11_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT fk_t403_t16 FOREIGN KEY (id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=83001;
 

@@ -1,4 +1,7 @@
-USE mundo_patitas2;
+
+-- AUN FALTA ACTUALIZAR
+
+USE mundo_patitas3;
 
 -- ==========================================================
 -- 1) Almacenes y Trabajadores
@@ -11,14 +14,16 @@ VALUES
   (3, 'Almacén Sur',     'Jr. Sur 456',       'VILLA EL SALVADOR','Activo');
 
 INSERT INTO t16CatalogoTrabajadores
-  (id_Trabajador, DNITrabajador, des_apepatTrabajador, des_apematTrabajador, des_nombreTrabajador, num_telefono, direccion, email, cargo, estado, Id_DireccionAlmacen)
+  (id_Trabajador, DNITrabajador, des_apepatTrabajador, des_apematTrabajador, des_nombreTrabajador, num_telefono, direccion, email, cargo, estado)
 VALUES
-  (50001, '33333333', 'Pérez',  'Lopez',  'María',  '999111222', 'Av. Central 123',    'maria.perez@mp.com',  'Cajero',  'Activo', 1),
-  (50002, '44444444', 'García', 'Torres', 'Carlos', '999222333', 'Calle Falsa 742',    'carlos.garcia@mp.com','Vendedor','Activo', 1),
-  (50003, '55555555', 'Ramos',  'Vera',   'Lucía',  '999333444', 'Jr. Las Flores 321', 'lucia.ramos@mp.com',  'Almacén', 'Activo', 1),
-  (50004, '22222222', 'Flores', 'Diaz',   'Carla',  '988222333', 'Mz B Lt 2',          'carla.flores@demo.com','Responsable de Pedidos','Activo', 1),
-  (50005, '66666666', 'López',  'Mora',   'Ana',    '999444555', 'Av. Secundaria 456', 'ana.lopez@mp.com',   'Responsable de Almacén', 'Activo', 1),
-  (50006, '77777777', 'Martín', 'Salas',  'José',   '999555666', 'Av. Terciaria 789',  'jose.martin@mp.com',  'Responsable de Almacén', 'Activo', 2);
+  (50001, '33333333', 'Pérez',  'Lopez',  'María',  '999111222', 'Av. Central 123',    'maria.perez@mp.com',  'Cajero',  'Activo'),
+  (50002, '44444444', 'García', 'Torres', 'Carlos', '999222333', 'Calle Falsa 742',    'carlos.garcia@mp.com','Vendedor','Activo'),
+  (50003, '55555555', 'Ramos',  'Vera',   'Lucía',  '999333444', 'Jr. Las Flores 321', 'lucia.ramos@mp.com',  'Almacén', 'Activo'),
+  (50004, '22222222', 'Flores', 'Diaz',   'Carla',  '988222333', 'Mz B Lt 2',          'carla.flores@demo.com','Responsable de Pedidos','Activo'),
+  (50005, '66666666', 'López',  'Mora',   'Ana',    '999444555', 'Av. Secundaria 456', 'ana.lopez@mp.com',   'Responsable de Almacén', 'Activo'),
+  (50006, '77777777', 'Martín', 'Salas',  'José',   '999555666', 'Av. Terciaria 789',  'jose.martin@mp.com',  'Responsable de Almacén', 'Activo');
+
+INSERT INTO t93TrabajadoresAlmacenes VALUES (50005, 1);
 
 -- ==========================================================
 -- 2) Catálogos de producto base

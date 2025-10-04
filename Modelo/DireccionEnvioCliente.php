@@ -11,10 +11,10 @@ final class DireccionEnvioCliente {
     if ($nombre === '') return null;
 
     $sql = "SELECT Id_Distrito
-            FROM t77DistritoEnvio
-            WHERE UPPER(TRIM(DescNombre)) = UPPER(TRIM(?))
-              AND UPPER(TRIM(Estado)) IN ('ACTIVO','ACTIVE')
-            LIMIT 1";
+              FROM t77DistritoEnvio
+             WHERE UPPER(TRIM(DescNombre)) = UPPER(TRIM(?))
+               AND UPPER(TRIM(Estado)) IN ('ACTIVO','ACTIVE')
+             LIMIT 1";
     $st = mysqli_prepare($this->cn, $sql);
     if (!$st) throw new RuntimeException(mysqli_error($this->cn));
     mysqli_stmt_bind_param($st, "s", $nombre);
@@ -25,27 +25,25 @@ final class DireccionEnvioCliente {
     return $row ? (int)$row['Id_Distrito'] : null;
   }
 
-  /** Inserta snapshot COMPLETO en t71 (incluye Id_Distrito si se pudo resolver) */
+  /** Inserta snapshot en t71 (sin DistritoSnap: solo guarda Id_Distrito FK si se pudo resolver). */
   private function insertarSnapshotConOrden(
     int $ordenId,
     string $nombreSnap,
     string $telSnap,
     string $dirSnap,
-    string $distritoSnap,
-    string $dniRecepcionSnap
+    string $dniRecepcionSnap,
+    ?int $idDistritoSnap
   ): int {
-    // Resolve Id_Distrito (puede ser null si no hay match)
-    $idDistritoSnap = $this->buscarIdDistritoPorNombre($distritoSnap);
-
     $sql = "INSERT INTO t71OrdenDirecEnvio
-              (Id_OrdenPedido, NombreContactoSnap, TelefonoSnap, DireccionSnap, DistritoSnap, ReceptorDniSnap, Id_Distrito)
-            VALUES (?,?,?,?,?,?,?)";
+              (Id_OrdenPedido, NombreContactoSnap, TelefonoSnap, DireccionSnap, ReceptorDniSnap, Id_Distrito)
+            VALUES (?,?,?,?,?,?)";
     $st = mysqli_prepare($this->cn, $sql);
     if (!$st) { throw new RuntimeException(mysqli_error($this->cn)); }
 
-    // tipos: i s s s s s i  (el último puede ser NULL y MySQL lo acepta)
-    mysqli_stmt_bind_param($st, "isssssi",
-      $ordenId, $nombreSnap, $telSnap, $dirSnap, $distritoSnap, $dniRecepcionSnap, $idDistritoSnap
+    // tipos: i s s s s i  (MySQL aceptará NULL en el último si la columna permite NULL)
+    mysqli_stmt_bind_param(
+      $st, "issssi",
+      $ordenId, $nombreSnap, $telSnap, $dirSnap, $dniRecepcionSnap, $idDistritoSnap
     );
     mysqli_stmt_execute($st);
     $id = mysqli_insert_id($this->cn);
@@ -63,7 +61,6 @@ final class DireccionEnvioCliente {
     mysqli_stmt_close($st);
   }
 
-  /* ==================== CRUD t70 ==================== */
 
   public function listarPorClienteId(int $idCliente): array {
     $sql = "SELECT
@@ -137,18 +134,23 @@ final class DireccionEnvioCliente {
       throw new InvalidArgumentException('DNI del receptor debe tener 8 dígitos.');
     }
 
+    // Resolver Id_Distrito a partir del nombre almacenado en t70
+    $idDistrito = $this->buscarIdDistritoPorNombre($row['DistritoNombre'] ?? null);
+
     return $this->insertarSnapshotConOrden(
       $ordenId,
-      $row['NombreContacto']     ?? '',
-      $row['TelefonoContacto']   ?? '',
-      $row['Direccion']          ?? '',
-      $row['DistritoNombre']     ?? '',
-      $dni
+      $row['NombreContacto']   ?? '',
+      $row['TelefonoContacto'] ?? '',
+      $row['Direccion']        ?? '',
+      $dni,
+      $idDistrito
     );
   }
 
   public function crearSnapshotDesdeOtra(
-    int $ordenId, int $idCliente, string $nombre, string $tel, string $dir, string $distrito, string $receptorDniSnap, bool $guardarEnCatalogo = false
+    int $ordenId, int $idCliente,
+    string $nombre, string $tel, string $dir, string $distrito, string $receptorDniSnap,
+    bool $guardarEnCatalogo = false
   ): int {
     $nombre=trim($nombre); $tel=trim($tel); $dir=trim($dir); $distrito=trim($distrito);
     if ($nombre==='' || $tel==='' || $dir==='' || $distrito==='') {
@@ -158,11 +160,17 @@ final class DireccionEnvioCliente {
       throw new InvalidArgumentException('DNI del receptor debe tener 8 dígitos.');
     }
 
-    $snapId = $this->insertarSnapshotConOrden($ordenId, $nombre, $tel, $dir, $distrito, $receptorDniSnap);
+    // Resolver Id_Distrito a partir del nombre ingresado por el usuario
+    $idDistrito = $this->buscarIdDistritoPorNombre($distrito);
+
+    $snapId = $this->insertarSnapshotConOrden(
+      $ordenId, $nombre, $tel, $dir, $receptorDniSnap, $idDistrito
+    );
 
     if ($guardarEnCatalogo) {
       $this->insertar($idCliente, $nombre, $tel, $receptorDniSnap, $dir, $distrito);
-      // Si quieres también enlazar snapshot↔catálogo: $this->vincularCatalogoASnapshot($snapId, $idDir);
+      // Si quieres, enlaza snapshot↔catálogo:
+      // $this->vincularCatalogoASnapshot($snapId, $idDir);
     }
     return $snapId;
   }

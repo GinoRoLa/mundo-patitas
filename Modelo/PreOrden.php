@@ -77,31 +77,6 @@ final class PreOrden
     return $out;
   }
 
-
-  // Marcar como procesadas y vincular a la orden
-  /* public function procesarYVincular(array $idsPreorden, int $ordenId): int{
-    if (empty($idsPreorden)) return 0;
-    $idsPreorden = array_values(array_unique(array_map('intval', $idsPreorden)));
-
-    $in = implode(',', array_fill(0, count($idsPreorden), '?'));
-    $types = str_repeat('i', count($idsPreorden) + 1); // ordenId + ids
-
-    $sql = "UPDATE t01PreOrdenPedido
-                   SET Estado='Procesado',
-                       t02OrdenPedido_Id_OrdenPedido = ?
-                 WHERE Id_PreOrdenPedido IN ($in)
-                   AND Estado='Emitido'";
-    $st = mysqli_prepare($this->cn, $sql);
-    if (!$st) throw new RuntimeException(mysqli_error($this->cn));
-
-    $params = array_merge([$ordenId], $idsPreorden);
-    mysqli_stmt_bind_param($st, $types, ...$params);
-    mysqli_stmt_execute($st);
-    $aff = mysqli_stmt_affected_rows($st);
-    mysqli_stmt_close($st);
-    return $aff;
-  } */
-
 public function procesarYVincular(array $ids, int $ordenId): array {
   // normaliza a ints
   $ids = array_values(array_unique(array_map(function($v){

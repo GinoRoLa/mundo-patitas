@@ -1,35 +1,72 @@
 -- ==========================================================
 -- Mundo Patitas - Script Definitivo (MySQL 8 / InnoDB / utf8mb4)
--- Con PK numéricas (id_Trabajador, Id_Cliente) y seeds diferenciadas
--- Versión: V3 (t27 sin costo, t77 normalizado, t71 enlazado a t77)
+-- V3 FIXED: orden de creación, FKs coherentes, nombres consistentes
 -- ==========================================================
 
-DROP DATABASE IF EXISTS mundo_patitas2;
-CREATE DATABASE mundo_patitas2
+DROP DATABASE IF EXISTS mundo_patitas3;
+CREATE DATABASE mundo_patitas3
   DEFAULT CHARACTER SET utf8mb4
   DEFAULT COLLATE utf8mb4_0900_ai_ci;
-USE mundo_patitas2;
+USE mundo_patitas3;
 
--- Endurecer chequeos
 SET sql_mode = 'STRICT_ALL_TABLES,ERROR_FOR_DIVISION_BY_ZERO,NO_ENGINE_SUBSTITUTION';
 
--- ==========================================
--- t73: Direcciones de origen (almacenes)
--- ==========================================
-CREATE TABLE IF NOT EXISTS t73DireccionAlmacen (
-  Id_DireccionAlmacen INT NOT NULL AUTO_INCREMENT,
-  NombreAlmacen VARCHAR(120) NOT NULL,
-  DireccionOrigen VARCHAR(255) NOT NULL,
-  DistritoOrigen VARCHAR(120) NOT NULL,
-  Estado VARCHAR(20) NOT NULL,
-  PRIMARY KEY (Id_DireccionAlmacen)
-) ENGINE=InnoDB;
+-- ==========================================================
+-- 0) Catálogos sin dependencias directas
+-- ==========================================================
+CREATE TABLE t31CategoriaProducto (
+  Id_Categoria INT NOT NULL AUTO_INCREMENT,
+  Descripcion VARCHAR(50) NOT NULL,
+  PRIMARY KEY (Id_Categoria)
+) ENGINE=InnoDB AUTO_INCREMENT=21001;
+
+CREATE TABLE t34UnidadMedida (
+  Id_UnidadMedida INT NOT NULL AUTO_INCREMENT,
+  Descripcion VARCHAR(30) NOT NULL,
+  PRIMARY KEY (Id_UnidadMedida)
+) ENGINE=InnoDB AUTO_INCREMENT=24001;
+
+CREATE TABLE t37DetalleRequerimiento (
+  Id_DetaRequerimiento INT NOT NULL AUTO_INCREMENT,
+  Observacion VARCHAR(200),
+  PRIMARY KEY (Id_DetaRequerimiento)
+) ENGINE=InnoDB AUTO_INCREMENT=37001;
+
+CREATE TABLE t28_Metodopago (
+  Id_MetodoPago INT NOT NULL AUTO_INCREMENT,
+  Descripcion VARCHAR(40) NOT NULL,
+  PRIMARY KEY (Id_MetodoPago)
+) ENGINE=InnoDB AUTO_INCREMENT=28001;
+
+CREATE TABLE t30TipoBanco (
+  Id_TipoBanco INT NOT NULL AUTO_INCREMENT,
+  Descripcion VARCHAR(40) NOT NULL,
+  PRIMARY KEY (Id_TipoBanco)
+) ENGINE=InnoDB AUTO_INCREMENT=30001;
+
+-- Zonas y Distritos (para que estén disponibles antes de t73/t71)
+CREATE TABLE t76ZonaEnvio (
+  Id_Zona INT NOT NULL,
+  DescZona VARCHAR(100) NOT NULL,
+  Estado VARCHAR(15) NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (Id_Zona)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE t77DistritoEnvio (
+  Id_Distrito INT NOT NULL,
+  Id_Zona     INT NOT NULL,
+  DescNombre  VARCHAR(120) NOT NULL,
+  MontoCosto  DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (MontoCosto >= 0),
+  Estado      VARCHAR(15) NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (Id_Distrito),
+  CONSTRAINT fk_t77_t76 FOREIGN KEY (Id_Zona)
+    REFERENCES t76ZonaEnvio(Id_Zona)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 -- ==========================================================
--- 1) Catálogos / Maestras mínimas
+-- 1) Personas
 -- ==========================================================
-
--- Clientes ahora con PK numérica y DNI único
 CREATE TABLE t20Cliente (
   Id_Cliente INT NOT NULL AUTO_INCREMENT,
   DniCli VARCHAR(8) NOT NULL,
@@ -40,12 +77,11 @@ CREATE TABLE t20Cliente (
   email_cliente VARCHAR(35) NOT NULL,
   direccionCliente VARCHAR(50) NOT NULL,
   estado VARCHAR(15) NOT NULL,
-  CONSTRAINT t20Cliente_pk PRIMARY KEY (Id_Cliente),
-  CONSTRAINT uq_t20_dni UNIQUE (DniCli)
+  PRIMARY KEY (Id_Cliente),
+  UNIQUE KEY uq_t20_dni (DniCli)
 ) ENGINE=InnoDB AUTO_INCREMENT=60001;
 
--- Trabajadores con PK numérica y DNI único
-CREATE TABLE IF NOT EXISTS t16CatalogoTrabajadores (
+CREATE TABLE t16CatalogoTrabajadores (
   id_Trabajador INT NOT NULL AUTO_INCREMENT,
   DNITrabajador VARCHAR(8) NOT NULL,
   des_apepatTrabajador VARCHAR(40) NOT NULL,
@@ -56,36 +92,13 @@ CREATE TABLE IF NOT EXISTS t16CatalogoTrabajadores (
   email VARCHAR(100) NOT NULL,
   cargo VARCHAR(40) NOT NULL,
   estado VARCHAR(15) NOT NULL,
-  Id_DireccionAlmacen INT,
-  CONSTRAINT t16CatalogoTrabajadores_pk PRIMARY KEY (id_Trabajador),
-  CONSTRAINT uq_t16_dni UNIQUE (DNITrabajador),
-  CONSTRAINT fk_DireccionAlmacen FOREIGN KEY (Id_DireccionAlmacen)
-    REFERENCES t73DireccionAlmacen(Id_DireccionAlmacen)
+  PRIMARY KEY (id_Trabajador),
+  UNIQUE KEY uq_t16_dni (DNITrabajador)
 ) ENGINE=InnoDB AUTO_INCREMENT=50001;
-
-CREATE TABLE t31CategoriaProducto (
-  Id_Categoria INT NOT NULL AUTO_INCREMENT,
-  Descripcion VARCHAR(50) NOT NULL,
-  CONSTRAINT t31CategoriaProducto_pk PRIMARY KEY (Id_Categoria)
-) ENGINE=InnoDB AUTO_INCREMENT=21001;
-
-CREATE TABLE t34UnidadMedida (
-  Id_UnidadMedida INT NOT NULL AUTO_INCREMENT,
-  Descripcion VARCHAR(30) NOT NULL,
-  CONSTRAINT t34UnidadMedida_pk PRIMARY KEY (Id_UnidadMedida)
-) ENGINE=InnoDB AUTO_INCREMENT=24001;
-
-CREATE TABLE t37DetalleRequerimiento (
-  Id_DetaRequerimiento INT NOT NULL AUTO_INCREMENT,
-  Observacion VARCHAR(200),
-  CONSTRAINT t37DetalleRequerimiento_pk PRIMARY KEY (Id_DetaRequerimiento)
-) ENGINE=InnoDB AUTO_INCREMENT=37001;
 
 -- ==========================================================
 -- 2) Productos / Proveedores
 -- ==========================================================
-
--- OJO: nombre estandarizado t18CatalogoProducto (C mayúscula) para coincidir con todas las FKs
 CREATE TABLE t18CatalogoProducto (
   Id_Producto INT NOT NULL AUTO_INCREMENT,
   NombreProducto VARCHAR(100) NOT NULL,
@@ -96,6 +109,8 @@ CREATE TABLE t18CatalogoProducto (
   StockMinimo INT NOT NULL,
   StockMaximo INT NOT NULL,
   Estado VARCHAR(15) NOT NULL,
+  Peso DECIMAL(8,2) NOT NULL COMMENT 'kg',
+  Volumen DECIMAL(8,2) NOT NULL COMMENT 'litros',
   t31CategoriaProducto_Id_Categoria INT NOT NULL,
   t34UnidadMedida_Id_UnidadMedida INT NOT NULL,
   PRIMARY KEY (Id_Producto),
@@ -108,19 +123,18 @@ CREATE TABLE t18CatalogoProducto (
   CONSTRAINT fk_t18_unidad FOREIGN KEY (t34UnidadMedida_Id_UnidadMedida)
     REFERENCES t34UnidadMedida (Id_UnidadMedida)
     ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT t18catalogoproducto_chk_1 CHECK (PrecioUnitario >= 0),
-  CONSTRAINT t18catalogoproducto_chk_2 CHECK (StockActual >= 0),
-  CONSTRAINT t18catalogoproducto_chk_3 CHECK (StockMinimo >= 0),
-  CONSTRAINT t18catalogoproducto_chk_4 CHECK (StockMaximo >= 0)
+  CONSTRAINT t18_chk_precio CHECK (PrecioUnitario >= 0),
+  CONSTRAINT t18_chk_stock1 CHECK (StockActual >= 0),
+  CONSTRAINT t18_chk_stock2 CHECK (StockMinimo >= 0),
+  CONSTRAINT t18_chk_stock3 CHECK (StockMaximo >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=1031;
 
--- (Opcional) catálogo legacy no referenciado
 CREATE TABLE t58Producto (
   Id_Producto INT NOT NULL AUTO_INCREMENT,
   nombre VARCHAR(60) NOT NULL,
   descripcion VARCHAR(200) NOT NULL,
   precio DECIMAL(12,2) NOT NULL CHECK (precio >= 0),
-  CONSTRAINT t58Producto_pk PRIMARY KEY (Id_Producto)
+  PRIMARY KEY (Id_Producto)
 ) ENGINE=InnoDB AUTO_INCREMENT=58001;
 
 CREATE TABLE t17CatalogoProveedor (
@@ -131,51 +145,85 @@ CREATE TABLE t17CatalogoProveedor (
   Correo VARCHAR(100) NOT NULL,
   estado VARCHAR(15) NOT NULL,
   t18CatalogoProducto_Id_Producto INT NOT NULL,
-  CONSTRAINT t17CatalogoProveedor_pk PRIMARY KEY (Id_NumRuc),
-  CONSTRAINT fk_t17_prod
-    FOREIGN KEY (t18CatalogoProducto_Id_Producto)
+  PRIMARY KEY (Id_NumRuc),
+  KEY fk_t17_prod (t18CatalogoProducto_Id_Producto),
+  CONSTRAINT fk_t17_prod FOREIGN KEY (t18CatalogoProducto_Id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- ==========================================================
--- 3) Catálogos de Pago (antes de ventas, para FKs)
+-- 3) Métodos de entrega / direcciones / zonas
 -- ==========================================================
-
-CREATE TABLE t28_Metodopago (
-  Id_MetodoPago INT NOT NULL AUTO_INCREMENT,
-  Descripcion VARCHAR(40) NOT NULL,
-  CONSTRAINT t28_Metodopago_pk PRIMARY KEY (Id_MetodoPago)
-) ENGINE=InnoDB AUTO_INCREMENT=28001;
-
-CREATE TABLE t30TipoBanco (
-  Id_TipoBanco INT NOT NULL AUTO_INCREMENT,
-  Descripcion VARCHAR(40) NOT NULL,
-  CONSTRAINT t30TipoBanco_pk PRIMARY KEY (Id_TipoBanco)
-) ENGINE=InnoDB AUTO_INCREMENT=30001;
-
--- ==========================================================
--- 4) Ventas: Orden / Preorden / Comprobante / Pagos / Entrega
--- ==========================================================
-
--- t27 sin Costo (el costo lo aporta t77 + snapshot en t02)
 CREATE TABLE t27MetodoEntrega (
   Id_MetodoEntrega INT NOT NULL AUTO_INCREMENT,
   Descripcion VARCHAR(40) NOT NULL,
   Estado VARCHAR(20) NOT NULL,
-  CONSTRAINT t27MetodoEntrega_pk PRIMARY KEY (Id_MetodoEntrega)
+  PRIMARY KEY (Id_MetodoEntrega)
 ) ENGINE=InnoDB AUTO_INCREMENT=9001;
 
+-- Catálogo de direcciones del cliente
+CREATE TABLE t70DireccionEnvioCliente (
+  Id_DireccionEnvio INT AUTO_INCREMENT PRIMARY KEY,
+  Id_Cliente        INT NOT NULL,
+  NombreContacto    VARCHAR(120) NOT NULL,
+  TelefonoContacto  VARCHAR(20)  NOT NULL,
+  Direccion         VARCHAR(255) NOT NULL,
+  Distrito          VARCHAR(120) NOT NULL,
+  DniReceptor       VARCHAR(8)   NOT NULL,
+  INDEX idx_t70_cliente  (Id_Cliente),
+  INDEX idx_t70_distrito (Distrito),
+  CONSTRAINT fk_t70_cliente FOREIGN KEY (Id_Cliente)
+    REFERENCES t20Cliente (Id_Cliente)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Direcciones de origen (almacenes) - ya existe t77
+CREATE TABLE t73DireccionAlmacen (
+  Id_DireccionAlmacen INT NOT NULL AUTO_INCREMENT,
+  NombreAlmacen       VARCHAR(120) NOT NULL,
+  DireccionOrigen     VARCHAR(255) NOT NULL,
+  Id_Distrito         INT NOT NULL,
+  Estado              VARCHAR(20) NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (Id_DireccionAlmacen),
+  KEY fk_t73_t77 (Id_Distrito),
+  CONSTRAINT fk_t73_t77 FOREIGN KEY (Id_Distrito)
+    REFERENCES t77DistritoEnvio(Id_Distrito)
+    ON UPDATE CASCADE ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- Puente trabajadores ↔ almacenes
+CREATE TABLE t94TrabajadoresAlmacenes (
+  id_Trabajador INT NOT NULL,
+  Id_DireccionAlmacen INT NOT NULL,
+  PRIMARY KEY (id_Trabajador, Id_DireccionAlmacen),
+  KEY fk_t94_t16 (id_Trabajador),
+  KEY fk_t94_t73 (Id_DireccionAlmacen),
+  CONSTRAINT fk_t94_t16 FOREIGN KEY (id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores(id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT fk_t94_t73 FOREIGN KEY (Id_DireccionAlmacen)
+    REFERENCES t73DireccionAlmacen(Id_DireccionAlmacen)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
+
+-- ==========================================================
+-- 4) Ventas: Orden / Preorden / comprobantes / OSE
+-- ==========================================================
 CREATE TABLE t02OrdenPedido (
   Id_OrdenPedido INT NOT NULL AUTO_INCREMENT,
   Fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Id_Cliente INT NOT NULL,
-  Id_MetodoEntrega INT,
-  CostoEntrega DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (CostoEntrega >= 0), -- snapshot
+  Id_MetodoEntrega INT NULL,
+  CostoEntrega DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (CostoEntrega >= 0),
   Descuento    DECIMAL(10,2) NOT NULL DEFAULT 0 CHECK (Descuento >= 0),
   Total        DECIMAL(12,2) NOT NULL DEFAULT 0 CHECK (Total >= 0),
+  Peso_total        DECIMAL(12,2) NOT NULL,
+  Volumen_total        DECIMAL(12,2) NOT NULL,
   Estado VARCHAR(15),
-  CONSTRAINT t02OrdenPedido_pk PRIMARY KEY (Id_OrdenPedido),
+  PRIMARY KEY (Id_OrdenPedido),
+  KEY fk_t02_cliente (Id_Cliente),
+  KEY fk_t02_metodo (Id_MetodoEntrega),
   CONSTRAINT fk_t02_cliente FOREIGN KEY (Id_Cliente)
     REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -184,7 +232,6 @@ CREATE TABLE t02OrdenPedido (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=10001;
 
--- Preorden
 CREATE TABLE t01PreOrdenPedido (
   Id_PreOrdenPedido INT NOT NULL AUTO_INCREMENT,
   t20Cliente_Id_Cliente INT NULL,
@@ -193,13 +240,11 @@ CREATE TABLE t01PreOrdenPedido (
   Total DECIMAL(10,2) DEFAULT 0.00,
   PRIMARY KEY (Id_PreOrdenPedido),
   KEY idx_preorden_cliente_estado_fec (t20Cliente_Id_Cliente, Estado, Fec_Emision),
-  CONSTRAINT fk_t01_cliente
-    FOREIGN KEY (t20Cliente_Id_Cliente)
+  CONSTRAINT fk_t01_cliente FOREIGN KEY (t20Cliente_Id_Cliente)
     REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=10;
 
--- Vinculación Preorden ↔ Orden
 CREATE TABLE t90PreOrden_OrdenPedido (
   Id                INT NOT NULL AUTO_INCREMENT,
   Id_OrdenPedido    INT NOT NULL,
@@ -208,12 +253,12 @@ CREATE TABLE t90PreOrden_OrdenPedido (
   PRIMARY KEY (Id),
   UNIQUE KEY uq_t90_par (Id_OrdenPedido, Id_PreOrdenPedido),
   UNIQUE KEY uq_t90_preorden_unica (Id_PreOrdenPedido),
-  CONSTRAINT fk_t90_orden
-    FOREIGN KEY (Id_OrdenPedido)
+  KEY fk_t90_orden (Id_OrdenPedido),
+  KEY fk_t90_preorden (Id_PreOrdenPedido),
+  CONSTRAINT fk_t90_orden FOREIGN KEY (Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE CASCADE,
-  CONSTRAINT fk_t90_preorden
-    FOREIGN KEY (Id_PreOrdenPedido)
+  CONSTRAINT fk_t90_preorden FOREIGN KEY (Id_PreOrdenPedido)
     REFERENCES t01PreOrdenPedido (Id_PreOrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
@@ -223,7 +268,9 @@ CREATE TABLE t03ComprobantePago (
   Tipo VARCHAR(20),
   Id_MetodoPago INT NULL,
   Id_TipoBanco  INT NULL,
-  CONSTRAINT t03ComprobantePago_pk PRIMARY KEY (Nro_ComproPago),
+  PRIMARY KEY (Nro_ComproPago),
+  KEY fk_cmp_metodo (Id_MetodoPago),
+  KEY fk_cmp_banco (Id_TipoBanco),
   CONSTRAINT fk_cmp_metodo FOREIGN KEY (Id_MetodoPago)
     REFERENCES t28_Metodopago (Id_MetodoPago)
     ON UPDATE RESTRICT ON DELETE SET NULL,
@@ -239,8 +286,9 @@ CREATE TABLE t59OrdenServicioEntrega (
   Estado           VARCHAR(20),
   FecCreacion      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   FecModificacion  DATETIME NULL,
-  CONSTRAINT pk_t59 PRIMARY KEY (Id_OSE),
-  CONSTRAINT uq_t59_orden UNIQUE (Id_OrdenPedido),
+  PRIMARY KEY (Id_OSE),
+  UNIQUE KEY uq_t59_orden (Id_OrdenPedido),
+  KEY fk_t59_orden (Id_OrdenPedido),
   CONSTRAINT fk_t59_orden FOREIGN KEY (Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE CASCADE
@@ -249,7 +297,8 @@ CREATE TABLE t59OrdenServicioEntrega (
 CREATE TABLE t04Factura (
   Id_Factura INT NOT NULL AUTO_INCREMENT,
   Nro_ComproPago INT,
-  CONSTRAINT t04Factura_pk PRIMARY KEY (Id_Factura),
+  PRIMARY KEY (Id_Factura),
+  KEY fk_t04_cmp (Nro_ComproPago),
   CONSTRAINT fk_t04_cmp FOREIGN KEY (Nro_ComproPago)
     REFERENCES t03ComprobantePago (Nro_ComproPago)
     ON UPDATE RESTRICT ON DELETE SET NULL
@@ -258,119 +307,190 @@ CREATE TABLE t04Factura (
 CREATE TABLE t05Boleta (
   Id_Boleta INT NOT NULL AUTO_INCREMENT,
   Nro_ComproPago INT,
-  CONSTRAINT t05Boleta_pk PRIMARY KEY (Id_Boleta),
+  PRIMARY KEY (Id_Boleta),
+  KEY fk_t05_cmp (Nro_ComproPago),
   CONSTRAINT fk_t05_cmp FOREIGN KEY (Nro_ComproPago)
     REFERENCES t03ComprobantePago (Nro_ComproPago)
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=105001;
 
--- ============================================
--- Catálogo de direcciones del cliente (t70)
--- ============================================
-CREATE TABLE IF NOT EXISTS t70DireccionEnvioCliente (
-  Id_DireccionEnvio INT AUTO_INCREMENT PRIMARY KEY,
-  Id_Cliente        INT NOT NULL,
-  NombreContacto    VARCHAR(120) NOT NULL,
-  TelefonoContacto  VARCHAR(20)  NOT NULL,
-  Direccion         VARCHAR(255) NOT NULL,
-  Distrito          VARCHAR(120) NOT NULL,
-  DniReceptor       VARCHAR(8)   NOT NULL,
-  INDEX idx_t70_cliente  (Id_Cliente),
-  INDEX idx_t70_distrito (Distrito),
-  CONSTRAINT fk_t70_cliente
-    FOREIGN KEY (Id_Cliente)
-    REFERENCES t20Cliente (Id_Cliente)
-    ON UPDATE CASCADE ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- =====================================================
--- t77: Distritos de Envío (normalizado + costo base)
--- =====================================================
-DROP TABLE IF EXISTS t77DistritoEnvio;
-CREATE TABLE IF NOT EXISTS t77DistritoEnvio (
-  Id_Distrito INT NOT NULL AUTO_INCREMENT,
-  DescNombre  VARCHAR(120) NOT NULL,                 -- Ej: "San Martín de Porres"
-  MontoCosto  DECIMAL(10,2) NOT NULL DEFAULT 0.00 CHECK (MontoCosto >= 0),
-  Estado      VARCHAR(15)  NOT NULL,                 -- 'Activo' / 'Inactivo'
-  PRIMARY KEY (Id_Distrito)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- =====================================================
--- Snapshot por orden (t71) 1:1 con la orden de pedido
---  + FK opcional a t77 para reportes/tarifación
--- =====================================================
-CREATE TABLE IF NOT EXISTS t71OrdenDirecEnvio (
+-- ==========================================================
+-- 5) Snapshot dirección por orden y referencia a catálogo
+-- ==========================================================
+CREATE TABLE t71OrdenDirecEnvio (
   Id_OrdenDirecEnvio INT AUTO_INCREMENT PRIMARY KEY,
   Id_OrdenPedido     INT NOT NULL,
   NombreContactoSnap VARCHAR(120) NOT NULL,
   TelefonoSnap       VARCHAR(20)  NOT NULL,
   DireccionSnap      VARCHAR(255) NOT NULL,
-  DistritoSnap       VARCHAR(120) NOT NULL,
   ReceptorDniSnap    VARCHAR(8)   NOT NULL,
-  Id_Distrito        INT NULL, -- nuevo enlace con t77
-
+  Id_Distrito        INT NULL,
   UNIQUE KEY uq_t71_orden (Id_OrdenPedido),
-
-  CONSTRAINT fk_t71_orden
-    FOREIGN KEY (Id_OrdenPedido)
+  KEY fk_t71_orden (Id_OrdenPedido),
+  KEY fk_t71_distrito (Id_Distrito),
+  CONSTRAINT fk_t71_orden FOREIGN KEY (Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE CASCADE ON DELETE CASCADE,
-
-  CONSTRAINT fk_t71_distrito
-    FOREIGN KEY (Id_Distrito)
+  CONSTRAINT fk_t71_distrito FOREIGN KEY (Id_Distrito)
     REFERENCES t77DistritoEnvio (Id_Distrito)
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Relación snapshot ↔ catálogo de dirección (opcional, se mantiene)
-CREATE TABLE IF NOT EXISTS t92Ref_Snapshot_DirCatalogo (
+CREATE TABLE t92Ref_Snapshot_DirCatalogo (
   Id                  INT AUTO_INCREMENT PRIMARY KEY,
   Id_OrdenDirecEnvio  INT NOT NULL,
   Id_DireccionEnvio   INT NOT NULL,
   UNIQUE KEY uq_t92_snapshot (Id_OrdenDirecEnvio),
-  INDEX idx_t92_dir (Id_DireccionEnvio),
-  CONSTRAINT fk_t92_t71
-    FOREIGN KEY (Id_OrdenDirecEnvio) REFERENCES t71OrdenDirecEnvio (Id_OrdenDirecEnvio)
+  KEY idx_t92_dir (Id_DireccionEnvio),
+  CONSTRAINT fk_t92_t71 FOREIGN KEY (Id_OrdenDirecEnvio)
+    REFERENCES t71OrdenDirecEnvio (Id_OrdenDirecEnvio)
     ON UPDATE CASCADE ON DELETE CASCADE,
-  CONSTRAINT fk_t92_t70
-    FOREIGN KEY (Id_DireccionEnvio)  REFERENCES t70DireccionEnvioCliente (Id_DireccionEnvio)
+  CONSTRAINT fk_t92_t70 FOREIGN KEY (Id_DireccionEnvio)
+    REFERENCES t70DireccionEnvioCliente (Id_DireccionEnvio)
     ON UPDATE CASCADE ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-
+-- ==========================================================
+-- 6) Flota y asignaciones
+-- ==========================================================
+CREATE TABLE t78Vehiculo (
+  Id_Vehiculo   INT AUTO_INCREMENT PRIMARY KEY,
+  Marca         VARCHAR(60) NOT NULL,
+  Modelo        VARCHAR(60) NULL,
+  Placa         VARCHAR(15) NOT NULL,
+  Anio          SMALLINT NULL,
+  Volumen       DECIMAL(12,2) NOT NULL DEFAULT 8.00,
+  CapacidadPesoKg DECIMAL(12,2) NOT NULL DEFAULT 1100.00,
+  Estado        VARCHAR(15) NOT NULL DEFAULT 'Disponible',
+  UNIQUE KEY uq_t78_placa (Placa)
+) ENGINE=InnoDB AUTO_INCREMENT=500 DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE t79AsignacionRepartidorVehiculo (
   Id_Asignacion   INT AUTO_INCREMENT PRIMARY KEY,
-  Id_Trabajador   INT NOT NULL,   -- FK a t16catalogotrabajadores
-  Id_Vehiculo     INT NOT NULL,   -- FK a t78vehiculo
+  Id_Trabajador   INT NOT NULL,
+  Id_Vehiculo     INT NOT NULL,
   Fecha_Inicio    DATE NOT NULL,
   Fecha_Fin       DATE NULL,
   Estado          VARCHAR(15) NOT NULL DEFAULT 'Activo',
-
-  CONSTRAINT uq_t79_trabajador UNIQUE (Id_Trabajador),
-  CONSTRAINT uq_t79_vehiculo   UNIQUE (Id_Vehiculo),
-
-  CONSTRAINT fk_t79_t16
-    FOREIGN KEY (Id_Trabajador)
-    REFERENCES t16catalogotrabajadores(Id_Trabajador)
+  UNIQUE KEY uq_t79_trabajador (Id_Trabajador),
+  UNIQUE KEY uq_t79_vehiculo   (Id_Vehiculo),
+  KEY fk_t79_t16 (Id_Trabajador),
+  KEY fk_t79_t78 (Id_Vehiculo),
+  CONSTRAINT fk_t79_t16 FOREIGN KEY (Id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores(Id_Trabajador)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT fk_t79_t78 FOREIGN KEY (Id_Vehiculo)
+    REFERENCES t78Vehiculo(Id_Vehiculo)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB;
 
-  CONSTRAINT fk_t79_t78
-    FOREIGN KEY (Id_Vehiculo)
-    REFERENCES t78vehiculo(Id_Vehiculo)
+CREATE TABLE t80DisponibilidadVehiculo (
+  Id_Disponibilidad INT AUTO_INCREMENT PRIMARY KEY,
+  Id_Vehiculo INT NOT NULL,
+  Fecha DATE NOT NULL,
+  HoraInicio TIME NOT NULL DEFAULT '09:00:00',
+  HoraFin TIME NOT NULL DEFAULT '18:00:00',
+  Estado VARCHAR(15) NOT NULL DEFAULT 'Ocupado',
+  KEY fk_t80_t78 (Id_Vehiculo),
+  CONSTRAINT fk_t80_t78 FOREIGN KEY (Id_Vehiculo)
+    REFERENCES t78Vehiculo(Id_Vehiculo)
+    ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ==========================================================
+-- 7) Guías de remisión
+-- ==========================================================
+CREATE TABLE t72GuiaRemision (
+  Id_Guia              INT NOT NULL AUTO_INCREMENT,
+  Numero               INT NOT NULL,
+  Fec_Emision          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  Estado               VARCHAR(20) NOT NULL DEFAULT 'Emitida',
+  RemitenteRUC         VARCHAR(11)  NOT NULL,
+  RemitenteRazonSocial VARCHAR(120) NOT NULL,
+  DestinatarioNombre   VARCHAR(120) NOT NULL,
+  DniReceptor          VARCHAR(8)   NOT NULL,
+  DireccionDestino     VARCHAR(255) NOT NULL,
+  DistritoDestino      VARCHAR(120) NOT NULL,
+  Id_DireccionAlmacen  INT NOT NULL,
+  Id_Asignacion        INT NULL,
+  ModalidadTransporte  VARCHAR(20) NOT NULL DEFAULT 'PROPIO',
+  Placa                VARCHAR(10)  NULL,
+  Conductor            VARCHAR(120) NULL,
+  Licencia             VARCHAR(20)  NULL,
+  Motivo               VARCHAR(30)  NOT NULL DEFAULT 'Venta',
+  FechaInicioTraslado  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (Id_Guia),
+  UNIQUE KEY uq_t72_numero (Numero),
+  KEY fk_t72_origen (Id_DireccionAlmacen),
+  KEY fk_t72_asignacion (Id_Asignacion),
+  CONSTRAINT fk_t72_origen FOREIGN KEY (Id_DireccionAlmacen)
+    REFERENCES t73DireccionAlmacen (Id_DireccionAlmacen)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT fk_t72_asignacion FOREIGN KEY (Id_Asignacion)
+    REFERENCES t79AsignacionRepartidorVehiculo (Id_Asignacion)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE INDEX idx_t72_estado_emision ON t72GuiaRemision (Estado, Fec_Emision);
+
+CREATE TABLE t74DetalleGuia (
+  Id_DetalleGuia  INT NOT NULL AUTO_INCREMENT,
+  Id_Guia         INT NOT NULL,
+  Id_Producto     INT NOT NULL,
+  Descripcion     VARCHAR(200) NOT NULL,
+  Unidad          VARCHAR(10)  NOT NULL,
+  Cantidad        INT NOT NULL,
+  PRIMARY KEY (Id_DetalleGuia),
+  KEY idx_t74_guia (Id_Guia),
+  KEY idx_t74_prod (Id_Producto),
+  CONSTRAINT fk_t74_guia FOREIGN KEY (Id_Guia)
+    REFERENCES t72GuiaRemision (Id_Guia)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+  CONSTRAINT fk_t74_prod FOREIGN KEY (Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE t93Guia_OrdenPedido (
+  Id_Guia        INT NOT NULL,
+  Id_OrdenPedido INT NOT NULL,
+  PRIMARY KEY (Id_Guia, Id_OrdenPedido),
+  KEY fk_t93_guia (Id_Guia),
+  KEY fk_t93_orden (Id_OrdenPedido),
+  CONSTRAINT fk_t93_guia FOREIGN KEY (Id_Guia)
+    REFERENCES t72GuiaRemision (Id_Guia)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+  CONSTRAINT fk_t93_orden FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- (Opcional: queda si deseas histórico con ID propio)
+CREATE TABLE t75GuiaOrden (
+  Id INT NOT NULL AUTO_INCREMENT,
+  Id_Guia INT NOT NULL,
+  Id_OrdenPedido INT NOT NULL,
+  PRIMARY KEY (Id),
+  UNIQUE KEY uq_t75 (Id_Guia, Id_OrdenPedido),
+  KEY fk_t75_g (Id_Guia),
+  KEY fk_t75_o (Id_OrdenPedido),
+  CONSTRAINT fk_t75_g FOREIGN KEY (Id_Guia)
+    REFERENCES t72GuiaRemision (Id_Guia)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+  CONSTRAINT fk_t75_o FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
 -- ==========================================================
--- 5) Compras / Ingresos / Kardex / Salidas / Incidencias
+-- 8) Compras / Movimientos de inventario
 -- ==========================================================
-
 CREATE TABLE t06OrdenCompra (
   Id_OrdenCompra INT NOT NULL AUTO_INCREMENT,
   Fec_Emision DATE,
   des_RazonSocial VARCHAR(100),
   Fec_Atencion DATE,
-  CONSTRAINT t06OrdenCompra_pk PRIMARY KEY (Id_OrdenCompra)
+  PRIMARY KEY (Id_OrdenCompra)
 ) ENGINE=InnoDB AUTO_INCREMENT=20001;
 
 CREATE TABLE t07DetalleOrdenCompra (
@@ -379,7 +499,9 @@ CREATE TABLE t07DetalleOrdenCompra (
   Id_Producto INT NOT NULL,
   Cantidad INT NOT NULL CHECK (Cantidad >= 0),
   PrecioUnitario DECIMAL(12,2) NOT NULL CHECK (PrecioUnitario >= 0),
-  CONSTRAINT t07DetalleOrdenCompra_pk PRIMARY KEY (Id_Detalle),
+  PRIMARY KEY (Id_Detalle),
+  KEY fk_t07_oc (Id_OrdenCompra),
+  KEY fk_t07_prod (Id_Producto),
   CONSTRAINT fk_t07_oc FOREIGN KEY (Id_OrdenCompra)
     REFERENCES t06OrdenCompra (Id_OrdenCompra)
     ON UPDATE RESTRICT ON DELETE CASCADE,
@@ -388,41 +510,14 @@ CREATE TABLE t07DetalleOrdenCompra (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=200001;
 
-CREATE TABLE t08ReporteIncidencia (
-  Id_ReporteIncidencia INT NOT NULL AUTO_INCREMENT,
-  id_Trabajador INT NOT NULL,
-  fec_Informe DATE NOT NULL,
-  Lista_Productos LONGTEXT NOT NULL,
-  DetaIncidencia LONGTEXT NOT NULL,
-  Estado VARCHAR(15) NOT NULL,
-  CONSTRAINT t08ReporteIncidencia_pk PRIMARY KEY (Id_ReporteIncidencia),
-  CONSTRAINT fk_t08_trab FOREIGN KEY (id_Trabajador)
-    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=8001;
-
-CREATE TABLE t12InformeIncidencia (
-  Id_InfomeIncidencia INT NOT NULL AUTO_INCREMENT,
-  t08ReporteIncidencia_Id_ReporteIncidencia INT NOT NULL,
-  id_Trabajador INT NOT NULL,
-  fec_Informe DATE NOT NULL,
-  Lista_Productos LONGTEXT NOT NULL,
-  DetaIncidencia LONGTEXT NOT NULL,
-  Estado VARCHAR(15) NOT NULL,
-  CONSTRAINT t12InformeIncidencia_pk PRIMARY KEY (Id_InfomeIncidencia),
-  CONSTRAINT fk_t12_t08 FOREIGN KEY (t08ReporteIncidencia_Id_ReporteIncidencia)
-    REFERENCES t08ReporteIncidencia (Id_ReporteIncidencia)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT fk_t12_trab FOREIGN KEY (id_Trabajador)
-    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=12001;
-
 CREATE TABLE t11OrdenSalida (
   Id_ordenSalida INT NOT NULL AUTO_INCREMENT,
-  Fec_Transaccion DATE NOT NULL,
+  Fec_Transaccion DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   t02OrdenPedido_Id_OrdenPedido INT NOT NULL,
-  CONSTRAINT t11OrdenSalida_pk PRIMARY KEY (Id_ordenSalida),
+  Tipo_Movimiento VARCHAR(10) NOT NULL,
+  PRIMARY KEY (Id_ordenSalida),
+  KEY idx_ordenPedido (t02OrdenPedido_Id_OrdenPedido),
+  KEY idx_fecha (Fec_Transaccion),
   CONSTRAINT fk_t11_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT
@@ -435,7 +530,9 @@ CREATE TABLE t10Kardex (
   Cantidad INT NOT NULL CHECK (Cantidad >= 0),
   Estado VARCHAR(15) NOT NULL,
   t11OrdenSalida_Id_ordenSalida INT NOT NULL,
-  CONSTRAINT t10Kardex_pk PRIMARY KEY (Id_Kardex),
+  PRIMARY KEY (Id_Kardex),
+  KEY fk_t10_t11 (t11OrdenSalida_Id_ordenSalida),
+  KEY fk_t10_prod (id_Producto),
   CONSTRAINT fk_t10_t11 FOREIGN KEY (t11OrdenSalida_Id_ordenSalida)
     REFERENCES t11OrdenSalida (Id_ordenSalida)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -451,7 +548,9 @@ CREATE TABLE t19OrdenIngresoCompra (
   Fec_Emision DATE NOT NULL,
   ListaProductos LONGTEXT NOT NULL,
   Estado VARCHAR(15) NOT NULL,
-  CONSTRAINT t19OrdenIngresoCompra_pk PRIMARY KEY (Id_OrdenIngresoCompra),
+  PRIMARY KEY (Id_OrdenIngresoCompra),
+  KEY fk_t19_t06 (t06OrdenCompra_Id_OrdenCompra),
+  KEY fk_t19_trab (id_Trabajador),
   CONSTRAINT fk_t19_t06 FOREIGN KEY (t06OrdenCompra_Id_OrdenCompra)
     REFERENCES t06OrdenCompra (Id_OrdenCompra)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -469,13 +568,14 @@ CREATE TABLE t09OrdenIngresoAlmacen (
   Observacion LONGTEXT NOT NULL,
   Estado VARCHAR(15) NOT NULL,
   t10Kardex_Id_Kardex INT NOT NULL,
-  CONSTRAINT t09OrdenIngresoAlmacen_pk PRIMARY KEY (Id_OrdenIngresoAlmacen),
-  CONSTRAINT fk_t09_t19
-    FOREIGN KEY (t19OrdenIngresoCompra_Id_OrdenIngresoCompra)
+  PRIMARY KEY (Id_OrdenIngresoAlmacen),
+  KEY fk_t09_t19 (t19OrdenIngresoCompra_Id_OrdenIngresoCompra),
+  KEY fk_t09_t10 (t10Kardex_Id_Kardex),
+  KEY fk_t09_trab (id_Trabajador),
+  CONSTRAINT fk_t09_t19 FOREIGN KEY (t19OrdenIngresoCompra_Id_OrdenIngresoCompra)
     REFERENCES t19OrdenIngresoCompra (Id_OrdenIngresoCompra)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT fk_t09_t10
-    FOREIGN KEY (t10Kardex_Id_Kardex)
+  CONSTRAINT fk_t09_t10 FOREIGN KEY (t10Kardex_Id_Kardex)
     REFERENCES t10Kardex (Id_Kardex)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t09_trab FOREIGN KEY (id_Trabajador)
@@ -483,124 +583,43 @@ CREATE TABLE t09OrdenIngresoAlmacen (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=20081;
 
--- ==========================================
--- t72: Guía de Remisión (cabecera)
---  - SÍ referencia dirección de origen (t73)
--- ==========================================
-CREATE TABLE IF NOT EXISTS t72GuiaRemision (
-  Id_Guia              INT NOT NULL AUTO_INCREMENT,
-  Numero               INT NOT NULL,
-  Fec_Emision          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  Estado               VARCHAR(20) NOT NULL DEFAULT 'Emitida',
+-- Reporte/Informe de incidencias (con FK válidas)
+CREATE TABLE t08ReporteIncidencia (
+  Id_ReporteIncidencia INT NOT NULL AUTO_INCREMENT,
+  id_Trabajador INT NOT NULL,
+  fec_Informe DATE NOT NULL,
+  Lista_Productos LONGTEXT NOT NULL,
+  DetaIncidencia LONGTEXT NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (Id_ReporteIncidencia),
+  KEY fk_t08_trab (id_Trabajador),
+  CONSTRAINT fk_t08_trab FOREIGN KEY (id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=8001;
 
-  -- Remitente (snapshot básico)
-  RemitenteRUC         VARCHAR(11)  NOT NULL,
-  RemitenteRazonSocial VARCHAR(120) NOT NULL,
-
-  -- Destino (snapshot desde t71 de la orden)
-  -- DestinatarioIdCliente INT          NOT NULL,
-  DestinatarioNombre    VARCHAR(120) NOT NULL,
-  DniReceptor           VARCHAR(8)   NOT NULL,
-  DireccionDestino      VARCHAR(255) NOT NULL,
-  DistritoDestino       VARCHAR(120) NOT NULL,
-
-  -- Origen
-  Id_DireccionAlmacen   INT NOT NULL,  -- FK -> t73DireccionAlmacen
-
-  -- Transporte
-  Id_Asignacion         INT NULL,      -- FK -> t79AsignacionRepartidorVehiculo
-  ModalidadTransporte   VARCHAR(20) NOT NULL DEFAULT 'PROPIO',
-  Placa                 VARCHAR(10)  NULL,     -- Snapshot
-  Conductor             VARCHAR(120) NULL,     -- Snapshot
-  Licencia              VARCHAR(20)  NULL,     -- Snapshot
-
-  -- Traslado
-  Motivo                VARCHAR(30) NOT NULL DEFAULT 'Venta',
-  FechaInicioTraslado   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  PRIMARY KEY (Id_Guia),
-  UNIQUE KEY uq_t72_numero (Numero),
-
-  CONSTRAINT fk_t72_origen
-    FOREIGN KEY (Id_DireccionAlmacen)
-    REFERENCES t73DireccionAlmacen (Id_DireccionAlmacen)
+CREATE TABLE t12InformeIncidencia (
+  Id_InfomeIncidencia INT NOT NULL AUTO_INCREMENT,
+  t08ReporteIncidencia_Id_ReporteIncidencia INT NOT NULL,
+  id_Trabajador INT NOT NULL,
+  fec_Informe DATE NOT NULL,
+  Lista_Productos LONGTEXT NOT NULL,
+  DetaIncidencia LONGTEXT NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (Id_InfomeIncidencia),
+  KEY fk_t12_t08 (t08ReporteIncidencia_Id_ReporteIncidencia),
+  KEY fk_t12_trab (id_Trabajador),
+  CONSTRAINT fk_t12_t08 FOREIGN KEY (t08ReporteIncidencia_Id_ReporteIncidencia)
+    REFERENCES t08ReporteIncidencia (Id_ReporteIncidencia)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
-
-  CONSTRAINT fk_t72_asignacion
-    FOREIGN KEY (Id_Asignacion)
-    REFERENCES t79AsignacionRepartidorVehiculo (Id_Asignacion)
+  CONSTRAINT fk_t12_trab FOREIGN KEY (id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
     ON UPDATE RESTRICT ON DELETE RESTRICT
-
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE INDEX idx_t72_estado_emision ON t72GuiaRemision (Estado, Fec_Emision);
-
--- ==========================================
--- t74: Detalle de Guía
--- ==========================================
-CREATE TABLE IF NOT EXISTS t74DetalleGuia (
-  Id_DetalleGuia  INT NOT NULL AUTO_INCREMENT,
-  Id_Guia         INT NOT NULL,             -- FK -> t72GuiaRemision
-  Id_Producto     INT NOT NULL,             -- FK -> t18CatalogoProducto
-
-  -- Snapshots para imprimir
-  Descripcion     VARCHAR(200) NOT NULL,
-  Unidad          VARCHAR(10)  NOT NULL,    -- 'UN','KG', etc.
-  Cantidad        INT NOT NULL,
-
-  PRIMARY KEY (Id_DetalleGuia),
-  KEY idx_t74_guia (Id_Guia),
-  KEY idx_t74_prod (Id_Producto),
-
-  CONSTRAINT fk_t74_guia
-    FOREIGN KEY (Id_Guia)
-    REFERENCES t72GuiaRemision (Id_Guia)
-    ON UPDATE RESTRICT ON DELETE CASCADE,
-
-  CONSTRAINT fk_t74_prod
-    FOREIGN KEY (Id_Producto)
-    REFERENCES t18CatalogoProducto (Id_Producto)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
--- ==========================================
--- t93: Puente Guía ↔ Pedido (N : M)
--- ==========================================
-CREATE TABLE IF NOT EXISTS t93Guia_OrdenPedido (
-  Id_Guia        INT NOT NULL,              -- FK -> t72GuiaRemision
-  Id_OrdenPedido INT NOT NULL,              -- FK -> t02OrdenPedido
-  PRIMARY KEY (Id_Guia, Id_OrdenPedido),
-  CONSTRAINT fk_t93_guia
-    FOREIGN KEY (Id_Guia)
-    REFERENCES t72GuiaRemision (Id_Guia)
-    ON UPDATE RESTRICT ON DELETE CASCADE,
-  CONSTRAINT fk_t93_orden
-    FOREIGN KEY (Id_OrdenPedido)
-    REFERENCES t02OrdenPedido (Id_OrdenPedido)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
-CREATE INDEX idx_t93_orden ON t93Guia_OrdenPedido (Id_OrdenPedido);
-
--- (Adicional a pedido previo: t75GuiaOrden)
-CREATE TABLE t75GuiaOrden (
-  Id INT NOT NULL AUTO_INCREMENT,
-  Id_Guia INT NOT NULL,           -- FK -> t72GuiaRemision
-  Id_OrdenPedido INT NOT NULL,    -- FK -> t02OrdenPedido
-  PRIMARY KEY (Id),
-  UNIQUE KEY uq_t75 (Id_Guia, Id_OrdenPedido),
-  CONSTRAINT fk_t75_g FOREIGN KEY (Id_Guia)
-    REFERENCES t72GuiaRemision (Id_Guia)
-    ON UPDATE RESTRICT ON DELETE CASCADE,
-  CONSTRAINT fk_t75_o FOREIGN KEY (Id_OrdenPedido)
-    REFERENCES t02OrdenPedido (Id_OrdenPedido)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB;
+) ENGINE=InnoDB AUTO_INCREMENT=12001;
 
 -- ==========================================================
--- 6) Cierre de caja / Notas / Cobertura
+-- 9) Notas / Cierre / Cobertura
 -- ==========================================================
-
 CREATE TABLE t26ReporteCierreCaja (
   id_ReporteCierre INT NOT NULL AUTO_INCREMENT,
   Fec_emision DATE NOT NULL,
@@ -614,7 +633,9 @@ CREATE TABLE t26ReporteCierreCaja (
   observaciones LONGTEXT NOT NULL,
   estado VARCHAR(15) NOT NULL,
   t02OrdenPedido_Id_OrdenPedido INT NULL,
-  CONSTRAINT t26ReporteCierreCaja_pk PRIMARY KEY (id_ReporteCierre),
+  PRIMARY KEY (id_ReporteCierre),
+  KEY fk_t26_t02 (t02OrdenPedido_Id_OrdenPedido),
+  KEY fk_t26_trab (id_Trabajador),
   CONSTRAINT fk_t26_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE SET NULL,
@@ -634,7 +655,11 @@ CREATE TABLE t21NotaCredito (
   Total DECIMAL(12,2) NOT NULL CHECK (Total >= 0),
   Estado VARCHAR(15) NOT NULL,
   t20Cliente_Id_Cliente INT NOT NULL,
-  CONSTRAINT t21NotaCredito_pk PRIMARY KEY (Id_NotaCredito),
+  PRIMARY KEY (Id_NotaCredito),
+  KEY fk_t21_cliente (t20Cliente_Id_Cliente),
+  KEY fk_t21_cmp (Nro_comprobantePago),
+  KEY fk_t21_orden (Id_OrdenPedido),
+  KEY fk_t21_trab (id_Trabajador),
   CONSTRAINT fk_t21_cliente FOREIGN KEY (t20Cliente_Id_Cliente)
     REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -655,7 +680,9 @@ CREATE TABLE t23NotaFaltanteCaja (
   id_Trabajador INT NOT NULL,
   montoFaltante DECIMAL(12,2) NOT NULL CHECK (montoFaltante >= 0),
   fechaEmision DATE NOT NULL,
-  CONSTRAINT t23NotaFaltanteCaja_pk PRIMARY KEY (id_NotaFaltante),
+  PRIMARY KEY (id_NotaFaltante),
+  KEY fk_t23_t26 (t26ReporteCierreCaja_id_ReporteCierre),
+  KEY fk_t23_trab (id_Trabajador),
   CONSTRAINT fk_t23_t26 FOREIGN KEY (t26ReporteCierreCaja_id_ReporteCierre)
     REFERENCES t26ReporteCierreCaja (id_ReporteCierre)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -671,7 +698,9 @@ CREATE TABLE t24NotaSobranteCaja (
   Fec_emi DATE NOT NULL,
   montoSobrante DECIMAL(12,2) NOT NULL CHECK (montoSobrante >= 0),
   observaciones VARCHAR(200) NOT NULL,
-  CONSTRAINT t24NotaSobranteCaja_pk PRIMARY KEY (id_NotaSobrante),
+  PRIMARY KEY (id_NotaSobrante),
+  KEY fk_t24_t26 (t26ReporteCierreCaja_id_ReporteCierre),
+  KEY fk_t24_trab (id_Trabajador),
   CONSTRAINT fk_t24_t26 FOREIGN KEY (t26ReporteCierreCaja_id_ReporteCierre)
     REFERENCES t26ReporteCierreCaja (id_ReporteCierre)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -686,7 +715,8 @@ CREATE TABLE t22NotaDescargoCobertura (
   montoCubierto DECIMAL(12,2) NOT NULL CHECK (montoCubierto >= 0),
   Estado VARCHAR(15) NOT NULL,
   t23NotaFaltanteCaja_id_NotaFaltante INT NOT NULL,
-  CONSTRAINT t22NotaDescargoCobertura_pk PRIMARY KEY (id_NotaDescargo),
+  PRIMARY KEY (id_NotaDescargo),
+  KEY fk_t22_t23 (t23NotaFaltanteCaja_id_NotaFaltante),
   CONSTRAINT fk_t22_t23 FOREIGN KEY (t23NotaFaltanteCaja_id_NotaFaltante)
     REFERENCES t23NotaFaltanteCaja (id_NotaFaltante)
     ON UPDATE RESTRICT ON DELETE RESTRICT
@@ -698,26 +728,26 @@ CREATE TABLE t25CoberturaRiesgo (
   saldoDisponible DECIMAL(12,2) NOT NULL CHECK (saldoDisponible >= 0),
   fechaUltimaAct DATE NOT NULL,
   estado VARCHAR(15) NOT NULL,
-  CONSTRAINT t25CoberturaRiesgo_pk PRIMARY KEY (id_Cobertura),
+  PRIMARY KEY (id_Cobertura),
+  KEY fk_t25_trab (id_Trabajador),
   CONSTRAINT fk_t25_trab FOREIGN KEY (id_Trabajador)
     REFERENCES t16CatalogoTrabajadores (id_Trabajador)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=45001;
 
 -- ==========================================================
--- 7) Devoluciones (catálogos globales) y detalle orden
+-- 10) Devoluciones
 -- ==========================================================
-
 CREATE TABLE t52MotivoDevolucion (
   Id_Motivo INT NOT NULL AUTO_INCREMENT,
   Descripcion VARCHAR(100) NOT NULL,
-  CONSTRAINT t52MotivoDevolucion_pk PRIMARY KEY (Id_Motivo)
+  PRIMARY KEY (Id_Motivo)
 ) ENGINE=InnoDB AUTO_INCREMENT=52001;
 
 CREATE TABLE t53TipoDevolucion (
   Id_tipo INT NOT NULL AUTO_INCREMENT,
   Descripcion VARCHAR(50) NOT NULL,
-  CONSTRAINT t53TipoDevolucion_pk PRIMARY KEY (Id_tipo)
+  PRIMARY KEY (Id_tipo)
 ) ENGINE=InnoDB AUTO_INCREMENT=53001;
 
 CREATE TABLE t50OrdenDevolucion (
@@ -731,7 +761,11 @@ CREATE TABLE t50OrdenDevolucion (
   estado VARCHAR(20) NOT NULL,
   t20Cliente_Id_Cliente INT NOT NULL,
   t21NotaCredito_Id_NotaCredito INT NOT NULL,
-  CONSTRAINT t50OrdenDevolucion_pk PRIMARY KEY (Id_Devolucion),
+  PRIMARY KEY (Id_Devolucion),
+  KEY fk_t50_cliente (t20Cliente_Id_Cliente),
+  KEY fk_t50_nc (t21NotaCredito_Id_NotaCredito),
+  KEY fk_t50_tipo (Id_Tipo),
+  KEY fk_t50_motivo (Id_Motivo),
   CONSTRAINT fk_t50_cliente FOREIGN KEY (t20Cliente_Id_Cliente)
     REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -751,7 +785,8 @@ CREATE TABLE t54EvaluacionDevolucion (
   Observaciones VARCHAR(200) NOT NULL,
   Resultado VARCHAR(30) NOT NULL,
   t50OrdenDevolucion_Id_Devolucion INT NOT NULL,
-  CONSTRAINT t54EvaluacionDevolucion_pk PRIMARY KEY (Id_Evaluacion),
+  PRIMARY KEY (Id_Evaluacion),
+  KEY fk_t54_t50 (t50OrdenDevolucion_Id_Devolucion),
   CONSTRAINT fk_t54_t50 FOREIGN KEY (t50OrdenDevolucion_Id_Devolucion)
     REFERENCES t50OrdenDevolucion (Id_Devolucion)
     ON UPDATE RESTRICT ON DELETE RESTRICT
@@ -759,12 +794,12 @@ CREATE TABLE t54EvaluacionDevolucion (
 
 CREATE TABLE t55EntregaProductoDevuelto (
   Id_ProductoDevuelto INT NOT NULL AUTO_INCREMENT,
-  CONSTRAINT t55EntregaProductoDevuelto_pk PRIMARY KEY (Id_ProductoDevuelto)
+  PRIMARY KEY (Id_ProductoDevuelto)
 ) ENGINE=InnoDB AUTO_INCREMENT=75001;
 
 CREATE TABLE t56ReporteDevolucion (
   Id_Reporte INT NOT NULL AUTO_INCREMENT,
-  CONSTRAINT t56ReporteDevolucion_pk PRIMARY KEY (Id_Reporte)
+  PRIMARY KEY (Id_Reporte)
 ) ENGINE=InnoDB AUTO_INCREMENT=76001;
 
 CREATE TABLE t57DetalleOrden (
@@ -774,7 +809,10 @@ CREATE TABLE t57DetalleOrden (
   cantidad INT NOT NULL CHECK (cantidad >= 0),
   subtotal DECIMAL(12,2) NOT NULL CHECK (subtotal >= 0),
   t50OrdenDevolucion_Id_Devolucion INT NOT NULL,
-  CONSTRAINT t57DetalleOrden_pk PRIMARY KEY (Id_DetalleOrden),
+  PRIMARY KEY (Id_DetalleOrden),
+  KEY fk_t57_t50 (t50OrdenDevolucion_Id_Devolucion),
+  KEY fk_t57_t02 (id_orden),
+  KEY fk_t57_t18 (sku_producto),
   CONSTRAINT fk_t57_t50 FOREIGN KEY (t50OrdenDevolucion_Id_Devolucion)
     REFERENCES t50OrdenDevolucion (Id_Devolucion)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -787,9 +825,8 @@ CREATE TABLE t57DetalleOrden (
 ) ENGINE=InnoDB AUTO_INCREMENT=77001;
 
 -- ==========================================================
--- 8) Detalles de Orden / PreOrden
+-- 11) Detalles de PreOrden / Orden
 -- ==========================================================
-
 CREATE TABLE t61detapreorden (
   Id_DetaPreOrden INT NOT NULL AUTO_INCREMENT,
   t18CatalogoProducto_Id_Producto INT NOT NULL,
@@ -804,18 +841,19 @@ CREATE TABLE t61detapreorden (
   CONSTRAINT fk_t61_t18 FOREIGN KEY (t18CatalogoProducto_Id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT t61detapreorden_chk_1 CHECK (Cantidad >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=61019;
+  CONSTRAINT t61_chk_cant CHECK (Cantidad >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=1;
 
--- Detalle de la Orden (sin columnas des_*)
-DROP TABLE IF EXISTS t60DetOrdenPedido;
 CREATE TABLE t60DetOrdenPedido (
   Id_DetOrdenPedido INT NOT NULL AUTO_INCREMENT,
   t18CatalogoProducto_Id_Producto INT NOT NULL,
   t02OrdenPedido_Id_OrdenPedido INT NOT NULL,
   Id_Cliente INT NOT NULL,
   Cantidad INT NOT NULL CHECK (Cantidad >= 0),
-  CONSTRAINT t60DetOrdenPedido_pk PRIMARY KEY (Id_DetOrdenPedido),
+  PRIMARY KEY (Id_DetOrdenPedido),
+  KEY fk_t60_t02 (t02OrdenPedido_Id_OrdenPedido),
+  KEY fk_t60_t18 (t18CatalogoProducto_Id_Producto),
+  KEY fk_t60_cli (Id_Cliente),
   CONSTRAINT fk_t60_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
@@ -825,24 +863,25 @@ CREATE TABLE t60DetOrdenPedido (
   CONSTRAINT fk_t60_cli FOREIGN KEY (Id_Cliente)
     REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=60001;
+) ENGINE=InnoDB AUTO_INCREMENT=1;
 
 -- ==========================================================
--- 9) Entregas / Evidencias / Incidencias
+-- 12) Asignación de reparto / hoja de ruta / salida / evidencias
 -- ==========================================================
-
 CREATE TABLE t40OrdenAsignacionReparto (
   Id_OrdenAsignacion INT NOT NULL AUTO_INCREMENT,
   Fecha DATE,
   Estado VARCHAR(15),
-  CONSTRAINT t40OrdenAsignacionReparto_pk PRIMARY KEY (Id_OrdenAsignacion)
+  PRIMARY KEY (Id_OrdenAsignacion)
 ) ENGINE=InnoDB AUTO_INCREMENT=80001;
 
 CREATE TABLE t401DetalleAsignacionReparto (
   Id_DetalleAsignacion INT NOT NULL AUTO_INCREMENT,
   Id_OrdenAsignacion INT NOT NULL,
   Id_OrdenPedido INT NOT NULL,
-  CONSTRAINT t401DetalleAsignacionReparto_pk PRIMARY KEY (Id_DetalleAsignacion),
+  PRIMARY KEY (Id_DetalleAsignacion),
+  KEY fk_t401_t40 (Id_OrdenAsignacion),
+  KEY fk_t401_t02 (Id_OrdenPedido),
   CONSTRAINT fk_t401_t40 FOREIGN KEY (Id_OrdenAsignacion)
     REFERENCES t40OrdenAsignacionReparto (Id_OrdenAsignacion)
     ON UPDATE RESTRICT ON DELETE CASCADE,
@@ -855,20 +894,24 @@ CREATE TABLE t402HojaRuta (
   Id_HojaRuta INT NOT NULL AUTO_INCREMENT,
   Id_OrdenAsignacion INT NOT NULL,
   Observaciones VARCHAR(200),
-  CONSTRAINT t402HojaRuta_pk PRIMARY KEY (Id_HojaRuta),
+  PRIMARY KEY (Id_HojaRuta),
+  KEY fk_t402_t40 (Id_OrdenAsignacion),
   CONSTRAINT fk_t402_t40 FOREIGN KEY (Id_OrdenAsignacion)
     REFERENCES t40OrdenAsignacionReparto (Id_OrdenAsignacion)
     ON UPDATE RESTRICT ON DELETE CASCADE
 ) ENGINE=InnoDB AUTO_INCREMENT=82001;
 
+-- FIX: nombres de constraints y columnas consistentes
 CREATE TABLE t403OrdenSalidaEntrega (
   Id_ordenSalida INT NOT NULL AUTO_INCREMENT,
   t02OrdenPedido_Id_OrdenPedido INT NOT NULL,
   Fec_Transaccion DATE NOT NULL,
   Tipo_Movimiento VARCHAR(10) NOT NULL,
   id_Trabajador INT NOT NULL,
-  CONSTRAINT t11OrdenSalida_pk PRIMARY KEY (Id_ordenSalida),
-  CONSTRAINT fk_t11_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
+  PRIMARY KEY (Id_ordenSalida),
+  KEY fk_t403_t02 (t02OrdenPedido_Id_OrdenPedido),
+  KEY fk_t403_t16 (id_Trabajador),
+  CONSTRAINT fk_t403_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t403_t16 FOREIGN KEY (id_Trabajador)
@@ -884,10 +927,11 @@ CREATE TABLE t404EvidenciaEntrega (
   DocumentoReceptor TINYINT(1) NOT NULL,
   CapturaEntrega TINYINT(1) NOT NULL,
   Observaciones LONGTEXT NOT NULL,
-  t403OrdenSalidaEntrega_IDOrdenSalidaEntrega INT NULL,
-  CONSTRAINT t404EvidenciaEntrega_pk PRIMARY KEY (IDEvidenciaEntrega),
-  CONSTRAINT fk_t404_t403 FOREIGN KEY (t403OrdenSalidaEntrega_IDOrdenSalidaEntrega)
-    REFERENCES t403OrdenSalidaEntrega (IDOrdenSalidaEntrega)
+  t403OrdenSalidaEntrega_Id_ordenSalida INT NULL,
+  PRIMARY KEY (IDEvidenciaEntrega),
+  KEY fk_t404_t403 (t403OrdenSalidaEntrega_Id_ordenSalida),
+  CONSTRAINT fk_t404_t403 FOREIGN KEY (t403OrdenSalidaEntrega_Id_ordenSalida)
+    REFERENCES t403OrdenSalidaEntrega (Id_ordenSalida)
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=84001;
 
@@ -899,20 +943,21 @@ CREATE TABLE t405IncidenciaEntrega (
   PuntoEntrega VARCHAR(50) NOT NULL,
   Motivo VARCHAR(50) NOT NULL,
   Observaciones VARCHAR(50) NOT NULL,
-  t403OrdenSalidaEntrega_IDOrdenSalidaEntrega INT NULL,
-  CONSTRAINT t405IncidenciaEntrega_pk PRIMARY KEY (IDIncidenciaEntrega),
-  CONSTRAINT fk_t405_t403 FOREIGN KEY (t403OrdenSalidaEntrega_IDOrdenSalidaEntrega)
-    REFERENCES t403OrdenSalidaEntrega (IDOrdenSalidaEntrega)
+  t403OrdenSalidaEntrega_Id_ordenSalida INT NULL,
+  PRIMARY KEY (IDIncidenciaEntrega),
+  KEY fk_t405_t403 (t403OrdenSalidaEntrega_Id_ordenSalida),
+  CONSTRAINT fk_t405_t403 FOREIGN KEY (t403OrdenSalidaEntrega_Id_ordenSalida)
+    REFERENCES t403OrdenSalidaEntrega (Id_ordenSalida)
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=85001;
 
 -- ==========================================================
--- 11) Índices útiles
+-- 13) Índices adicionales
 -- ==========================================================
 CREATE INDEX idx_t58_nombre ON t58Producto (nombre);
 CREATE INDEX idx_t02_estado ON t02OrdenPedido (Estado);
 CREATE INDEX idx_t26_estado ON t26ReporteCierreCaja (estado, Fec_emision);
 CREATE INDEX idx_t21_cmp ON t21NotaCredito (Nro_comprobantePago);
 CREATE INDEX idx_t09_fec ON t09OrdenIngresoAlmacen (fec_ingreso);
-CREATE INDEX idx_t60_orden      ON t60DetOrdenPedido (t02OrdenPedido_Id_OrdenPedido);
-CREATE INDEX idx_t61_pre_prod   ON t61detapreorden (t01PreOrdenPedido_Id_PreOrdenPedido, t18CatalogoProducto_Id_Producto);
+CREATE INDEX idx_t60_orden ON t60DetOrdenPedido (t02OrdenPedido_Id_OrdenPedido);
+CREATE INDEX idx_t61_pre_prod ON t61detapreorden (t01PreOrdenPedido_Id_PreOrdenPedido, t18CatalogoProducto_Id_Producto);

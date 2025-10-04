@@ -3,14 +3,6 @@
   const { $, log, setNum, to2, setDirty, Messages } = window.Utils;
   const { fetchJSON, url } = window.API;
 
-  /* function isDeliverySelected() {
-    const opt = document.getElementById("cboEntrega")?.selectedOptions?.[0];
-    if (!opt) return false;
-    if (opt.dataset.esDelivery !== undefined) {
-      return opt.dataset.esDelivery === "1" || opt.dataset.esDelivery === "true";
-    }
-    return /delivery/i.test(opt.textContent || "");
-  } */
 
   function isDeliverySelected() {
     const opt = document.getElementById("cboEntrega")?.selectedOptions?.[0];
@@ -19,11 +11,6 @@
     return /delivery/i.test(label);
   }
 
-  /** Recalcula el costo de entrega:
-   * - Si NO es delivery: usa el costo base del método (normalmente 0)
-   * - Si es delivery: intenta costo por distrito (guardada u “otra”) usando window.costoPorNombreLocal
-   * y actualiza txtCostoEnt + total.
-   */
   function recomputeCostoEntrega() {
     const cboEntrega = document.getElementById("cboEntrega");
     const base = Number(cboEntrega?.selectedOptions?.[0]?.dataset?.costo || 0);
@@ -404,6 +391,40 @@
         autoclear: 1500,
       });
   }
+
+  /* function pintarItemsConsolidados(r) {
+    const tb = document.querySelector("#tblItems tbody");
+    tb.innerHTML = "";
+    (r.items || []).forEach((it) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td>${it.IdProducto}</td>
+        <td>${it.NombreProducto}</td>
+        <td>${to2(it.PrecioUnitario)}</td>
+        <td>${it.Cantidad}</td>
+        <td>${to2(it.Subtotal)}</td>
+        <td>${to2(it.PesoUnitario || 0)}</td>
+      <td>${to2(it.PesoTotal || 0)}</td>
+      <td>${to2(it.VolumenUnitario || 0)}</td>
+      <td>${to2(it.VolumenTotal || 0)}</td>
+      `;
+      tb.appendChild(tr);
+    });
+
+    document.getElementById("txtCantProd").value = r.cantidadProductos || 0;
+    setNum(document.getElementById("txtDesc"), r.descuento);
+    setNum(document.getElementById("txtSubTotal"), r.subtotal);
+
+    // Centraliza costo/total
+    recomputeCostoEntrega();
+
+    validarReadyParaRegistrar();
+    const n = Number(document.getElementById("txtCantProd").value || 0);
+    if (n > 0)
+      Messages.preorden.ok("Productos consolidados en la orden.", {
+        autoclear: 1500,
+      });
+  } */
 
   function onMetodoEntregaChange() {
     // Recalcula costo (si es delivery, por distrito; sino base) y luego actualiza panel

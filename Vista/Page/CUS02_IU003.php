@@ -118,27 +118,6 @@ $t77 = (new DistritoEnvio())->listarActivos();
         <fieldset id="envioPanel" class="envio-panel" style="display:none;">
           <legend>Dirección de entrega</legend>
 
-          <!-- <div class="row grid-2 mt-8">
-            <div>
-              <label for="envioReceptorDni">DNI de quien recibe</label>
-              <input id="envioReceptorDni"
-                maxlength="8"
-                pattern="\d{8}"
-                inputmode="numeric"
-                placeholder="8 dígitos"
-                autocomplete="off">
-              <small class="hint">Obligatorio para programar la entrega.</small>
-            </div>
-            <div>
-              <label for="envioDistrito">Distrito</label>
-              <input id="envioDistrito"
-                maxlength="120"
-                placeholder="Ej: Los Olivos"
-                autocomplete="address-level2">
-              <small class="hint">Se usa para planificar las rutas.</small>
-            </div>
-          </div> -->
-
           <div class="envio-modo" role="radiogroup" aria-label="Modo de dirección de entrega">
             <label class="radio">
               <input type="radio" name="envioModo" value="guardada" aria-controls="envioGuardada">
@@ -187,10 +166,10 @@ $t77 = (new DistritoEnvio())->listarActivos();
               <div>
                 <label for="envioDistrito">Distrito</label>
                 <input id="envioDistrito" maxlength="120" placeholder="Distrito" autocomplete="address-level2">
-<datalist id="dlDistritos"></datalist>
-<small id="distritoHint" class="hint"></small>
+                <datalist id="dlDistritos"></datalist>
+                <small id="distritoHint" class="hint"></small>
 
-                
+
               </div>
             </div>
 
@@ -217,6 +196,10 @@ $t77 = (new DistritoEnvio())->listarActivos();
             <th>Precio (S/)</th>
             <th>Cantidad</th>
             <th>Subtotal (S/)</th>
+            <!-- <th>Peso unit. (kg)</th>
+            <th>Peso total (kg)</th>
+            <th>Vol. unit. (L)</th>
+            <th>Vol. total (L)</th> -->
           </tr>
         </thead>
         <tbody></tbody>
@@ -224,6 +207,8 @@ $t77 = (new DistritoEnvio())->listarActivos();
 
       <div class="totales">
         <label>Cantidad productos:</label><input id="txtCantProd" value="0" readonly />
+        <!-- <label>Peso total (kg):</label><input id="txtPesoTotal" value="0" readonly />
+        <label>Volumen total (L):</label><input id="txtVolumenTotal" value="0" readonly /> -->
         <label>Costo de entrega (S/):</label><input id="txtCostoEnt" value="0" readonly />
         <label>Des. aplicado (S/):</label><input id="txtDesc" value="0" readonly />
         <label>Total Pedido(S/):</label><input id="txtSubTotal" value="0" readonly />
@@ -255,8 +240,8 @@ $t77 = (new DistritoEnvio())->listarActivos();
   <script src="../Script/CUS02/api.js"></script>
   <script src="../Script/CUS02/utils.js"></script>
   <script>
-  window.T77 = <?= json_encode($t77, JSON_UNESCAPED_UNICODE) ?>;
-</script>
+    window.T77 = <?= json_encode($t77, JSON_UNESCAPED_UNICODE) ?>;
+  </script>
   <script src="../Script/CUS02/cliente.js"></script>
   <script src="../Script/CUS02/distritos.js"></script>
   <script src="../Script/CUS02/preorden.js"></script>

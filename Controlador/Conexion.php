@@ -9,4 +9,11 @@ class Conexion {
         }
         return $this->cn;
     }
+    /*
+        function conecta(){
+        if($this->cn==null){
+            $this->cn= mysqli_connect("localhost", "root", "jasas", "bd_mundopatitas","3306");
+        }
+        return $this->cn;
+    */
 } 

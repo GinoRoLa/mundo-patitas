@@ -281,7 +281,8 @@ VALUES
 -- t94TrabajadoresAlmacenes
 INSERT INTO t94TrabajadoresAlmacenes (id_Trabajador, Id_DireccionAlmacen) VALUES 
 (50003, 1),
-(50004, 1);
+(50004, 1),
+(50006, 1);
 
 
 -- t70DireccionEnvioCliente

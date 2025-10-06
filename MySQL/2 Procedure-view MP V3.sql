@@ -54,58 +54,6 @@ BEGIN
 END$$
 DELIMITER ;
 
-DROP PROCEDURE IF EXISTS sp_registrarPreorden;
-DELIMITER $$
-CREATE PROCEDURE sp_registrarPreorden(
-    IN p_idCliente INT,
-    IN p_productosJson JSON
-)
-BEGIN
-    DECLARE v_preordenId INT;
-    DECLARE v_productoId INT;
-    DECLARE v_cantidad INT;
-    DECLARE v_precio DECIMAL(12,2);
-    DECLARE v_index INT DEFAULT 0;
-    DECLARE v_totalProductos INT;
-    DECLARE v_totalPreorden DECIMAL(12,2) DEFAULT 0.00;
-
-    -- Insertar la preorden con total 0 temporalmente
-    INSERT INTO t01preordenpedido (t20Cliente_Id_Cliente, Estado, Total)
-    VALUES (p_idCliente, 'Emitido', 0.00);
-
-    SET v_preordenId = LAST_INSERT_ID();
-
-    -- Contar cuántos productos vienen en el JSON
-    SET v_totalProductos = JSON_LENGTH(p_productosJson);
-
-    WHILE v_index < v_totalProductos DO
-        SET v_productoId = JSON_UNQUOTE(JSON_EXTRACT(p_productosJson, CONCAT('$[', v_index, '].codigo')));
-        SET v_cantidad  = JSON_UNQUOTE(JSON_EXTRACT(p_productosJson, CONCAT('$[', v_index, '].cantidad')));
-        SET v_precio    = JSON_UNQUOTE(JSON_EXTRACT(p_productosJson, CONCAT('$[', v_index, '].precio')));
-
-        -- Insertar detalle
-        INSERT INTO t61detapreorden (t18CatalogoProducto_Id_Producto, t01PreOrdenPedido_Id_PreOrdenPedido, Cantidad)
-        VALUES (v_productoId, v_preordenId, v_cantidad);
-
-        -- Actualizar stock del producto
-        UPDATE t18CatalogoProducto
-        SET StockActual = StockActual - v_cantidad
-        WHERE Id_Producto = v_productoId;
-
-        -- Acumular el total de la preorden usando el precio del JSON
-        SET v_totalPreorden = v_totalPreorden + (v_precio * v_cantidad);
-
-        SET v_index = v_index + 1;
-    END WHILE;
-
-    -- Actualizar el total de la preorden
-    UPDATE t01preordenpedido
-    SET Total = v_totalPreorden
-    WHERE Id_PreOrdenPedido = v_preordenId;
-
-END$$
-DELIMITER ;
-
 DROP PROCEDURE IF EXISTS registrarMovimiento;
 DELIMITER $$
 
@@ -154,8 +102,10 @@ BEGIN
         FROM t61detapreorden d
         INNER JOIN t01preordenpedido pre 
             ON d.t01PreOrdenPedido_Id_PreOrdenPedido = pre.Id_PreOrdenPedido
+        INNER JOIN t90preorden_ordenpedido rel
+            ON pre.Id_PreOrdenPedido = rel.Id_PreOrdenPedido
         INNER JOIN t02ordenpedido o
-            ON pre.t02OrdenPedido_Id_OrdenPedido = o.Id_OrdenPedido
+            ON rel.Id_OrdenPedido = o.Id_OrdenPedido
         WHERE o.Id_OrdenPedido = v_Id_OrdenPedido;
     
     UPDATE t02ordenpedido
@@ -171,8 +121,6 @@ DELIMITER ;
 -- ==========================================================
 -- Procedimientos Orden CUS02
 -- ==========================================================
-
-USE mundo_patitas3;
 
 -- Limpieza defensiva
 DROP PROCEDURE IF EXISTS sp_preorden_vigentes_por_dni;

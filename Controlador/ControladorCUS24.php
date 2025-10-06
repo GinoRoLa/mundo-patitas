@@ -29,7 +29,7 @@ try {
       // session_start();
       // $idTrabajador = (int)($_SESSION['id_trabajador'] ?? 0);
       // DEMO: por ahora, simula con un DNI
-      $dniDemo = '55555555';
+      $dniDemo = '77777777';
 
       $trabM = new Trabajador();
       $tRow  = $trabM->buscarPorDni($dniDemo);

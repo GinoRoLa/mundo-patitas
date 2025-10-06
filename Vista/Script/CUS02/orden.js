@@ -12,46 +12,53 @@
   }
 
   function recomputeCostoEntrega() {
-    const cboEntrega = document.getElementById("cboEntrega");
-    const base = Number(cboEntrega?.selectedOptions?.[0]?.dataset?.costo || 0);
-    let costo = base;
+  const cboEntrega = document.getElementById("cboEntrega");
+  const base = Number(cboEntrega?.selectedOptions?.[0]?.dataset?.costo || 0);
+  let costo = base;
 
-    if (isDeliverySelected()) {
-      const modo =
-        document.querySelector('input[name="envioModo"]:checked')?.value ||
-        "otra";
-      let distritoTxt = "";
+  if (isDeliverySelected()) {
+    const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
 
-      if (modo === "guardada") {
-        const opt = document.getElementById("cboDireccionGuardada")
-          ?.selectedOptions?.[0];
-        distritoTxt = opt?.dataset?.distrito || "";
-      } else {
-        distritoTxt = (
-          document.getElementById("envioDistrito")?.value || ""
-        ).trim();
+    if (modo === "guardada") {
+      const opt = document.getElementById("cboDireccionGuardada")?.selectedOptions?.[0];
+      const distId = opt?.dataset?.distritoId || "";      // ← usa ID si está
+      const distNm = opt?.dataset?.distrito   || "";      // fallback nombre
+      let det = null;
+
+      if (distId && typeof window.costoPorIdLocal === "function") {
+        det = window.costoPorIdLocal(Number(distId));
       }
-
-      if (distritoTxt && typeof window.costoPorNombreLocal === "function") {
-        const det = window.costoPorNombreLocal(distritoTxt);
-        if (det && typeof det.MontoCosto !== "undefined") {
-          costo = Number(det.MontoCosto);
-        }
+      if (!det && distNm && typeof window.costoPorNombreLocal === "function") {
+        det = window.costoPorNombreLocal(distNm);
       }
-    }
+      if (det && typeof det.MontoCosto !== "undefined") {
+        costo = Number(det.MontoCosto);
+      }
+    } else {
+      const distId = (document.getElementById("envioDistritoId")?.value || "").trim();
+      const distNm = (document.getElementById("envioDistrito")?.value || "").trim();
+      let det = null;
 
-    setNum(document.getElementById("txtCostoEnt"), costo);
-
-    // Recalcula total si ya hay subtotal/desc
-    const subt = Number(document.getElementById("txtSubTotal")?.value || 0);
-    const desc = Number(document.getElementById("txtDesc")?.value || 0);
-    if (subt || desc) {
-      setNum(
-        document.getElementById("txtTotal"),
-        Math.max(0, subt - desc + costo)
-      );
+      if (distId && typeof window.costoPorIdLocal === "function") {
+        det = window.costoPorIdLocal(Number(distId));
+      }
+      if (!det && distNm && typeof window.costoPorNombreLocal === "function") {
+        det = window.costoPorNombreLocal(distNm);
+      }
+      if (det && typeof det.MontoCosto !== "undefined") {
+        costo = Number(det.MontoCosto);
+      }
     }
   }
+
+  setNum(document.getElementById("txtCostoEnt"), costo);
+  const subt = Number(document.getElementById("txtSubTotal")?.value || 0);
+  const desc = Number(document.getElementById("txtDesc")?.value || 0);
+  if (subt || desc) {
+    setNum(document.getElementById("txtTotal"), Math.max(0, subt - desc + costo));
+  }
+}
+
 
   // === Prefill desde dirección guardada + LOG ===
   function _prefillDesdeGuardada(debug = true) {
@@ -205,6 +212,7 @@
         "envioDireccion",
         "envioReceptorDni",
         "envioDistrito",
+        "envioDistritoId"
       ].forEach((id) => {
         const el = document.getElementById(id);
         if (el) el.value = "";
@@ -488,27 +496,20 @@
         payload.append("envioReceptorDni", opt?.dataset?.dni || "");
         payload.append("envioDistrito", opt?.dataset?.distrito || "");
       } else {
-        const nom = (
-          document.getElementById("envioNombre")?.value || ""
-        ).trim();
-        const tel = (
-          document.getElementById("envioTelefono")?.value || ""
-        ).trim();
-        const dir = (
-          document.getElementById("envioDireccion")?.value || ""
-        ).trim();
-        const dniRec = (
-          document.getElementById("envioReceptorDni")?.value || ""
-        ).trim();
-        const dis = (
-          document.getElementById("envioDistrito")?.value || ""
-        ).trim();
+        const nom = (document.getElementById("envioNombre")?.value || "").trim();
+  const tel = (document.getElementById("envioTelefono")?.value || "").trim();
+  const dir = (document.getElementById("envioDireccion")?.value || "").trim();
+  const dniRec = (document.getElementById("envioReceptorDni")?.value || "").trim();
+  const dis    = (document.getElementById("envioDistrito")?.value || "").trim();
+  const disId  = (document.getElementById("envioDistritoId")?.value || "").trim(); // ← NUEVO
 
         payload.append("envioNombre", nom);
         payload.append("envioTelefono", tel);
         payload.append("envioDireccion", dir);
         payload.append("envioReceptorDni", dniRec);
         payload.append("envioDistrito", dis);
+        if(disId) payload.append("envioDistritoId", disId);
+        
         if (document.getElementById("chkGuardarDireccion")?.checked) {
           payload.append("guardarDireccionCliente", "1");
         }

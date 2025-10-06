@@ -1,6 +1,6 @@
-// ======== t77 en front (sin endpoint) ========
+// ======== t77 en front ========
 
-// Normaliza texto (quita tildes, minúsculas, trim)
+// Normaliza texto
 function _norm(s) {
   return (s || "")
     .normalize("NFD")
@@ -11,16 +11,24 @@ function _norm(s) {
 
 // Estructuras en memoria
 let DIST_LIST = Array.isArray(window.T77) ? window.T77 : [];
-let DIST_MAP  = {};
+let DIST_BY_NAME = {};
+let DIST_BY_ID = {};
 
-// Hidrata mapa y arma el datalist
 function hydrateDistritos() {
   DIST_LIST = Array.isArray(window.T77) ? window.T77 : [];
-  DIST_MAP = {};
+  DIST_BY_NAME = {};
+  DIST_BY_ID = {};
+
   DIST_LIST.forEach(d => {
-    // t77: DescNombre, MontoCosto, Estado
     if ((d.Estado || "").toLowerCase() === "activo") {
-      DIST_MAP[_norm(d.DescNombre)] = d;
+      const rec = {
+        Id_Distrito: Number(d.Id_Distrito),
+        DescNombre: d.DescNombre,
+        MontoCosto: Number(d.MontoCosto),
+        Estado: d.Estado
+      };
+      DIST_BY_NAME[_norm(d.DescNombre)] = rec;
+      DIST_BY_ID[rec.Id_Distrito] = rec;
     }
   });
   _buildDistritoDatalist();
@@ -30,26 +38,32 @@ function _buildDistritoDatalist() {
   const dl = document.getElementById("dlDistritos");
   if (!dl) return;
   dl.innerHTML = "";
-  DIST_LIST
-    .filter(d => (d.Estado || "").toLowerCase() === "activo")
-    .forEach(d => {
-      const opt = document.createElement("option");
-      opt.value = d.DescNombre; // lo que se coloca en el input
-      opt.label = `${d.DescNombre} — S/ ${Number(d.MontoCosto).toFixed(2)}`;
-      opt.dataset.monto = d.MontoCosto; // opcional
-      dl.appendChild(opt);
-    });
+  Object.values(DIST_BY_ID).forEach(d => {
+    const opt = document.createElement("option");
+    opt.value = d.DescNombre;
+    opt.label = `${d.DescNombre} — S/ ${d.MontoCosto.toFixed(2)}`;
+    opt.dataset.monto = d.MontoCosto;
+    dl.appendChild(opt);
+  });
 }
 
-// Lookup local por nombre de distrito
+// Lookup por nombre (¡incluye Id_Distrito!)
 function costoPorNombreLocal(nombre) {
-  const rec = DIST_MAP[_norm(nombre)];
+  const rec = DIST_BY_NAME[_norm(nombre)];
   return rec
-    ? { MontoCosto: Number(rec.MontoCosto), DescNombre: rec.DescNombre }
+    ? { Id_Distrito: rec.Id_Distrito, MontoCosto: rec.MontoCosto, DescNombre: rec.DescNombre }
     : null;
 }
 
-// Setea costo en UI y recalcula total
+// Lookup por ID
+function costoPorIdLocal(id) {
+  const rec = DIST_BY_ID[Number(id)];
+  return rec
+    ? { Id_Distrito: rec.Id_Distrito, MontoCosto: rec.MontoCosto, DescNombre: rec.DescNombre }
+    : null;
+}
+
+// Setea costo y total
 function setCostoEnvio(nuevoCosto) {
   const ent = document.getElementById("txtCostoEnt");
   if (!ent) return;
@@ -63,26 +77,26 @@ function setCostoEnvio(nuevoCosto) {
   if (tot) tot.value = total.toFixed(2);
 }
 
-// Activa typeahead para "otra dirección"
+// Typeahead para “otra dirección”
 function setupDistritoTypeahead() {
   const inp = document.getElementById("envioDistrito");
   if (!inp) return;
-  inp.setAttribute("list", "dlDistritos"); // conecta al datalist
-
-  if (inp._bound) return;  // evita listeners duplicados
+  inp.setAttribute("list", "dlDistritos");
+  if (inp._bound) return;
   inp._bound = true;
 
   const hint = document.getElementById("distritoHint");
+  const hid  = document.getElementById("envioDistritoId");
 
   const apply = () => {
     const m = costoPorNombreLocal(inp.value);
     if (m) {
       setCostoEnvio(m.MontoCosto);
+      if (hid) hid.value = m.Id_Distrito;  // ← ahora sí se guarda el ID
       if (hint) hint.textContent = `Costo por distrito: S/ ${m.MontoCosto.toFixed(2)}`;
     } else {
+      if (hid) hid.value = "";
       if (hint) hint.textContent = "Distrito no encontrado en la lista.";
-      // Si quieres, puedes resetear costo a 0:
-      // setCostoEnvio(0);
     }
     window.Orden?.validarReadyParaRegistrar?.();
   };
@@ -91,9 +105,9 @@ function setupDistritoTypeahead() {
   inp.addEventListener("change", apply);
 }
 
-// Llamar una vez en el arranque (p.ej. DOMContentLoaded)
 document.addEventListener("DOMContentLoaded", hydrateDistritos);
 
-// Exponer helpers si otros módulos los usan
+// Exponer helpers
 window.costoPorNombreLocal = costoPorNombreLocal;
+window.costoPorIdLocal = costoPorIdLocal;
 window.setupDistritoTypeahead = setupDistritoTypeahead;

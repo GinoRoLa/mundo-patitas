@@ -165,9 +165,10 @@ $t77 = (new DistritoEnvio())->listarActivos();
               </div>
               <div>
                 <label for="envioDistrito">Distrito</label>
-                <input id="envioDistrito" maxlength="120" placeholder="Distrito" autocomplete="address-level2">
-                <datalist id="dlDistritos"></datalist>
-                <small id="distritoHint" class="hint"></small>
+<input id="envioDistrito" maxlength="120" placeholder="Distrito" autocomplete="address-level2">
+<input type="hidden" id="envioDistritoId" name="envioDistritoId"> <!-- ← NUEVO -->
+<datalist id="dlDistritos"></datalist>
+<small id="distritoHint" class="hint"></small>
 
 
               </div>

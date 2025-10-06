@@ -92,15 +92,15 @@ try {
 
       if (!dni_ok($dni)) err('DNI inválido.', 422);
       if (!is_array($idsPre) || !$idsPre) err('Debe seleccionar al menos una preorden.', 422);
-      $idsPre = array_values(array_map('intval', $idsPre));
+      $idsPre = array_values(array_unique(array_map('intval', $idsPre)));
 
-      $costoEntrega = 0.00; // ← inicializa siempre
+      $costoEntrega = 0.00;
 
-      // Método y costo base (t27 ya no tiene Costo; conservamos 0 como base)
+      // Método de entrega (activo)
       $met = (new MetodoEntrega())->obtenerPorId($metodoId);
       if (!$met || (isset($met['Estado']) && $met['Estado'] !== 'Activo')) err('Método de entrega inválido.', 422);
 
-      // Validar/Consolidar preórdenes
+      // Validar / consolidar preórdenes
       $preM = new PreOrden();
       $validas = $preM->filtrarVigentesDelCliente($dni, $idsPre);
       if (count($validas) !== count($idsPre)) err('Hay preórdenes no vigentes o que no pertenecen al cliente. Refresca la lista.', 422);
@@ -118,36 +118,51 @@ try {
         ? ((int)$met['EsDelivery'] === 1)
         : (stripos(($met['Descripcion'] ?? ''), 'delivery') !== false);
 
-      // Si es delivery, intenta costo por distrito desde t77 (por nombre)
+      // Si es delivery, calcula costo por distrito (preferir Id; fallback nombre)
       if ($esDelivery) {
-        $distritoParaCosto = null;
-        $direccionEnvioId  = (int)($_POST['direccionEnvioId'] ?? 0);
+        $distM = new DistritoEnvio();
+        $direccionEnvioId = (int)($_POST['direccionEnvioId'] ?? 0);
 
+        // Asegurar cliente (también se usará luego)
         $cli = (new Cliente())->buscarPorDni($dni);
         if (!$cli) err('Cliente no encontrado por DNI', 422);
         $idClienteInt = (int)$cli['Id_Cliente'];
 
+        $idDistritoParaCosto = null;
+
         if ($direccionEnvioId > 0) {
+          // Direccion guardada: traer Id_Distrito desde t70
           $rowGuard = (new DireccionEnvioCliente())->obtenerDeCliente($idClienteInt, $direccionEnvioId);
           if (!$rowGuard) err('Dirección guardada inválida para este cliente.', 422);
-          $distritoParaCosto = trim((string)($rowGuard['DistritoNombre'] ?? ''));
+          if (isset($rowGuard['Id_Distrito'])) {
+            $idDistritoParaCosto = (int)$rowGuard['Id_Distrito'];
+          }
         } else {
-          $distritoParaCosto = trim((string)($_POST['envioDistrito'] ?? ''));
+          // Otra dirección: preferir hidden `envioDistritoId`; fallback por nombre si no llega
+          $idDistritoPost = (int)($_POST['envioDistritoId'] ?? 0);
+          if ($idDistritoPost > 0) {
+            $idDistritoParaCosto = $idDistritoPost;
+          } else {
+            $distritoNombre = trim((string)($_POST['envioDistrito'] ?? ''));
+            // Fallback por nombre:
+            if ($distritoNombre !== '') {
+              $idFound = $distM->idPorNombre($distritoNombre);
+              if ($idFound) $idDistritoParaCosto = $idFound;
+            }
+          }
         }
 
-        if ($distritoParaCosto !== '') {
-          $distM = new DistritoEnvio();
-          $costoDist = $distM->costoPorNombre($distritoParaCosto);
+        if ($idDistritoParaCosto) {
+          $costoDist = $distM->costoPorId($idDistritoParaCosto);
           if ($costoDist !== null) {
             $costoEntrega = (float)$costoDist;
           }
         }
       }
 
-      // Total definitivo
       $total = max(0, $subt - $desc + $costoEntrega);
 
-      // Cliente (si no es delivery aún no lo habíamos traído)
+      // Asegurar idClienteInt si no era delivery
       if (!isset($idClienteInt)) {
         $cli = (new Cliente())->buscarPorDni($dni);
         if (!$cli) err('Cliente no encontrado por DNI', 422);
@@ -174,8 +189,6 @@ try {
         ]);
       }
 
-
-
       // Snapshot de envío (guardada u otra)
       if ($esDelivery) {
         $dirM = new DireccionEnvioCliente();
@@ -191,7 +204,7 @@ try {
             $nombre   = trim($_POST['envioNombre']    ?? '');
             $tel      = trim($_POST['envioTelefono']  ?? '');
             $dir      = trim($_POST['envioDireccion'] ?? '');
-            $distrito = trim($_POST['envioDistrito']  ?? '');
+            $distrito = trim($_POST['envioDistrito']  ?? ''); // el modelo resolverá Id_Distrito
             $dniRec   = trim($_POST['envioReceptorDni'] ?? '');
             $dirM->crearSnapshotDesdeOtra($ordenId, $idClienteInt, $nombre, $tel, $dir, $distrito, $dniRec, $guardar);
           }
@@ -202,6 +215,7 @@ try {
 
       ok(['ordenId' => $ordenId, 'msg' => 'Orden generada y preórdenes procesadas.']);
       break;
+
 
     default:
       err('Acción no encontrada', 404, ['accion' => $accion]);

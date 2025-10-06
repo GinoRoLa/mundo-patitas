@@ -56,6 +56,7 @@
       "#envioDireccion",
       "#envioReceptorDni",
       "#envioDistrito",
+      "#envioDistritoId",
       "#chkGuardarDireccion",
     ].forEach((sel) => $(sel)?.addEventListener("input", revalida));
 
@@ -78,6 +79,29 @@
 
       revalida();
     });
+
+    $("#cboDireccionGuardada")?.addEventListener("change", (e) => {
+  const opt = e.target.selectedOptions?.[0];
+  if (!opt) return;
+
+  const dni   = opt.dataset.dni  || "";
+  const dist  = opt.dataset.dist || "";          // nombre (por compatibilidad)
+  const distId = opt.dataset.distritoId || "";   // ← NUEVO (asegúrate que cliente.js setee data-distrito-id)
+
+  const dniRec  = $("#envioReceptorDni");
+  const distInp = $("#envioDistrito");
+  const distHid = $("#envioDistritoId");         // ← hidden
+
+  if (dniRec && /^\d{8}$/.test(dni)) dniRec.value = dni;
+  if (distInp) distInp.value = dist;
+  if (distHid) distHid.value = distId;           // ← setea el ID
+
+  const modo = document.querySelector('input[name="envioModo"]:checked')?.value || "otra";
+  if (distInp) distInp.disabled = (modo === "guardada");
+
+  revalida();
+});
+
 
     // 7) Normalización de teléfono: sólo dígitos y máximo 9
     const tel = $("#envioTelefono");

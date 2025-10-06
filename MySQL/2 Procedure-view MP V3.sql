@@ -376,7 +376,6 @@ BEGIN
     t40.FechaProgramada              AS fechaProgramada,
     t40.FecCreacion                  AS fecCreacion,
     t40.Estado                       AS estado,
-
     t79.Id_Trabajador                AS idTrabajador,
     t16.DNITrabajador                AS dni,
     t16.des_nombreTrabajador         AS nombre,
@@ -385,7 +384,8 @@ BEGIN
     t16.num_telefono                 AS telefono,
     t16.email                        AS email,
     t16.cargo                        AS cargo,
-
+    t41.Num_Licencia                 AS numLicencia,
+    t41.Estado                       AS licenciaEstado,
     t79.Id_Vehiculo                  AS idVehiculo,
     t78.Marca                        AS vehMarca,
     t78.Placa                        AS vehPlaca,
@@ -397,6 +397,9 @@ BEGIN
        ON t16.id_Trabajador = t79.Id_Trabajador
   JOIN t78Vehiculo t78
        ON t78.Id_Vehiculo = t79.Id_Vehiculo
+  LEFT JOIN t41LicenciaConductor t41
+       ON t41.id_Trabajador = t16.id_Trabajador
+       AND t41.Estado = 'Vigente'
   WHERE t40.Id_OrdenAsignacion = pIdAsignacion
   LIMIT 1;
 END$$

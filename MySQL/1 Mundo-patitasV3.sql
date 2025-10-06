@@ -96,6 +96,23 @@ CREATE TABLE t16CatalogoTrabajadores (
   UNIQUE KEY uq_t16_dni (DNITrabajador)
 ) ENGINE=InnoDB AUTO_INCREMENT=50001;
 
+CREATE TABLE t41LicenciaConductor (
+  Id_Licencia INT NOT NULL AUTO_INCREMENT,
+  id_Trabajador INT NOT NULL,
+  Num_Licencia VARCHAR(20) NOT NULL,
+  Categoria VARCHAR(10) NOT NULL,
+  Fec_Emision DATE NOT NULL,
+  Fec_Revalidacion DATE NOT NULL,
+  Estado VARCHAR(15) NOT NULL DEFAULT 'Vigente',
+  PRIMARY KEY (Id_Licencia),
+  UNIQUE KEY uq_t41_num_licencia (Num_Licencia),
+  KEY idx_t41_trabajador (id_Trabajador),
+  KEY idx_t41_estado_revalidacion (Estado, Fec_Revalidacion),
+  CONSTRAINT fk_t41_t16 FOREIGN KEY (id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=41001;
+
 -- ==========================================================
 -- 2) Productos / Proveedores
 -- ==========================================================

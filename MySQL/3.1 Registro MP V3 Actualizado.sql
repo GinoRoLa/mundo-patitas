@@ -319,3 +319,7 @@ INSERT INTO t30TipoBanco (Id_TipoBanco, Descripcion) VALUES
 
 
 -- 
+INSERT INTO t41LicenciaConductor 
+  (id_Trabajador, Num_Licencia, Categoria, Fec_Emision, Fec_Revalidacion, Estado)
+VALUES
+  (50002, 'Q44444444', 'A-II-a', '2020-03-15', '2025-03-15', 'Vigente');

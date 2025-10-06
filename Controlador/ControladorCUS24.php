@@ -54,7 +54,7 @@ try {
       ];
       ok($resp);
       break;
-    
+
     case 'buscar-asignacion':
       if ($_SERVER['REQUEST_METHOD'] !== 'GET') err('Method Not Allowed', 405);
       $id = (int)($_GET['id'] ?? 0);
@@ -65,13 +65,15 @@ try {
       if (!$enc) err('Asignación no encontrada.', 404);
 
       $pedidos = $repo->obtenerPedidos($id);
+      $licNum    = $enc['numLicencia']     ?? null;
+      $licEstado = $enc['licenciaEstado']  ?? null;
 
       ok([
         'asignacion' => [
           'id'              => (int)$enc['id'],
           'fechaProgramada' => $enc['fechaProgramada'],
           'fecCreacion'     => $enc['fecCreacion'],
-          'estado'          => $enc['estado']
+          'estado'          => $enc['estado'],
         ],
         'repartidor' => [
           'idTrabajador' => (int)$enc['idTrabajador'],
@@ -81,16 +83,26 @@ try {
           'apeMat'       => $enc['apeMat'],
           'telefono'     => $enc['telefono'],
           'email'        => $enc['email'],
-          'cargo'        => $enc['cargo']
+          'cargo'        => $enc['cargo'],
+
+          // ✔️ campo plano para compatibilidad con tu front:
+          'licencia'     => $licNum,
+
+          // ✔️ bloque detallado si lo quieres aprovechar:
+          'licenciaInfo' => [
+            'numero' => $licNum,
+            'estado' => $licEstado,
+          ],
         ],
         'vehiculo' => [
           'idVehiculo' => (int)$enc['idVehiculo'],
           'marca'      => $enc['vehMarca'],
           'placa'      => $enc['vehPlaca'],
-          'modelo'     => $enc['vehModelo']
+          'modelo'     => $enc['vehModelo'],
         ],
-        'pedidos' => $pedidos
+        'pedidos' => $pedidos,
       ]);
+
       break;
 
     default:

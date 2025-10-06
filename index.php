@@ -74,6 +74,19 @@
                             </div>
                         </div>
                     </div>
+                    <!-- Card CUS24 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS24</h5>
+                                <p class="card-text flex-grow-1">Salida de Entrega</p>
+                                <a href="http://localhost:8080/mundo-patitas/vista/Page/CUS24_IU024.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
 
                 </div>
             </section>

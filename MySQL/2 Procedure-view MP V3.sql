@@ -132,8 +132,8 @@ BEGIN
         END IF;
 
         -- 1. Registrar la Orden de Salida
-        INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido)
-        VALUES (v_Id_OrdenPedido);
+        INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido, Tipo_Movimiento)
+        VALUES (v_Id_OrdenPedido, 'Venta');
 
         SET v_Id_OrdenSalida = LAST_INSERT_ID();
 
@@ -414,3 +414,91 @@ BEGIN
   SELECT v_ins AS preordenes_vinculadas, v_upd AS preordenes_marcadas;
 END$$
 DELIMITER ;
+
+-- ==========================================================
+-- Procedimientos Orden CUS24
+-- ==========================================================
+DROP PROCEDURE IF EXISTS sp_cus24_get_asignacion_encabezado;
+DELIMITER $$
+CREATE PROCEDURE sp_cus24_get_asignacion_encabezado(IN pIdAsignacion INT)
+SQL SECURITY INVOKER
+BEGIN
+  SELECT 
+    t40.Id_OrdenAsignacion           AS id,
+    t40.FechaProgramada              AS fechaProgramada,
+    t40.FecCreacion                  AS fecCreacion,
+    t40.Estado                       AS estado,
+
+    t79.Id_Trabajador                AS idTrabajador,
+    t16.DNITrabajador                AS dni,
+    t16.des_nombreTrabajador         AS nombre,
+    t16.des_apepatTrabajador         AS apePat,
+    t16.des_apematTrabajador         AS apeMat,
+    t16.num_telefono                 AS telefono,
+    t16.email                        AS email,
+    t16.cargo                        AS cargo,
+
+    t79.Id_Vehiculo                  AS idVehiculo,
+    t78.Marca                        AS vehMarca,
+    t78.Placa                        AS vehPlaca,
+    t78.Modelo                       AS vehModelo
+  FROM t40OrdenAsignacionReparto t40
+  JOIN t79AsignacionRepartidorVehiculo t79
+       ON t79.Id_AsignacionRepartidorVehiculo = t40.Id_AsignacionRepartidorVehiculo
+  JOIN t16CatalogoTrabajadores t16
+       ON t16.id_Trabajador = t79.Id_Trabajador
+  JOIN t78Vehiculo t78
+       ON t78.Id_Vehiculo = t79.Id_Vehiculo
+  WHERE t40.Id_OrdenAsignacion = pIdAsignacion
+  LIMIT 1;
+END$$
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_cus24_get_asignacion_pedidos;
+DELIMITER $$
+CREATE PROCEDURE sp_cus24_get_asignacion_pedidos(IN pIdAsignacion INT)
+SQL SECURITY INVOKER
+BEGIN
+  SELECT
+    t02.Id_OrdenPedido                                 AS idOrdenPedido,
+    t59.Id_OSE                                         AS idOSE,
+    t02.Estado                                         AS estadoOP,
+    CONCAT(c.des_nombreCliente,' ',c.des_apepatCliente,' ',c.des_apematCliente) AS cliente,
+    t71.DireccionSnap                                  AS direccion,
+    t71.Id_Distrito                                    AS distritoId,
+    d.DescNombre                                       AS distritoNombre
+  FROM t401DetalleAsignacionReparto d401
+  JOIN t59OrdenServicioEntrega t59
+       ON t59.Id_OSE = d401.Id_OSE
+  JOIN t02OrdenPedido t02
+       ON t02.Id_OrdenPedido = t59.Id_OrdenPedido
+  LEFT JOIN t71OrdenDirecEnvio t71
+       ON t71.Id_OrdenPedido = t02.Id_OrdenPedido
+  LEFT JOIN t77DistritoEnvio d
+       ON d.Id_Distrito = t71.Id_Distrito
+  LEFT JOIN t20Cliente c
+       ON c.Id_Cliente = t02.Id_Cliente
+  WHERE d401.Id_OrdenAsignacion = pIdAsignacion
+  ORDER BY d.DescNombre, t71.DireccionSnap, t02.Id_OrdenPedido;
+END$$
+DELIMITER ;
+
+
+DROP PROCEDURE IF EXISTS sp_cus24_get_items_op;
+DELIMITER $$
+CREATE PROCEDURE sp_cus24_get_items_op(IN pIdOrden INT)
+SQL SECURITY INVOKER
+BEGIN
+  SELECT 
+    d.Id_DetOrdenPedido   AS idDet,
+    d.t18CatalogoProducto_Id_Producto AS idProducto,
+    p.NombreProducto      AS descripcion,
+    d.Cantidad            AS cantidad
+  FROM t60DetOrdenPedido d
+  JOIN t18CatalogoProducto p ON p.Id_Producto = d.t18CatalogoProducto_Id_Producto
+  WHERE d.t02OrdenPedido_Id_OrdenPedido = pIdOrden
+  ORDER BY d.Id_DetOrdenPedido;
+END$$
+DELIMITER ;
+

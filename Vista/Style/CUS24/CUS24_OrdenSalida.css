@@ -1,0 +1,639 @@
+/* ================== Reset & Variables ================== */
+* { box-sizing: border-box; }
+
+:root{
+  /* Paleta principal*/
+  --bg: #f0f4f9;
+  --card: #ffffff;
+  --text: #111827;
+  --muted: #1e293b;
+
+  /* Bordes / sombras */
+  --border: #e2e8f0;
+  --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+
+  /* Primarios */
+  --primary: #93c5fd;
+  --primary-600:#3b82f6;
+  --primary-50:#eff6ff;
+
+  /* Estados */
+  --success:#16a34a;
+  --danger:#dc2626;
+
+  /* Textos secundarios */
+  --text-strong: #1e293b;
+
+  /* Placeholders */
+  --placeholder:#94a3b8;
+
+  /* Superficies claras */
+  --surface-muted:#f8fafc;
+
+  /* Focus / Hovers */
+  --focus-ring: rgba(147, 197, 253, .45); 
+  --hover-shadow: rgba(59, 130, 246, .15);
+
+  /* Chips, tablas y resaltados*/
+  --soft-rose:#bfdbfe;
+  --table-row-hover:#eff6ff;
+
+  /* Paneles */
+  --panel-bg:#dbeafe; 
+
+  /* Mensajes */
+  --msg-bg:#f1f5f9; 
+  --msg-text:#334155;
+  --ok-bg:#ecfdf5;
+  --ok-text:#065f46;
+  --ok-border:#a7f3d0;
+  --error-bg:#fff2f2;  
+  --error-text:#7f1d1d; 
+  --error-border:#fbcaca;
+
+  /* Head de tabla */
+  --thead-bg: var(--soft-rose);
+  --thead-text: var(--text-strong);
+
+  /* Grises */
+  --gray-strong:#475569;
+  --gray-soft:#e2e8f0;
+
+  /* Radios / tipografías */
+  --radius-lg: 16px;
+  --radius-md: 12px;
+  --radius-sm: 10px;
+
+  --fs-h2: 22px;
+  --fs-h3: 13px;
+  --fs-label: 12px;
+  --fs-body: 14px;
+
+  /* Límites de campos para centrar */
+  --field-min: 260px;
+  --field-max: 400px;
+  --field-gap: 18px;
+}
+
+html, body{
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font: var(--fs-body)/1.55 system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ================== Layout ================== */
+.container{
+  max-width: 1180px;
+  margin: 26px auto;
+  padding: 0 16px;
+}
+section{
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  padding: 22px;
+}
+
+h2{
+  margin: 0 0 14px;
+  font-size: var(--fs-h2);
+  font-weight: 800;
+  letter-spacing: .2px;
+}
+h3{
+  margin: 18px 0 12px;
+  font-size: var(--fs-h3);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .9px;
+}
+label{
+  color: var(--muted);
+  font-size: var(--fs-label);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+hr{
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
+
+.row{ display:flex; flex-wrap:wrap; gap:12px; align-items:center; }
+.row--between{ justify-content: space-between; }
+
+.grid{ display:grid; gap: 10px 14px; align-items:center; }
+.grid-2{ grid-template-columns: 1fr 1fr; }
+.grid-3{ grid-template-columns: 1fr 1fr 1fr; }
+
+@media (max-width: 920px){
+  .grid-2,.grid-3{ grid-template-columns: 1fr; }
+}
+
+/* ================== META (rol/actor/fecha/hora) ================== */
+section.has-meta{ position: relative; padding-top: 72px; }
+
+.row--meta{
+  position: absolute; top: 16px; right: 16px;
+  display: flex; flex-direction: column;
+  gap: 6px; align-items: flex-end;
+}
+.meta-line{ display:flex; gap:8px; align-items:center; }
+.row--meta .col{ display:flex; gap:6px; align-items:center; }
+
+#lblRol, #lblActor{
+  display:inline-block;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--gray-strong);
+  font-size: 12px; font-weight: 600;
+}
+
+.row--meta input[type="date"],
+.row--meta #txtHora{
+  height: 28px; padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--gray-strong);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+.row--meta label{ font-size: 11px; color: var(--gray-strong); text-transform: none; }
+
+@media (max-width: 720px){
+  .row--meta{ position: static; align-items: flex-start; margin-bottom: 8px; }
+  .meta-line{ flex-wrap: wrap; justify-content: flex-start; }
+}
+
+/* ================== Inputs ================== */
+input, select, button{ font: inherit; }
+
+input[type="text"],
+input[type="number"],
+input[type="date"],
+input[type="email"],
+select{
+  width: 100%;
+  height: 42px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--card);
+  color: var(--text);
+  transition: border-color .2s, box-shadow .2s, background .2s;
+}
+input:focus, select:focus{
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+input::placeholder{ color: var(--placeholder); }
+input[readonly]{
+  background: var(--surface-muted);
+  color: var(--text-strong);
+  border-color: var(--border);
+}
+input[disabled], select[disabled]{
+  background: var(--surface-muted);
+  color: var(--placeholder);
+  cursor: not-allowed;
+}
+
+.input-group{ display:flex; width:100%; align-items:stretch; }
+.input-group > input{
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.input-group > button{
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  min-width: 110px;
+}
+
+/* Validaciones visuales */
+.input--invalid{ border-color: var(--danger)!important; }
+.input--invalid:focus{ box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+.input--ok{ border-color: var(--success)!important; }
+.input--ok:focus{ box-shadow: 0 0 0 3px rgba(22,163,74,.15); }
+
+/* ================== Inputs estilo "chip suave" ================== */
+/* Esquinas menos redondeadas (6px), fondo suave y foco agradable */
+:root{
+  --radius-semi: 6px;                 /* menos redondeado que var(--radius-sm) */
+  --input-soft-bg: var(--primary-50);  /* tono suave del tema (azul claro) */
+  --input-soft-border: var(--border);
+}
+
+/* Aplica a <input>, <select> */
+.input--soft{
+  height: 40px;                        /* un poquito más compacto */
+  background: var(--input-soft-bg);
+  border: 3px solid var(--input-soft-border);
+  border-radius: var(--radius-semi);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.6);
+  transition: background .2s, border-color .2s, box-shadow .2s;
+}
+.input--soft::placeholder{ color: color-mix(in srgb, var(--placeholder), #000 12%); }
+
+.input--soft:focus{
+  background: #fff;
+  border-color: var(--primary-600);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+  outline: none;
+}
+
+/* Estados */
+.input--soft[readonly]{
+  background: var(--surface-muted);
+  color: var(--text-strong);
+}
+.input--soft[disabled]{
+  background: var(--surface-muted);
+  color: var(--placeholder);
+  cursor: not-allowed;
+}
+
+/* Compacto (opcional) */
+.input--compact{ height: 36px; padding: 8px 10px; }
+
+/* Validaciones con el nuevo estilo */
+.input--soft.input--invalid{ border-color: var(--danger) !important; }
+.input--soft.input--invalid:focus{ box-shadow: 0 0 0 3px rgba(220,38,38,.16); }
+.input--soft.input--ok{ border-color: var(--success) !important; }
+.input--soft.input--ok:focus{ box-shadow: 0 0 0 3px rgba(22,163,74,.16); }
+
+/* ========== Input-group con el estilo suave ========== */
+.input-group.input--soft > input{
+  background: var(--input-soft-bg);
+  border: 1px solid var(--input-soft-border);
+  border-right: 0;
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  height: 40px;
+}
+.input-group.input--soft > button{
+  height: 40px;
+  border: 1px solid var(--input-soft-border);
+  border-left: 0;
+  background: #fff;
+  color: var(--text-strong);
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+}
+.input-group.input--soft:focus-within > input{
+  background: #fff;
+  border-color: var(--primary-600);
+  box-shadow: 0 0 0 3px var(--focus-ring);
+}
+.input-group.input--soft:focus-within > button{
+  border-color: var(--primary-600);
+}
+
+/* Variante “borde cuadradito” para botones de grupo */
+.btn--square{ border-radius: var(--radius-semi); }
+
+
+/* ================== Botones ================== */
+button{
+  appearance:none;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: var(--text);
+  padding: 10px 16px;
+  height: 42px;
+  border-radius: var(--radius-sm);
+  font-weight: 700;
+  cursor:pointer;
+  transition: transform .05s ease, background .2s, border-color .2s, box-shadow .2s;
+}
+button:hover{
+  background: var(--primary-600);
+  border-color: var(--primary-600);
+  box-shadow: 0 6px 16px var(--hover-shadow);
+}
+button:active{ transform: translateY(1px); }
+button[disabled]{ opacity:.6; cursor:not-allowed; box-shadow:none; }
+
+.btn{ border:1px solid var(--border); background:#fff; border-radius:10px; padding:.55rem .9rem; }
+.btn-primary{ background:var(--primary); border-color:var(--primary-600); color:#111827; font-weight:600; }
+.btn-ghost{ background:#fff; color:var(--text-strong); border-color:var(--border); }
+.btn-ghost:hover{ background: var(--surface-muted); }
+
+/* ================== Tablas ================== */
+.table{
+  width:100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--card);
+  border:1px solid var(--border);
+  border-radius: var(--radius-md);
+  overflow:hidden;
+}
+.table thead th{
+  background: var(--thead-bg);
+  color: var(--thead-text);
+  text-align:left;
+  font-size: 12px;
+  padding: 11px 12px;
+  border-bottom:1px solid var(--border);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+.table tbody td{
+  padding: 11px 12px;
+  border-bottom:1px solid var(--border);
+  vertical-align: middle;
+}
+.table tbody tr:last-child td{ border-bottom:none; }
+.table tbody tr:hover{ background: var(--table-row-hover); }
+.table button{ height: 32px; padding: 6px 10px; }
+
+/* ================== Mensajes ================== */
+.msg{
+  min-height: 1.25em;
+  margin-top:14px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  border:1px solid var(--border);
+  background: var(--msg-bg);
+  color: var(--msg-text);
+}
+.msg.ok{
+  background: var(--ok-bg);
+  color: var(--ok-text);
+  border-color: var(--ok-border);
+}
+.msg.error{
+  background: var(--error-bg);
+  color: var(--error-text);
+  border-color: var(--error-border);
+}
+.hint{
+  display:block;
+  margin-top:6px;
+  font-size:12px;
+  color: var(--placeholder);
+}
+
+/* ================== Campos centrados y acotados ================== */
+.compact-fields input[type="text"],
+.compact-fields input[type="number"],
+.compact-fields input[type="date"],
+.compact-fields input[type="email"],
+.compact-fields select {
+  max-width: var(--field-max);
+}
+.compact-fields .grid,
+.compact-fields .row { justify-content: center; }
+
+.compact-fields .grid-2{
+  grid-template-columns: repeat(2, minmax(var(--field-min), var(--field-max)));
+  justify-content: center;
+  column-gap: var(--field-gap);
+  row-gap: 12px;
+}
+.compact-fields .grid-3{
+  grid-template-columns: repeat(3, minmax(var(--field-min), var(--field-max)));
+  justify-content: center;
+  column-gap: var(--field-gap);
+  row-gap: 12px;
+}
+.compact-fields .input-group{
+  max-width: var(--field-max);
+  margin-inline: auto;
+}
+.compact-fields fieldset{
+  display: grid;
+  justify-items: center;
+}
+.compact-fields fieldset > legend{
+  justify-self: start;
+}
+.compact-fields .grid.grid-2 fieldset{
+  max-width: calc(var(--field-max) + 24px);
+  width: 100%;
+}
+.compact-fields #txtOrigen,
+.compact-fields #txtDireccionActiva{
+  max-width: calc(var(--field-max) + 80px);
+}
+
+@media (max-width: 920px){
+  .compact-fields .grid-2,
+  .compact-fields .grid-3{
+    grid-template-columns: minmax(var(--field-min), var(--field-max));
+  }
+}
+
+/* ================== Ajustes sección Guía ================== */
+fieldset{
+  border:1px dashed var(--gray-soft);
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  padding: 14px;
+}
+legend{
+  padding: 0 6px;
+  font-size: var(--fs-label);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+/* ================== Acciones ================== */
+.acciones{ display:flex; gap:12px; justify-content:flex-end; margin-top: 16px; }
+
+/* ================== Modal ================== */
+.modal { border:0; padding:0; background:transparent; max-width:32rem; width:92%; }
+.modal::backdrop { background: rgba(15,23,42,.45); backdrop-filter: blur(2px); }
+.modal__card { background:#fff; border-radius:14px; padding:1.25rem 1.25rem 1rem; box-shadow: var(--shadow); min-width:260px; }
+.modal__title { margin:0 0 .5rem 0; font-size:1.125rem; font-weight:600; color: var(--text-strong); }
+.modal__msg { margin:0 0 1rem 0; color:#334155; line-height:1.45; }
+.modal__actions { display:flex; justify-content:flex-end; gap:.5rem; }
+
+/* ====== ASIGNACIÓN + REPARTIDOR (layout estilo boceto) ====== */
+.fieldset-asignacion{
+  border: 1px dashed var(--gray-soft);
+  background: var(--surface-muted);
+  border-radius: var(--radius-md);
+  padding: 16px 16px 18px;
+}
+
+/* Fila superior: label + input + botón */
+.form-row{
+  display: grid;
+  align-items: center;
+  gap: 10px 14px;
+  margin-bottom: 12px;
+}
+
+/* label | [input ....] [button] */
+.form-row--search{
+  grid-template-columns: 180px minmax(280px, 440px) auto;
+}
+.form-row--search label{
+  justify-self: end;
+  white-space: nowrap;
+}
+
+/* Dos columnas para los datos del repartidor */
+.cols-2{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 18px 36px;
+  margin-top: 6px;
+}
+
+/* Cada línea: label a la izquierda, input a la derecha */
+.field{
+  display: grid;
+  grid-template-columns: 160px minmax(240px, 420px);
+  align-items: center;
+  gap: 10px 14px;
+  margin: 6px 0;
+}
+.field label{
+  justify-self: end;        /* etiqueta pegada al campo */
+  white-space: nowrap;
+}
+
+/* Ajustes del grupo input+botón para que “pegue” visualmente */
+.fieldset-asignacion .input-group > input{
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+}
+.fieldset-asignacion .input-group > button{
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  min-width: 108px;
+}
+
+/* Responsivo: apilar columnas y poner label arriba si es muy estrecho */
+@media (max-width: 860px){
+  .form-row--search{
+    grid-template-columns: 1fr;      /* label encima */
+  }
+  .form-row--search label{
+    justify-self: start;
+  }
+  .cols-2{ grid-template-columns: 1fr; }
+  .field{ grid-template-columns: 1fr; }  /* label arriba, input abajo */
+  .field label{ justify-self: start; }
+}
+
+/* ===== Guía de Remisión – layout estilo boceto ===== */
+.guia{
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+/* Origen / Destino en la parte superior */
+.guia-row--top{
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px 24px;
+}
+
+/* Pareja label + input alineados como en el wireframe */
+.field.compact{
+  display: grid;
+  grid-template-columns: 100px 1fr;   /* ancho del label */
+  align-items: center;
+  gap: 8px 12px;
+}
+.field.compact label{
+  justify-self: end;                   /* etiqueta pegada al campo */
+  white-space: nowrap;
+}
+/* Fila de ancho completo (Conductor) */
+.field--full{
+  grid-column: 1 / -1;
+}
+
+/* Cajas internas (transportista / unidad) */
+.guia-box{
+  border: 1px solid var(--border, #e5e7eb);
+  background: var(--card, #fff);
+  border-radius: var(--radius-md, 12px);
+  padding: 14px 14px 12px;
+}
+.guia-box legend{
+  padding: 0 8px;
+  font-weight: 700;
+  color: var(--muted, #2b1c1c);
+  text-transform: none;
+  letter-spacing: .3px;
+}
+
+/* Grids internos */
+.guia-grid-trans{
+  display: grid;
+  grid-template-columns: 1fr 1fr;     /* DNI | Licencia */
+  gap: 12px 24px;
+}
+.guia-grid-trans .field{ grid-template-columns: 90px 1fr; }
+
+.guia-grid-unid{
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr; /* Marca | Placa | Modelo */
+  gap: 12px 24px;
+}
+.guia-grid-unid .field{ grid-template-columns: 80px 1fr; }
+
+/* Que los inputs no se vayan “de punta a punta” visualmente */
+.guia input[readonly]{
+  background: var(--surface-muted, #fafbfc);
+}
+
+/* Responsive */
+@media (max-width: 900px){
+  .guia-row--top{ grid-template-columns: 1fr; }
+  .field.compact{ grid-template-columns: 1fr; }
+  .field.compact label{ justify-self: start; }
+  .guia-grid-trans{ grid-template-columns: 1fr; }
+  .guia-grid-unid{ grid-template-columns: 1fr; }
+}
+
+
+.row--meta input[type="date"],
+.row--meta #hora{
+  height: 28px; padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  color: var(--gray-strong);
+  border: 1px solid var(--border);
+  font-size: 12px;
+}
+
+
+#msgAsignacion.msg{ margin-top:8px; padding:8px 10px; border:1px solid var(--border); border-radius:8px; background:var(--msg-bg); color:var(--msg-text); }
+#msgAsignacion.ok{ background:var(--ok-bg); color:var(--ok-text); border-color:var(--ok-border); }
+#msgAsignacion.error{ background:var(--error-bg); color:var(--error-text); border-color:var(--error-border); }
+#msgAsignacion.show{ display:block; } /* si prefieres, maneja opacidad/transición */
+
+/* borde rojo cuando hay error */
+.input--invalid{
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, .15);
+}
+
+/* mensaje de error generado por JS */
+.input-msg{
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--error-text);
+}
+
+
+/* Ya lo tenías, pero lo recuerdo */
+.input--invalid { border-color: var(--danger) !important; }
+.input--invalid:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.15); }

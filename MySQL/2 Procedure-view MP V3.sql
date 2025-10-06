@@ -132,8 +132,8 @@ BEGIN
         END IF;
 
         -- 1. Registrar la Orden de Salida
-        INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido)
-        VALUES (v_Id_OrdenPedido);
+        INSERT INTO t11ordensalida (t02OrdenPedido_Id_OrdenPedido, Tipo_Movimiento)
+        VALUES (v_Id_OrdenPedido, 'Venta');
 
         SET v_Id_OrdenSalida = LAST_INSERT_ID();
 

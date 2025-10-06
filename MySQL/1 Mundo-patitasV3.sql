@@ -978,4 +978,4 @@ CREATE INDEX idx_t26_estado ON t26ReporteCierreCaja (estado, Fec_emision);
 CREATE INDEX idx_t21_cmp ON t21NotaCredito (Nro_comprobantePago);
 CREATE INDEX idx_t09_fec ON t09OrdenIngresoAlmacen (fec_ingreso);
 CREATE INDEX idx_t60_orden ON t60DetOrdenPedido (t02OrdenPedido_Id_OrdenPedido);
-CREATE INDEX idx_t61_pre_prod ON t61detapreorden (t01PreOrdenPedido_Id_PreOrdenPedido, t18CatalogoProducto_Id_Producto);x
+CREATE INDEX idx_t61_pre_prod ON t61detapreorden (t01PreOrdenPedido_Id_PreOrdenPedido, t18CatalogoProducto_Id_Producto);

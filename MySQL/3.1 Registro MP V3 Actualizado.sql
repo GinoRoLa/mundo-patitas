@@ -1,4 +1,4 @@
-
+use mundo_patitas3;
 -- t16CatalogoTrabajadores
 INSERT INTO t16CatalogoTrabajadores
   (id_Trabajador, DNITrabajador, des_apepatTrabajador, des_apematTrabajador, des_nombreTrabajador, num_telefono, direccion, email, cargo, estado)
@@ -303,28 +303,6 @@ VALUES
   (60013, 'Patricia Castillo Zapata','989565656','Av. Brasil 1500, Jesús María',            404, '56565656'),
   (60014, 'Bruno Aguilar Sánchez','981787878', 'Av. La Marina 700, Pueblo Libre',           409, '78787878'),
   (60015, 'Verónica Chávez Ibarra','983909090','Jr. Ancash 210, Cercado de Lima',           403, '90909090');
-
-
--- t01PreOrdenPedido
-INSERT INTO t01PreOrdenPedido
-  (Id_PreOrdenPedido, t20Cliente_Id_Cliente, Fec_Emision, Estado, Total)
-VALUES
-  (10, 60001, NOW(), 'Emitido',   73.50),
-  (11, 60001, NOW(), 'Emitido',   42.00),
-  (12, 60001, NOW(), 'Emitido',   18.00),
-  (13, 60001, NOW(), 'Procesado', 27.90);
-
-
--- t61detapreorden
-INSERT INTO t61detapreorden
-  (Id_DetaPreOrden, t18CatalogoProducto_Id_Producto, t01PreOrdenPedido_Id_PreOrdenPedido, Cantidad)
-VALUES
-  (61019, 1001, 10, 2),
-  (61020, 1003, 10, 1),
-  (61021, 1005, 11, 1),
-  (61022, 1006, 11, 2),
-  (61023, 1004, 12, 1),
-  (61024, 1002, 13, 1);
 
 
 -- t28_Metodopago

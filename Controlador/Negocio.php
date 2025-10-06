@@ -41,7 +41,7 @@ class Negocio {
     //LISTA DE PRODUCTOS
     function listaProductos(){
         $obj= new Conexion();
-        $sql= "SELECT Id_Producto, NombreProducto, PrecioUnitario, StockActual, Marca FROM t18catalogoproducto WHERE Estado = 'activo';";
+        $sql= "SELECT Id_Producto, NombreProducto, PrecioUnitario, StockActual, Marca FROM t18catalogoproducto WHERE Estado = 'Disponible';";
         $res= mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
         $vec=array();
         while($f= mysqli_fetch_array($res)){

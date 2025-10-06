@@ -1,7 +1,6 @@
 SHOW VARIABLES LIKE 'event_scheduler';
 SET GLOBAL event_scheduler = ON;
 
-use mundo_patitas2;
 CREATE INDEX ix_orden_estado_fecha ON t02OrdenPedido (Estado, Fecha);
 
 -- Marca como Vencido cualquier pedido que siga en 'Generada' pasado el umbral

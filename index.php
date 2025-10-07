@@ -25,7 +25,7 @@
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">CUS01</h5>
                                 <p class="card-text flex-grow-1">Generar Preorden</p>
-                                <a href="http://localhost:8080/mundo-patitas/vista/Page/CUS01_IU001.php"
+                                <a href="Vista/Page/CUS01_IU001.php"
                                    class="btn btn-primary mt-auto" target="_blank">
                                     Ir al caso de uso
                                 </a>
@@ -39,7 +39,7 @@
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">CUS02</h5>
                                 <p class="card-text flex-grow-1">Generar Orden de Pedido</p>
-                                <a href="http://localhost:8080/mundo-patitas/vista/Page/CUS02_IU003.php" 
+                                <a href="Vista/Page/CUS02_IU003.php" 
                                    class="btn btn-primary mt-auto" target="_blank">
                                     Ir al caso de uso
                                 </a>
@@ -67,20 +67,21 @@
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">CUS04</h5>
                                 <p class="card-text flex-grow-1">Preparar pedido de venta</p>
-                                <a href="http://localhost:8080/mundo-patitas/vista/Page/CUS04_IU004.php" 
+                                <a href="Vista/Page/CUS04_IU004.php" 
                                    class="btn btn-primary mt-auto" target="_blank">
                                     Ir al caso de uso
                                 </a>
                             </div>
                         </div>
                     </div>
+
                     <!-- Card CUS24 -->
                     <div class="col">
                         <div class="card shadow-sm h-100">
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">CUS24</h5>
                                 <p class="card-text flex-grow-1">Salida de Entrega</p>
-                                <a href="http://localhost:8080/mundo-patitas/vista/Page/CUS24_IU024.php" 
+                                <a href="Vista/Page/CUS24_IU024.php" 
                                    class="btn btn-primary mt-auto" target="_blank">
                                     Ir al caso de uso
                                 </a>

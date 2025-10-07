@@ -1,0 +1,11 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+.detalle-pedido {
+  max-width: 920px;      /* ajusta a gusto */
+  margin: .25rem auto;   /* centra */
+}
+

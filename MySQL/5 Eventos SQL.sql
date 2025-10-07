@@ -1,3 +1,5 @@
+use mundo_patitas2;
+
 SHOW VARIABLES LIKE 'event_scheduler';
 SET GLOBAL event_scheduler = ON;
 

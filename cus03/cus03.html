@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interface cus03</title>
+    <!--  Coneccion con boostrap  -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet"
+        integrity="sha384-sRIl4kxILFvY47J16cr9ZwB07vP4J8+LH7qKQnuqkuIAvNWLzeN8tE5YBujZqJLB" crossorigin="anonymous">
+
+    <!-- Conexion con boostrap bootstrap-icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+
+    <link rel="stylesheet" href="/css/main.css">
+
+</head>
+
+<body>
+
+    <header>
+        <div class="container py-3">
+            <div class="d-flex flex-column gap-2 mb-3">
+                <div>
+                    <h1 class="h5 m-0">IU004 - Realizar cobro de pedido</h1>
+                </div>
+
+                <div class="d-flex gap-3">
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"> Cajero <i class="bi bi-person-badge m-2"></i> </span>
+                        <input type="text" class="form-control" value="Víctor Torres" aria-label="Cajero" readonly>
+                    </div>
+                    <div class="input-group input-group-sm">
+                        <span class="input-group-text"> Fecha actual <i class="bi-calendar3 m-2"></i></span>
+                        <input type="date" class="form-control" id="hoy" readonly>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <div class="container" id="cliente-section">
+            <fieldset class="border rounded-3 p-3 mb-3">
+                <legend class="float-none w-auto px-2 fs-5 fw-semibold mb-0">
+                    <i class="bi bi-person-circle"></i> Cliente
+                </legend>
+                <!-- Búsqueda por DNI -->
+                <div class="row g-3 align-items-end mb-2">
+                    <div class="col-sm-6 col-md-5 col-lg-4">
+                        <label for="dniCliente" class="form-label fw-semibold">Ingrese el DNI del cliente</label>
+                        <input type="text" id="dniCliente" class="form-control" placeholder="Ej. 12345678"
+                            inputmode="numeric" pattern="\d{8}" maxlength="8" autocomplete="off"
+                            aria-describedby="dniHelp">
+                    </div>
+
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="btnBuscar" type="button">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+                <hr class="my-3">
+                <!-- Datos del cliente -->
+                <div class="row g-4">
+                    <!-- Columna primera mitad -->
+                    <div class="col-lg-6">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="row g-2 align-items-center">
+                                    <label for="nombre" class="col-sm-4 col-form-label">Nombre</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" id="nombre" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="row g-2 align-items-center">
+                                    <label for="apPaterno" class="col-sm-4 col-form-label">Apellido paterno</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" id="apPaterno" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="row g-2 align-items-center">
+                                    <label for="apMaterno" class="col-sm-4 col-form-label">Apellido materno</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" id="apMaterno" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna segunda mitad -->
+                    <div class="col-lg-6">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <div class="row g-2 align-items-center">
+                                    <label for="telefono" class="col-sm-4 col-form-label">Teléfono</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" id="telefono" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="row g-2 align-items-center">
+                                    <label for="email" class="col-sm-4 col-form-label">Email</label>
+                                    <div class="col-sm-8">
+                                        <input type="email" id="email" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-12">
+                                <div class="row g-2 align-items-center">
+                                    <label for="direccion" class="col-sm-4 col-form-label">Dirección</label>
+                                    <div class="col-sm-8">
+                                        <input type="text" id="direccion" class="form-control" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="container" id="ordenes-section">
+            <fieldset class="border rounded-3 p-3 mb-3">
+
+                <legend class="float-none w-auto px-2 fs-5 fw-semibold mb-0">
+                    <i class="bi bi-archive"></i> Órdenes activas
+                </legend>
+
+
+                <div id="alerta-orden-pedido-vacio" class="alert alert-warning d-none"></div>
+
+
+                <div class="table text-sm">
+                    <div class="row fw-bold border-bottom py-2 bg-primary bg-opacity-10">
+                        <div class="col-2 text-center">Id Orden Pedido</div>
+                        <div class="col-4 text-center">Fecha</div>
+                        <div class="col-2 text-center">Total</div>
+                        <div class="col-3 text-center">Estado</div>
+                        <div class="col-1 text-center">Acción</div>
+                    </div>
+
+                    <div id="tbody-ordenes"></div>
+
+                    <div class="row fw-bold border-top mt-3 pt-2">
+                        <div class="col-10 text-end">Total general:</div>
+                        <div class="col-2 text-end">S/ <span id="total-pedido">0.00</span></div>
+                    </div>
+
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="container d-none" id="nota-credito-section">
+            <fieldset class="border rounded-3 p-3 mb-3">
+                <legend class="float-none w-auto px-2 fs-5 fw-semibold mb-0">
+                    <i class="bi bi-card-text"></i> Nota de crédito
+                </legend>
+
+                <div class="row g-3 align-items-end mb-2">
+                    <div class="col-sm-6 col-md-5 col-lg-4">
+                        <label for="notaCredito" class="form-label fw-semibold">Ingrese el número de la nota de
+                            crédito</label>
+                        <input type="text" id="notaCredito" class="form-control" placeholder="Ej. 2025091700157"
+                            inputmode="numeric" pattern="\d{13}" maxlength="13" autocomplete="off"
+                            aria-describedby="notaHelp">
+                        <small id="notaHelp" class="text-body-secondary">Debe tener exactamente 13 dígitos.</small>
+                    </div>
+
+                    <div class="col-auto">
+                        <button class="btn btn-primary" id="btnBuscarNotaCredito" type="button">
+                            <i class="bi bi-search me-2"></i>Buscar
+                        </button>
+                    </div>
+                </div>
+            </fieldset>
+        </div>
+
+        <div class="container py-4 d-none" id="pago-section">
+            <fieldset class="border rounded-4 p-4 shadow-sm bg-body">
+                <legend class="float-none w-auto px-2 fs-5 fw-semibold mb-0">
+                    <i class="bi bi-wallet2 me-2"></i>Efectuar el pago
+                </legend>
+
+                <div class="row g-4 align-items-start mt-1">
+                    <!-- Columna izquierda: Método de pago + Comprobante -->
+                    <div class="col-lg-7">
+                        <!-- MÉTODO DE PAGO -->
+                        <div class="mb-2 d-flex align-items-center justify-content-between">
+                            <span class="fw-semibold">Método de pago</span>
+                            <small class="text-body-secondary">Elige cómo deseas pagar</small>
+                        </div>
+
+                        <ul class="nav nav-pills nav-justified gap-2 mb-3" id="pagoNav" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="tab-efectivo" data-bs-toggle="tab"
+                                    data-bs-target="#pane-efectivo" data-metodo-pago="1" type="button">
+                                    <i class="bi bi-cash-coin me-2"></i>Efectivo
+                                </button>
+                            </li>
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link" id="tab-tarjeta" data-bs-toggle="tab"
+                                    data-bs-target="#pane-tarjeta" data-metodo-pago="2" type="button">
+                                    <i class="bi bi-credit-card-2-front me-2"></i>Tarjeta
+                                </button>
+                            </li>
+                        </ul>
+
+                        <!-- Contenido de los métodos de pago -->
+                        <div class="tab-content border rounded-3 p-3 bg-light-subtle">
+                            <!-- EFECTIVO -->
+                            <div class="tab-pane fade show active" id="pane-efectivo" role="tabpanel"
+                                aria-labelledby="tab-efectivo" tabindex="0">
+                                <div class="row g-3">
+                                    <div class="col-12 col-sm-8 col-md-6">
+                                        <label for="inpEfectivo" class="form-label fw-semibold">Cantidad
+                                            recibida</label>
+                                        <input type="number" id="inpEfectivo" class="form-control" inputmode="decimal"
+                                            min="0" step="0.01" placeholder="0.00" autocomplete="off">
+                                        <div class="form-text">Debe ser mayor o igual al total.</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- TARJETA -->
+                            <div class="tab-pane fade" id="pane-tarjeta" role="tabpanel" aria-labelledby="tab-tarjeta"
+                                tabindex="0">
+                                <div class="row g-3">
+                                    <div class="col-12 d-flex flex-column align-items-center">
+                                        <span class="fw-semibold mb-2">Tipo de tarjeta</span>
+
+                                        <div class="btn-group" role="group" aria-label="Tipo de tarjeta">
+                                            <input type="radio" class="btn-check" name="tipoTarjeta" id="tarjetaDebito"
+                                                autocomplete="off" checked>
+                                            <label class="btn btn-outline-primary" for="tarjetaDebito">Débito</label>
+
+                                            <input type="radio" class="btn-check" name="tipoTarjeta" id="tarjetaCredito"
+                                                autocomplete="off">
+                                            <label class="btn btn-outline-primary" for="tarjetaCredito">Crédito</label>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <hr class="my-3">
+
+                        <!-- COMPROBANTE DE PAGO -->
+                        <div class="mb-2 d-flex align-items-center justify-content-between">
+                            <span class="fw-semibold">Comprobante de pago</span>
+                            <small class="text-body-secondary">Boleta o factura</small>
+                        </div>
+
+                        <!-- Radios tipo botón + colapso RUC sin JS -->
+                        <div class="btn-group d-flex" role="group" aria-label="Tipo de comprobante">
+                            <input type="radio" class="btn-check" name="tipoComprobante" id="compBoleta"
+                                autocomplete="off">
+                            <label class="btn btn-outline-primary" for="compBoleta" data-bs-toggle="collapse"
+                                data-bs-target="#collapseBoleta" data-metodo-comprobantePago="1"
+                                aria-controls="collapseBoleta">
+                                Boleta
+                            </label>
+
+                            <input type="radio" class="btn-check" name="tipoComprobante" id="compFactura"
+                                autocomplete="off" checked>
+                            <label class="btn btn-outline-primary" for="compFactura" data-bs-toggle="collapse"
+                                data-bs-target="#collapseFactura" data-metodo-comprobantePago="2"
+                                aria-controls="collapseFactura" aria-expanded="true">
+                                Factura
+                            </label>
+                        </div>
+
+                        <!-- Acordeón para alternar Boleta/Factura y mostrar RUC solo en Factura -->
+                        <div class="accordion mt-3" id="comprobanteAccordion">
+                            <!-- Pane "Boleta": vacío, sirve para cerrar el RUC al elegir Boleta -->
+                            <div class="collapse" id="collapseBoleta" data-bs-parent="#comprobanteAccordion"></div>
+
+                            <!-- Pane "Factura": muestra campo RUC -->
+                            <div class="collapse show" id="collapseFactura" data-bs-parent="#comprobanteAccordion">
+                                <div class="row g-3">
+                                    <div class="col-12 col-sm-8 col-md-6">
+                                        <label for="inpRUC" class="form-label fw-semibold">RUC</label>
+                                        <input type="text" id="inpRUC" class="form-control" inputmode="numeric"
+                                            pattern="\d{11}" maxlength="11" placeholder="11 dígitos" autocomplete="off">
+                                        <div class="form-text">Ingresa el RUC (11 dígitos).</div>
+                                    </div>
+                                    <div class="col-12 col-md-8">
+                                        <label for="inpRazonSocial" class="form-label">Razón social (opcional)</label>
+                                        <input type="text" id="inpRazonSocial" class="form-control"
+                                            placeholder="Empresa S.A.C.">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Columna derecha: Resumen -->
+                    <div class="col-lg-5">
+                        <div class="card shadow-sm">
+                            <div class="card-body">
+
+                                <!-- Encabezado -->
+                                <div class="d-flex align-items-center justify-content-between mb-3">
+                                    <div class="fw-semibold">
+                                        <i class="bi bi-shield-check me-2"></i>Resumen
+                                    </div>
+                                    <small class="text-body-secondary">Verifica la información</small>
+                                </div>
+
+                                <!-- Cliente -->
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <span class="small text-body-secondary">Cliente</span>
+                                    <span class="fw-semibold" id="resumenCPCliente">---</span>
+                                </div>
+
+                                <!-- Monto Bruto -->
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <span class="small text-body-secondary">Monto Bruto</span>
+                                    <span class="fw-semibold">
+                                        <span class="me-1">S/</span><span id="montoBruto">0.00</span>
+                                    </span>
+                                </div>
+
+                                <!-- Descuentos -->
+                                <div class="d-flex justify-content-between align-items-center border-bottom py-2">
+                                    <span class="small text-body-secondary">Descuentos adicionales</span>
+                                    <span class="fw-semibold text-success">
+                                        -<span class="me-1">S/</span><span id="montoDescuento">0.00</span>
+                                    </span>
+                                </div>
+
+                                <!-- Total a Pagar -->
+                                <div class="d-flex justify-content-between align-items-center pt-3">
+                                    <span class="fw-semibold">Total a Pagar</span>
+                                    <span class="fs-5 fw-bold text-primary">
+                                        <span class="me-1">S/</span><span id="montoTotal">0.00</span>
+                                    </span>
+                                </div>
+
+                            </div>
+                              
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CTA -->
+                <div class="d-grid d-sm-flex justify-content-sm-center mt-4">
+                    <button class="btn btn-primary btn-lg px-4 rounded-pill shadow-sm" id="btnPagar" type="button">
+                        <i class="bi bi-cart-check me-2"></i>Pagar ahora
+                    </button>
+                </div>
+            </fieldset>
+        </div>
+
+
+    </main>
+    <footer>
+
+    </footer>
+
+    <script src="js/main.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+        integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI"
+        crossorigin="anonymous"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</body>
+
+</html>

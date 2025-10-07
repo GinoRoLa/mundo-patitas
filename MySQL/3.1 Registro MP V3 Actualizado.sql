@@ -399,3 +399,10 @@ WHERE Id_Vehiculo IN (
   14005, 14006, 14007, 14008, 14009,
   14010, 14011, 14012, 14013, 14014
 );
+
+
+-- t41LicenciaConductor
+INSERT INTO t41LicenciaConductor 
+  (id_Trabajador, Num_Licencia, Categoria, Fec_Emision, Fec_Revalidacion, Estado)
+VALUES
+  (50002, 'Q44444444', 'A-II-a', '2020-03-15', '2025-03-15', 'Vigente');

@@ -11,7 +11,7 @@
     const tb = $("#tblPedidos tbody"); if (tb) tb.innerHTML = "";
   }
 
-  function pintarEncabezado(data) {
+  /* function pintarEncabezado(data) {
     const r = data.repartidor || {};
     const v = data.vehiculo   || {};
     $("#repNombre") && ($("#repNombre").value = r.nombre   || "");
@@ -25,7 +25,49 @@
     $("#vehMarca")  && ($("#vehMarca").value  = v.marca  || "");
     $("#vehPlaca")  && ($("#vehPlaca").value  = v.placa  || "");
     $("#vehModelo") && ($("#vehModelo").value = v.modelo || "");
-  }
+  } */
+
+  function pintarEncabezado(data) {
+  const r = data.repartidor || {};
+  const v = data.vehiculo   || {};
+
+  // -------- Repartidor (panel superior) --------
+  $("#repNombre") && ($("#repNombre").value = r.nombre   || "");
+  $("#repApePat") && ($("#repApePat").value = r.apePat   || "");
+  $("#repApeMat") && ($("#repApeMat").value = r.apeMat   || "");
+  $("#repTel")    && ($("#repTel").value    = r.telefono || "");
+  $("#repEmail")  && ($("#repEmail").value  = r.email    || "");
+  const licCompat = r.licenciaInfo?.numero ?? r.licencia ?? r.licenciaConducir ?? r.dni ?? "";
+  $("#repLic")    && ($("#repLic").value = licCompat);
+
+  // -------- Vehículo --------
+  $("#vehMarca")  && ($("#vehMarca").value  = v.marca  || "");
+  $("#vehPlaca")  && ($("#vehPlaca").value  = v.placa  || "");
+  $("#vehModelo") && ($("#vehModelo").value = v.modelo || "");
+
+  // -------- Guía de Remisión (datos del transportista) --------
+  const fullName = [r.nombre, r.apePat, r.apeMat].filter(Boolean).join(" ").trim();
+  const guiaDni  = r.dni || "";
+  const guiaLic  = licCompat; // mismo criterio que arriba
+
+  $("#guiaDni")        && ($("#guiaDni").value        = guiaDni);
+  $("#guiaLic")        && ($("#guiaLic").value        = guiaLic);
+  $("#guiaConductor")  && ($("#guiaConductor").value  = fullName);
+
+  // (opcional) guarda un snapshot por si luego generas la guía
+  window.GUIA = {
+    transportista: {
+      dni: guiaDni,
+      licencia: guiaLic,
+      conductor: fullName,
+      estadoLicencia: r.licenciaInfo?.estado ?? null
+    },
+    vehiculo: {
+      marca: v.marca || "", placa: v.placa || "", modelo: v.modelo || ""
+    }
+  };
+}
+
 
   function pintarPedidosFallback(pedidos = []) {
     const tb = $("#tblPedidos tbody");

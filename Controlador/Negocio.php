@@ -4,6 +4,16 @@ include_once 'Conexion.php';
 class Negocio {
     
     
+    //TRABAJADOR
+    function buscarTrabajador($idTrabajador){
+        $obj= new Conexion();
+        $sql = "select * from t16catalogotrabajadores where id_Trabajador = 50007 and estado = 'Activo';";
+        $res = mysqli_query($obj->Conecta(), $sql) or
+                die(mysqli_error($obj->Conecta()));
+        $fila = mysqli_fetch_array($res);
+        return $fila;
+    }
+    
     //BUSCAR CLIENTE
     function BuscarCliente($DniCliente) {
         $obj = new Conexion();

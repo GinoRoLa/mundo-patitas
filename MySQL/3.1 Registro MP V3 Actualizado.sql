@@ -8,7 +8,28 @@ VALUES
   (50003, '55555555', 'Ramos',  'Vera',   'Lucía',  '999333444', 'Jr. Las Flores 321', 'lucia.ramos@mp.com',  'Almacén', 'Activo'),
   (50004, '22222222', 'Flores', 'Diaz',   'Carla',  '988222333', 'Mz B Lt 2',          'carla.flores@demo.com','Responsable de Pedidos','Activo'),
   (50005, '66666666', 'López',  'Mora',   'Ana',    '999444555', 'Av. Secundaria 456', 'ana.lopez@mp.com',   'Responsable de Almacén', 'Activo'),
-  (50006, '77777777', 'Martín', 'Salas',  'José',   '999555666', 'Av. Terciaria 789',  'jose.martin@mp.com',  'Responsable de Almacén', 'Activo');
+  (50006, '77777777', 'Martín', 'Salas',  'José',   '999555666', 'Av. Terciaria 789',  'jose.martin@mp.com',  'Responsable de Almacén', 'Activo'),
+  (50007, '78541296', 'Martin', 'Saldarriaga',  'Josue Miguel',   '924785136', 'Av. Cuaternaria 452',  'jmartin@mp.com',  'Responsable de distribución', 'Activo'),
+  (50008, '81234567', 'Quispe',  'Huamán',  'Luis',    '999111333', 'Av. Los Olivos 456',       'luis.quispe@mp.com',  'Repartidor', 'Activo'),
+  (50009, '84567890', 'Vargas',  'Meza',    'Javier',  '999333555', 'Calle Cuzco 120',          'javier.vargas@mp.com','Repartidor', 'Activo'),
+  (50010, '85678901', 'Rojas',   'Torres',  'Erick',   '999444666', 'Av. Grau 908',             'erick.rojas@mp.com',  'Repartidor', 'Activo'),
+  (50011, '86789012', 'Mendoza', 'Quispe',  'Hugo',    '999555777', 'Av. Perú 345',             'hugo.mendoza@mp.com', 'Repartidor', 'Activo'),
+  (50012, '87890123', 'Gómez',   'Paredes', 'Mario',   '999666888', 'Jr. Arequipa 678',         'mario.gomez@mp.com',  'Repartidor', 'Activo'),
+  (50013, '88901234', 'Castro',  'Ramos',   'Ricardo', '999777999', 'Av. Argentina 1234',       'ricardo.castro@mp.com','Repartidor','Activo'),
+  (50014, '89012345', 'Torres',  'Silva',   'Juan',    '999888000', 'Mz A Lt 5',                'juan.torres@mp.com',  'Repartidor', 'Activo'),
+  (50015, '80123456', 'Ramos',   'Campos',  'Carlos',  '999999111', 'Calle Lima 87',            'carlos.ramos@mp.com', 'Repartidor', 'Activo'),
+  (50016, '81234568', 'Luna',    'Lopez',   'Diego',   '999112233', 'Av. Colonial 432',         'diego.luna@mp.com',   'Repartidor', 'Activo'),
+  (50017, '82345679', 'Reyes',   'Flores',  'Marco',   '999223344', 'Calle Bolognesi 654',      'marco.reyes@mp.com',  'Repartidor', 'Activo'),
+  (50018, '83456780', 'Pérez',   'Cruz',    'Jorge',   '999334455', 'Jr. Piura 876',            'jorge.perez@mp.com',  'Repartidor', 'Activo'),
+  (50019, '84567891', 'Huamán',  'Valdez',  'Samuel',  '999445566', 'Av. Universitaria 221',    'samuel.huaman@mp.com','Repartidor','Activo'),
+  (50020, '85678902', 'Campos',  'Romero',  'Rodrigo', '999556677', 'Jr. Los Rosales 102',      'rodrigo.campos@mp.com','Repartidor','Activo'),
+  (50021, '86789013', 'Lopez',   'Reátegui','Andrés',  '999667788', 'Av. Faucett 332',          'andres.lopez@mp.com', 'Repartidor', 'Activo'),
+  (50022, '87890124', 'Salas',   'Carrillo','Oscar',   '999778899', 'Jr. Chosica 202',          'oscar.salas@mp.com',  'Repartidor', 'Activo'),
+  (50023, '88901235', 'Ramos',   'Peña',    'Henry',   '999889900', 'Av. Argentina 1021',       'henry.ramos@mp.com',  'Repartidor', 'Activo'),
+  (50024, '89012346', 'Flores',  'Morales', 'Alexis',  '999990011', 'Calle Surco 77',           'alexis.flores@mp.com','Repartidor','Activo'),
+  (50025, '80123457', 'Romero',  'Vega',    'Renzo',   '999101122', 'Av. Colonial 999',         'renzo.romero@mp.com', 'Repartidor', 'Activo'),
+  (50026, '81234569', 'Valdez',  'Guerra',  'Cristian','999212233', 'Jr. Puno 445',             'cristian.valdez@mp.com','Repartidor','Activo'),
+  (50027, '83456789', 'Sánchez', 'Rojas',   'Pedro',   '999222444', 'Jr. Lima 234',             'pedro.sanchez@mp.com','Repartidor', 'Activo');
 
 
 -- t37DetalleRequerimiento
@@ -318,7 +339,69 @@ INSERT INTO t30TipoBanco (Id_TipoBanco, Descripcion) VALUES
   (30002, 'BBVA');
 
 
--- 
+-- t78Vehiculo
+INSERT INTO t78Vehiculo 
+(Id_Vehiculo, Marca, Modelo, Placa, Anio, Volumen, CapacidadPesoKg, Estado)
+VALUES
+(14000, 'Toyota',    'Hiace',   'ABC-500', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14001, 'Hyundai',   'H1',      'BCD-501', 2021, 8.0000, 1100.0000, 'Disponible'),
+(14002, 'Nissan',    'Urvan',   'CDE-502', 2019, 8.0000, 1100.0000, 'Disponible'),
+(14003, 'Kia',       'Pregio',  'DEF-503', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14004, 'Mercedes',  'Sprinter','EFG-504', 2022, 8.0000, 1100.0000, 'Disponible'),
+(14005, 'Toyota',    'Hiace',   'FGH-505', 2018, 8.0000, 1100.0000, 'Disponible'),
+(14006, 'Hyundai',   'H1',      'GHI-506', 2021, 8.0000, 1100.0000, 'Disponible'),
+(14007, 'Chevrolet', 'N300',    'HIJ-507', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14008, 'Nissan',    'NV350',   'IJK-508', 2022, 8.0000, 1100.0000, 'Disponible'),
+(14009, 'Kia',       'Bongo',   'JKL-509', 2019, 8.0000, 1100.0000, 'Disponible'),
+(14010, 'Toyota',    'Hiace',   'KLM-510', 2021, 8.0000, 1100.0000, 'Disponible'),
+(14011, 'Hyundai',   'H1',      'LMN-511', 2019, 8.0000, 1100.0000, 'Disponible'),
+(14012, 'Nissan',    'Urvan',   'MNO-512', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14013, 'Kia',       'Pregio',  'NOP-513', 2022, 8.0000, 1100.0000, 'Disponible'),
+(14014, 'Mercedes',  'Sprinter','OPQ-514', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14015, 'Toyota',    'Hiace',   'PQR-515', 2021, 8.0000, 1100.0000, 'Disponible'),
+(14016, 'Hyundai',   'Porter',  'QRS-516', 2018, 8.0000, 1100.0000, 'Disponible'),
+(14017, 'Chevrolet', 'N300',    'RST-517', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14018, 'Nissan',    'NV350',   'STU-518', 2021, 8.0000, 1100.0000, 'Disponible'),
+(14019, 'Kia',       'Bongo',   'TUV-519', 2022, 8.0000, 1100.0000, 'Disponible'),
+(14020, 'Toyota',    'Hiace',   'UVW-520', 2020, 8.0000, 1100.0000, 'Disponible'),
+(14021, 'Hyundai',   'H1',      'VWX-521', 2021, 8.0000, 1100.0000, 'Disponible'),
+(14022, 'Nissan',    'Urvan',   'WXY-522', 2022, 8.0000, 1100.0000, 'Disponible'),
+(14023, 'Kia',       'Pregio',  'XYZ-523', 2019, 8.0000, 1100.0000, 'Disponible'),
+(14024, 'Mercedes',  'Sprinter','YZA-524', 2021, 8.0000, 1100.0000, 'Disponible');
+
+
+-- t79AsignacionRepartidorVehiculo
+INSERT INTO t79AsignacionRepartidorVehiculo
+  (Id_Trabajador, Id_Vehiculo, Fecha_Inicio, Fecha_Fin, Estado)
+VALUES
+  (50008, 14000, '2025-08-17', NULL, 'Activo'),
+  (50009, 14001, '2025-08-19', NULL, 'Activo'),
+  (50010, 14002, '2025-08-21', NULL, 'Activo'),
+  (50011, 14003, '2025-08-23', NULL, 'Activo'),
+  (50012, 14004, '2025-08-25', NULL, 'Activo'),
+  (50013, 14005, '2025-08-27', NULL, 'Activo'),
+  (50014, 14006, '2025-08-29', NULL, 'Activo'),
+  (50015, 14007, '2025-09-01', NULL, 'Activo'),
+  (50016, 14008, '2025-09-05', NULL, 'Activo'),
+  (50017, 14009, '2025-09-09', NULL, 'Activo'),
+  (50018, 14010, '2025-09-13', NULL, 'Activo'),
+  (50019, 14011, '2025-09-18', NULL, 'Activo'),
+  (50020, 14012, '2025-09-22', NULL, 'Activo'),
+  (50021, 14013, '2025-09-26', NULL, 'Activo'),
+  (50022, 14014, '2025-09-30', NULL, 'Activo');
+
+
+-- t78Vehiculo
+UPDATE t78Vehiculo
+SET Estado = 'Asignado'
+WHERE Id_Vehiculo IN (
+  14000, 14001, 14002, 14003, 14004,
+  14005, 14006, 14007, 14008, 14009,
+  14010, 14011, 14012, 14013, 14014
+);
+
+
+-- t41LicenciaConductor
 INSERT INTO t41LicenciaConductor 
   (id_Trabajador, Num_Licencia, Categoria, Fec_Emision, Fec_Revalidacion, Estado)
 VALUES

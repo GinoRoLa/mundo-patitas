@@ -372,7 +372,7 @@ CREATE TABLE t92Ref_Snapshot_DirCatalogo (
 -- 6) Flota y asignaciones
 -- ==========================================================
 CREATE TABLE t78Vehiculo (
-  Id_Vehiculo   INT AUTO_INCREMENT PRIMARY KEY,
+  Id_Vehiculo   INT PRIMARY KEY,
   Marca         VARCHAR(60) NOT NULL,
   Modelo        VARCHAR(60) NULL,
   Placa         VARCHAR(15) NOT NULL,
@@ -381,7 +381,7 @@ CREATE TABLE t78Vehiculo (
   CapacidadPesoKg DECIMAL(12,4) NOT NULL DEFAULT 1100.00,
   Estado        VARCHAR(15) NOT NULL DEFAULT 'Disponible',
   UNIQUE KEY uq_t78_placa (Placa)
-) ENGINE=InnoDB AUTO_INCREMENT=500 DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE t79AsignacionRepartidorVehiculo (
   Id_AsignacionRepartidorVehiculo   INT AUTO_INCREMENT PRIMARY KEY,
@@ -402,18 +402,26 @@ CREATE TABLE t79AsignacionRepartidorVehiculo (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
-CREATE TABLE t80DisponibilidadVehiculo (
-  Id_Disponibilidad INT AUTO_INCREMENT PRIMARY KEY,
-  Id_Vehiculo INT NOT NULL,
+CREATE TABLE t80disponibilidadvehiculo (
+  Id_Disponibilidad INT NOT NULL AUTO_INCREMENT,
+  Id_AsignacionRepartidorVehiculo INT NOT NULL,
+  Id_OrdenAsignacion INT NULL,   -- Nueva columna FK a t40OrdenAsignacionReparto
   Fecha DATE NOT NULL,
   HoraInicio TIME NOT NULL DEFAULT '09:00:00',
   HoraFin TIME NOT NULL DEFAULT '18:00:00',
   Estado VARCHAR(15) NOT NULL DEFAULT 'Ocupado',
-  KEY fk_t80_t78 (Id_Vehiculo),
-  CONSTRAINT fk_t80_t78 FOREIGN KEY (Id_Vehiculo)
-    REFERENCES t78Vehiculo(Id_Vehiculo)
-    ON UPDATE CASCADE ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+  PRIMARY KEY (Id_Disponibilidad),
+  KEY fk_t80_t79 (Id_AsignacionRepartidorVehiculo),
+  KEY fk_t80_t40 (Id_OrdenAsignacion),
+  CONSTRAINT fk_t80_t79 FOREIGN KEY (Id_AsignacionRepartidorVehiculo)
+    REFERENCES t79asignacionrepartidorvehiculo (Id_AsignacionRepartidorVehiculo)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_t80_t40 FOREIGN KEY (Id_OrdenAsignacion)
+    REFERENCES t40OrdenAsignacionReparto (Id_OrdenAsignacion)
+    ON DELETE SET NULL ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+
 
 -- ==========================================================
 -- 7) Guías de remisión

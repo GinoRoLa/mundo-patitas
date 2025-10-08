@@ -72,12 +72,12 @@ try {
 
       ok([
         'asignacion' => [
-    'id'              => (int)$enc['id'],
-    'idAsignacionRV'  => (int)$enc['idAsignacionRV'],   // <-- AQUI
-    'fechaProgramada' => $enc['fechaProgramada'],
-    'fecCreacion'     => $enc['fecCreacion'],
-    'estado'          => $enc['estado'],
-  ],
+          'id'              => (int)$enc['id'],
+          'idAsignacionRV'  => (int)$enc['idAsignacionRV'],   // <-- AQUI
+          'fechaProgramada' => $enc['fechaProgramada'],
+          'fecCreacion'     => $enc['fecCreacion'],
+          'estado'          => $enc['estado'],
+        ],
         'repartidor' => [
           'idTrabajador' => (int)$enc['idTrabajador'],
           'dni'          => $enc['dni'],
@@ -144,9 +144,9 @@ try {
 
       // Validaciones mínimas
       if (empty($in['ops']) || !is_array($in['ops'])) err('Lista de OPs vacía o inválida', 422);
-  if (empty($in['origen']['id'])) err('Origen inválido', 422);
-  if (empty($in['anchor']['dni']) || empty($in['anchor']['direccion'])) err('Anchor (dni/dirección) inválido', 422);
-  if (!isset($in['asignacionRV']) || !$in['asignacionRV']) err('Falta Id_AsignacionRepartidorVehiculo', 422); // <-- AQUI
+      if (empty($in['origen']['id'])) err('Origen inválido', 422);
+      if (empty($in['anchor']['dni']) || empty($in['anchor']['direccion'])) err('Anchor (dni/dirección) inválido', 422);
+      if (!isset($in['asignacionRV']) || !$in['asignacionRV']) err('Falta Id_AsignacionRepartidorVehiculo', 422); // <-- AQUI
 
       // 1) Registrar salidas
       $almacenM = new Almacen();
@@ -155,21 +155,21 @@ try {
       // 2) Crear guía
       $guiaM = new Guia();
       $guia  = $guiaM->crearGuiaSinNumerador([
-    'serie'              => '001',
-    'remitenteRuc'       => '20123456789',
-    'remitenteRazon'     => 'Mundo Patitas SAC',
-    'destinatarioNombre' => $in['destinatarioNombre'] ?? '',
-    'dniReceptor'        => $in['anchor']['dni'] ?? '',
-    'direccionDestino'   => $in['anchor']['direccion'] ?? '',
-    'distritoDestino'    => $in['anchor']['distrito'] ?? '',
-    'idDireccionAlmacen' => (int)$in['origen']['id'],
-    'idAsignacionRV'     => (int)$in['asignacionRV'],     // <-- OBLIGATORIO
-    'marca'              => $in['vehiculo']['marca'] ?? '',
-    'placa'              => $in['vehiculo']['placa'] ?? '',
-    'conductor'          => $in['transportista']['conductor'] ?? '',
-    'licencia'           => $in['transportista']['licencia'] ?? '',
-    'motivo'             => 'Venta'
-  ]);
+        'serie'              => '001',
+        'remitenteRuc'       => '20123456789',
+        'remitenteRazon'     => 'Mundo Patitas SAC',
+        'destinatarioNombre' => $in['destinatarioNombre'] ?? '',
+        'dniReceptor'        => $in['anchor']['dni'] ?? '',
+        'direccionDestino'   => $in['anchor']['direccion'] ?? '',
+        'distritoDestino'    => $in['anchor']['distrito'] ?? '',
+        'idDireccionAlmacen' => (int)$in['origen']['id'],
+        'idAsignacionRV'     => (int)$in['asignacionRV'],
+        'marca'              => $in['vehiculo']['marca'] ?? '',
+        'placa'              => $in['vehiculo']['placa'] ?? '',
+        'conductor'          => $in['transportista']['conductor'] ?? '',
+        'licencia'           => $in['transportista']['licencia'] ?? '',
+        'motivo'             => 'Venta'
+      ]);
 
 
       // 3) Insertar el detalle de la guía a partir de las OPs

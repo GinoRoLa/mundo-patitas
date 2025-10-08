@@ -52,4 +52,35 @@ final class Guia
     $sql  = "CALL sp_cus24_insertar_detalle_guia_from_ops($idGuia, '$json')";
     $this->cn->query($sql);
   }
+
+  public function obtenerEncabezado(int $idGuia): ?array {
+  $sql = "SELECT g.*,
+                 da.DireccionOrigen AS OrigenDireccion
+          FROM t72GuiaRemision g
+          LEFT JOIN t73DireccionAlmacen da
+            ON da.Id_DireccionAlmacen = g.Id_DireccionAlmacen
+          WHERE g.Id_Guia = ?";
+  $st = $this->cn->prepare($sql);
+  $st->bind_param("i", $idGuia);
+  $st->execute();
+  $res = $st->get_result()->fetch_assoc();
+  $st->close();
+  return $res ?: null;
+}
+
+public function obtenerDetalle(int $idGuia): array {
+  $sql = "SELECT Id_Producto, Descripcion, Unidad, Cantidad
+          FROM t74DetalleGuia
+          WHERE Id_Guia = ?
+          ORDER BY Id_DetalleGuia";
+  $st = $this->cn->prepare($sql);
+  $st->bind_param("i", $idGuia);
+  $st->execute();
+  $rs = $st->get_result();
+  $out = [];
+  while ($row = $rs->fetch_assoc()) $out[] = $row;
+  $st->close();
+  return $out;
+}
+
 }

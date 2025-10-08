@@ -420,7 +420,9 @@ CREATE TABLE t80DisponibilidadVehiculo (
 -- ==========================================================
 CREATE TABLE t72GuiaRemision (
   Id_Guia              INT NOT NULL AUTO_INCREMENT,
+  Serie                VARCHAR(3) NOT NULL DEFAULT '001',
   Numero               INT NOT NULL,
+  NumeroTexto          VARCHAR(20) GENERATED ALWAYS AS (CONCAT(Serie,'-',LPAD(Numero,6,'0'))),
   Fec_Emision          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Estado               VARCHAR(20) NOT NULL DEFAULT 'Emitida',
   RemitenteRUC         VARCHAR(11)  NOT NULL,
@@ -430,7 +432,7 @@ CREATE TABLE t72GuiaRemision (
   DireccionDestino     VARCHAR(100) NOT NULL,
   DistritoDestino      VARCHAR(120) NOT NULL,
   Id_DireccionAlmacen  INT NOT NULL,
-  Id_AsignacionRepartidorVehiculo        INT NULL,
+  Id_AsignacionRepartidorVehiculo INT NOT NULL,
   ModalidadTransporte  VARCHAR(20) NOT NULL DEFAULT 'PROPIO',
   Marca                VARCHAR(10)  NULL,
   Placa                VARCHAR(10)  NULL,
@@ -439,7 +441,7 @@ CREATE TABLE t72GuiaRemision (
   Motivo               VARCHAR(30)  NOT NULL DEFAULT 'Venta',
   FechaInicioTraslado  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (Id_Guia),
-  UNIQUE KEY uq_t72_numero (Numero),
+  UNIQUE KEY uq_t72_numero (Serie, Numero),
   KEY fk_t72_origen (Id_DireccionAlmacen),
   KEY fk_t72_asignacion (Id_AsignacionRepartidorVehiculo),
   CONSTRAINT fk_t72_origen FOREIGN KEY (Id_DireccionAlmacen)

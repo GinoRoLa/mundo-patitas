@@ -31,6 +31,10 @@
 
 /* TABLA */
 
+.servicioentrega {
+    border-bottom: 1px solid #cccccc;
+}
+
 .filtroOSE,.comboZonas, .botonesFiltro {
     display: flex;
     flex-flow: row wrap;
@@ -41,7 +45,6 @@
 
 .filtroOSE {
     padding: 1.5rem 1rem;
-    border-bottom: 1px solid #cccccc;
 }
 
 .comboZonas label{
@@ -108,6 +111,9 @@ select::-ms-expand {
 
 /* REPARTIDORES */
 
+.repartidorVehiculo {
+    border-bottom: 1px solid #cccccc;
+}
 .verDisponibilidad,.buscarRepartidor, .botonBuscar {
     display: flex;
     flex-flow: row wrap;
@@ -118,7 +124,6 @@ select::-ms-expand {
 
 .verDisponibilidad {
     padding: 1.5rem 1rem;
-    border-bottom: 1px solid #cccccc;
 }
 
 .buscarRepartidor label{
@@ -205,3 +210,69 @@ select::-ms-expand {
 }
 
 
+.detalleSeleccion {
+    border-bottom: 1px solid #cccccc;
+}
+
+.repartidor-information {
+    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 0;
+
+}
+
+.repartidor-details {
+    margin: 0 13rem;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+    align-content: center;
+    width: 55%;
+}
+
+.repartidor-details h2{
+    padding: 4px;
+}
+
+.repartidor-details input {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    width: 50%;
+    padding: 0.5rem;
+}
+
+.button-change {
+    margin: 0 auto;
+}
+
+.details-repartidor-table {
+    max-width: 1050px !important;
+    font-size: 12px;
+}
+
+.rutaTrazada {
+    max-width: 950px;
+    display: flex;
+    margin: 0 auto;
+    flex-flow: column wrap;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.botonesCUS {
+    border-bottom: 1px solid #cccccc;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+}
+
+.rutaTxt {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+}

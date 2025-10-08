@@ -13,6 +13,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <link href="../Style/CUS01/StyleButtonGeneral.css" rel="stylesheet" type="text/css"/>
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
         <link href="../Style/CUS22/CUS22_IU022.css" rel="stylesheet" type="text/css"/>
+        <link href="../Style/CUS01/StyleInputGeneral.css" rel="stylesheet" type="text/css"/>
         <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
         <script src="../Script/CUS22/calendarConfig.js" type="text/javascript"></script>
@@ -113,6 +114,60 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                     </table>
                 </div>
                 <div id="calendar"></div>
+            </section>
+            <section class="detalleSeleccion">
+                <div class="repartidor-information">
+                    <div class="repartidor-details">
+                        <h2>Código repartidor:</h2>
+                        <input type="text" readonly id="nombreCliente">
+                    </div>
+                    <div class="repartidor-details">
+                        <h2>Placa:</h2>
+                        <input type="text" readonly id="telefonoCliente">
+                    </div>
+                    <div class="repartidor-details">
+                        <h2>Marca:</h2>
+                        <input type="text" readonly id="apepatCliente">
+                    </div>
+                    <div class="repartidor-details">
+                        <h2>Modelo:</h2>
+                        <input type="text" readonly id="apematCliente">
+                    </div>
+                    <div class="repartidor-details">
+                        <h2>Fecha seleccionada:</h2>
+                        <input type="text" readonly id="emailCliente">
+                    </div>
+                    <div class="repartidor-details">
+                        <button class="style-button button-change">Cambiar repartidor</button>
+                    </div>
+                </div>
+                <div class="product-table details-repartidor-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Código OSE</th>
+                                <th>Código OP</th>
+                                <th>Distrito</th>
+                                <th>Zona</th>
+                                <th>Peso (kg)</th>
+                                <th>Volumen (m3)</th>
+                                <th>Dias restantes</th>
+                                <th>Quitar</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-rv-selectd">
+                            
+                        </tbody>
+                    </table>
+                </div>
+                <div class="rutaTrazada">
+                    <h2>Ruta trazada:</h2>
+                    <textarea class="rutaTxt" id="ruta" name="ruta" rows="5" cols="10" readonly style="resize: none;"></textarea>
+                </div>
+            </section>
+            <section class="botonesCUS">
+                <button class="style-button">Generar orden de asignación</button>
+                <button class="style-button">Cancelar</button>
             </section>
         </main>
         <script src="../Script/CUS22/cargarOSETabla.js" type="text/javascript"></script>

@@ -83,6 +83,7 @@
     if (!tb) return;
     tb.innerHTML = "";
     pedidos.forEach(p => tb.insertAdjacentHTML("beforeend", rowHtml(p)));
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
   }
 
   // Refresca SOLO una fila (por OP)
@@ -104,6 +105,7 @@
 
     if (incluida) tr.classList.add("selected");
     else tr.classList.remove("selected");
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
   }
 
   // Recalcula TODOS los botones/filas según ancla + inclusión
@@ -130,6 +132,17 @@
       if (incluida) tr.classList.add("selected");
       else tr.classList.remove("selected");
     });
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
+  }
+
+  /* ========== Fallback sin API: remover filas por OP ========== */
+  function removeRowsByOps(ops = []) {
+    (ops || []).forEach(op => {
+      const tr = document.querySelector(`#tblPedidos tbody tr[data-op="${Number(op)}"]`);
+      tr?.remove();
+    });
+    refreshCompatHighlights();
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
   }
 
   /* ========== Delegación de clicks ========== */
@@ -166,5 +179,10 @@
   }
 
   // Exponer API pública
-  window.Pedidos = { pintarLista, refreshCompatHighlights, refreshSingle };
+  window.Pedidos = {
+    pintarLista,
+    refreshCompatHighlights,
+    refreshSingle,
+    removeRowsByOps // ← para fallback sin API de recarga
+  };
 })();

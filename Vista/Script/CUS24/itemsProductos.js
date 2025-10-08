@@ -46,17 +46,20 @@
   }
 
   function clearDestino() {
-    const txtDest = document.getElementById("txtDireccionActiva");
-    if (txtDest) txtDest.value = "";
-    const dniEl = document.getElementById("DniRecep");
-    const nomEl = document.getElementById("NombreRecep");
-    if (dniEl) dniEl.value = "";
-    if (nomEl) nomEl.value = "";
-    if (window.Asignacion) {
-      window.Asignacion.destinoActivo = null;
-      window.Asignacion.recepcionista = null;
-    }
+  const txtDest = document.getElementById("txtDireccionActiva");
+  if (txtDest) txtDest.value = ""; // ← corregido: usar txtDest
+
+  const dniEl = document.getElementById("DniRecep");
+  const nomEl = document.getElementById("NombreRecep");
+  if (dniEl) dniEl.value = "";
+  if (nomEl) nomEl.value = "";
+
+  if (window.Asignacion) {
+    window.Asignacion.destinoActivo = null;
+    window.Asignacion.recepcionista = null;
   }
+}
+
 
   /* ==================== Limpieza / Pintado ==================== */
   function emptyState(text = "Sin ítems para mostrar.") {
@@ -120,9 +123,10 @@
     // Refresca TODOS los botones a "Agregar" o "off" según corresponda
     window.Pedidos?.refreshCompatHighlights?.();
 
-    // Botón Generar OFF
+    // Botón Generar OFF + recálculo
     const gen = document.getElementById("btnGenerar");
     if (gen) gen.disabled = true;
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
   }
 
   /* ==================== Normalización y Merge ==================== */
@@ -256,8 +260,7 @@
 
     // 6) Render y habilitar generar
     renderAll();
-    const gen = document.getElementById("btnGenerar");
-    if (gen) gen.disabled = !(window.AnchorCUS24?.isSet?.() && _opsIncluidas.size > 0);
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
 
     // 7) Actualiza estado de botones/filas
     window.Pedidos?.refreshSingle?.(op);

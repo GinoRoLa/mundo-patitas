@@ -142,7 +142,7 @@ window.Asignacion.idAsignacionRV = res.asignacion?.idAsignacionRV || null;
       window.Utils24.showMsg(msgEl, "ok", `Se encontraron ${pedidos.length} pedido(s) para retirar.`, { autoclear: 2500 });
     } else {
       if (window.Pedidos?.pintarLista) window.Pedidos.pintarLista([]);
-      window.Utils24.showMsg(msgEl, "info", "No hay pedidos pendientes en esta asignación.", { autoclear: 3000 });
+      window.Utils24.showMsg(msgEl, "ok", "No hay pedidos pendientes en esta asignación.", { autoclear: 3000 });
     }
   }
 

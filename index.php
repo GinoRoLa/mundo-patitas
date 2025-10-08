@@ -53,7 +53,7 @@
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">CUS03</h5>
                                 <p class="card-text flex-grow-1">Generar Boleta de Pago</p>
-                                <a href="http://127.0.0.1:5501/index.html" 
+                                <a href="/cus03/cus03.html" 
                                    class="btn btn-primary mt-auto" target="_blank">
                                     Ir al caso de uso
                                 </a>

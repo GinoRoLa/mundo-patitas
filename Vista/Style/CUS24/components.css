@@ -1,0 +1,29 @@
+/* estado por compatibilidad */
+.btnAdd {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 10px;
+  padding: .45rem .75rem;
+  cursor: pointer;
+}
+.btnAdd.ok {
+  background: #10b98120;
+  border-color: #10b981;
+  color: #064e3b;
+  font-weight: 600;
+}
+.btnAdd.off {
+  background: #f3f4f6;
+  border-color: #e5e7eb;
+  color: #9ca3af;
+  cursor: not-allowed;
+}
+.btnAdd.off:hover { filter: none; }
+
+.btnAdd   { border:1px solid var(--success); background: var(--ok-bg); color: var(--ok-text); }
+.btnAdd:hover { filter: brightness(0.98); }
+
+.btnRemove{ border:1px solid #dc2626; background:#fee2e2; color:#991b1b; }
+.btnRemove:hover { filter: brightness(0.98); }
+
+.btnDisabled { border-color: var(--border); background:#f3f4f6; color:#9ca3af; cursor:not-allowed; }

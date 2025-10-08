@@ -7,7 +7,6 @@ final class Almacen
         $this->cn = (new Conexion())->conecta();
     }
 
-    /** Devuelve almacenes activos del trabajador: id, nombre, dirección, distrito */
     public function listarPorTrabajadorId(int $idTrabajador): array
     {
         $sql = "SELECT a.Id_DireccionAlmacen AS id,
@@ -40,4 +39,17 @@ final class Almacen
         mysqli_stmt_close($st);
         return $rows;
     }
+
+    public function registrarSalida(array $opIds): void {
+    $json = json_encode(array_values(array_map('intval', $opIds)));
+    $sql  = "CALL sp_cus24_registrar_salida(?)";
+    $st   = mysqli_prepare($this->cn, $sql);
+    mysqli_stmt_bind_param($st, "s", $json);
+    mysqli_stmt_execute($st);
+    mysqli_stmt_close($st);
+    // Si el SP hace SIGNAL en error, mysqli lanzará error y lo capturas en el controlador
+  }
+
+    
+
 }

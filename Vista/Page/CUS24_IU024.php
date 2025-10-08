@@ -13,8 +13,8 @@ $fecha = date('Y-m-d');
   <!-- CSS -->
   <!--   <link rel="stylesheet" href="../Style/CUS24/base.css">
   <link rel="stylesheet" href="../Style/CUS24/layout.css">
-  <link rel="stylesheet" href="../Style/CUS24/theme-blue.css"> 
-  <link rel="stylesheet" href="../Style/CUS24/components.css">-->
+  <link rel="stylesheet" href="../Style/CUS24/theme-blue.css">--> 
+  <link rel="stylesheet" href="../Style/CUS24/components.css">
   <link rel="stylesheet" href="../Style/CUS24/CUS24_OrdenSalida.css">
 </head>
 
@@ -60,7 +60,7 @@ $fecha = date('Y-m-d');
             <input id="txtAsignacion" placeholder="Id Asignación (ej. 80001)" />
             <button id="btnBuscar" type="button">Buscar</button>
           </div>
-          
+
 
         </div>
         <div id="msgAsignacion" class="msg"></div>
@@ -98,7 +98,7 @@ $fecha = date('Y-m-d');
         </thead>
         <tbody></tbody>
       </table>
-      <div id="msgPedidos" class="msg hint">Seleccione solo pedidos de la misma dirección. Si intenta mezclar direcciones, se mostrará el mensaje E1.</div>
+      <div id="msgPedidos" class="msg hint"></div>
       <hr />
       <!-- Detalle de ítems -->
       <div class="row row--between">
@@ -109,7 +109,7 @@ $fecha = date('Y-m-d');
         <thead>
           <tr>
             <th>OP</th>
-            <th>Código</th>
+            <th>Código Producto</th>
             <th>Descripción</th>
             <th>Cantidad</th>
           </tr>
@@ -124,6 +124,14 @@ $fecha = date('Y-m-d');
       <section class="guia">
         <!-- Origen / Destino -->
         <div class="guia-row guia-row--top">
+          <div class="field compact">
+            <label for="DniRecep">DNI: </label>
+            <input id="DniRecep" class="input--soft" readonly />
+          </div>
+          <div class="field compact">
+            <label for="NombreRecep">Nombre:</label>
+            <input id="NombreRecep" class="input--soft" readonly/>
+          </div>
           <div class="field compact">
             <label for="txtOrigen">Origen:</label>
             <input id="txtOrigen" class="input--soft" readonly />
@@ -200,10 +208,11 @@ $fecha = date('Y-m-d');
   <script src="../Script/CUS24/apiCUS24.js"></script>
   <script src="../Script/CUS24/actor.js"></script>
   <script src="../Script/CUS24/utils.js"></script>
+  <script src="../Script/CUS24/anchor.js"></script>
+  <script src="../Script/CUS24/itemsProductos.js"></script>
   <script src="../Script/CUS24/asignacion.js"></script>
   <script src="../Script/CUS24/pedidos.js"></script>
-  <!-- <script src="../Script/CUS24/guia.js"></script>
-  <script src="../Script/CUS24/salida.js"></script> -->
+  <script src="../Script/CUS24/salida.js"></script>
   <script src="../Script/CUS24/main.js"></script>
   <script src="../Script/dialog.js"></script>
   <script src="../Script/actualizarHora.js"></script>

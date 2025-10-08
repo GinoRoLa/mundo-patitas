@@ -637,3 +637,24 @@ legend{
 /* Ya lo tenías, pero lo recuerdo */
 .input--invalid { border-color: var(--danger) !important; }
 .input--invalid:focus { box-shadow: 0 0 0 3px rgba(220,38,38,.15); }
+
+/* ==== Debug visual para filas clickeadas ==== */
+#tblPedidos tbody tr.debug-hit {
+  outline: 2px solid #38bdf8; /* azul */
+  background: #eff6ff;        /* azul muy claro */
+  transition: outline .15s ease, background .15s ease;
+}
+#tblPedidos .debug-badge {
+  position: absolute;
+  top: 4px; right: 6px;
+  font-size: 10px;
+  line-height: 1;
+  padding: 3px 6px;
+  border-radius: 8px;
+  background: #0ea5e9;
+  color: #fff;
+  box-shadow: 0 1px 6px rgba(14,165,233,.25);
+  opacity: 0;
+  transition: opacity .2s ease;
+  pointer-events: none;
+}

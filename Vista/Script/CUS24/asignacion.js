@@ -9,52 +9,48 @@
       const el = $(sel); if (el) el.value = "";
     });
     const tb = $("#tblPedidos tbody"); if (tb) tb.innerHTML = "";
+    // (opcional) limpiar panel de ítems
+    window.ItemsProductos?.limpiar?.();
+    
+    const txtDest = document.querySelector("#txtDireccionActiva");
+  if (txtDest) txtDest.value = ""; // o "Sin dirección activa"
+  if (window.Asignacion) window.Asignacion.destinoActivo = null;
   }
-
-  /* function pintarEncabezado(data) {
-    const r = data.repartidor || {};
-    const v = data.vehiculo   || {};
-    $("#repNombre") && ($("#repNombre").value = r.nombre   || "");
-    $("#repApePat") && ($("#repApePat").value = r.apePat   || "");
-    $("#repApeMat") && ($("#repApeMat").value = r.apeMat   || "");
-    $("#repTel")    && ($("#repTel").value    = r.telefono || "");
-    $("#repEmail")  && ($("#repEmail").value  = r.email    || "");
-    const lic = (r.licencia ?? r.licenciaConducir ?? r.dni ?? "") || "";
-    $("#repLic")    && ($("#repLic").value = lic);
-
-    $("#vehMarca")  && ($("#vehMarca").value  = v.marca  || "");
-    $("#vehPlaca")  && ($("#vehPlaca").value  = v.placa  || "");
-    $("#vehModelo") && ($("#vehModelo").value = v.modelo || "");
-  } */
 
   function pintarEncabezado(data) {
   const r = data.repartidor || {};
   const v = data.vehiculo   || {};
+  const asig = data.asignacion || {};
 
-  // -------- Repartidor (panel superior) --------
+  // Datos del repartidor
   $("#repNombre") && ($("#repNombre").value = r.nombre   || "");
   $("#repApePat") && ($("#repApePat").value = r.apePat   || "");
   $("#repApeMat") && ($("#repApeMat").value = r.apeMat   || "");
   $("#repTel")    && ($("#repTel").value    = r.telefono || "");
   $("#repEmail")  && ($("#repEmail").value  = r.email    || "");
-  const licCompat = r.licenciaInfo?.numero ?? r.licencia ?? r.licenciaConducir ?? r.dni ?? "";
-  $("#repLic")    && ($("#repLic").value = licCompat);
 
-  // -------- Vehículo --------
+  const licCompat = r.licenciaInfo?.numero ?? r.licencia ?? r.licenciaConducir ?? r.dni ?? "";
+  $("#repLic") && ($("#repLic").value = licCompat);
+
+  // Vehículo
   $("#vehMarca")  && ($("#vehMarca").value  = v.marca  || "");
   $("#vehPlaca")  && ($("#vehPlaca").value  = v.placa  || "");
   $("#vehModelo") && ($("#vehModelo").value = v.modelo || "");
 
-  // -------- Guía de Remisión (datos del transportista) --------
+  // Campos guía (conductor)
   const fullName = [r.nombre, r.apePat, r.apeMat].filter(Boolean).join(" ").trim();
   const guiaDni  = r.dni || "";
-  const guiaLic  = licCompat; // mismo criterio que arriba
+  const guiaLic  = licCompat;
 
-  $("#guiaDni")        && ($("#guiaDni").value        = guiaDni);
-  $("#guiaLic")        && ($("#guiaLic").value        = guiaLic);
-  $("#guiaConductor")  && ($("#guiaConductor").value  = fullName);
+  $("#guiaDni")       && ($("#guiaDni").value       = guiaDni);
+  $("#guiaLic")       && ($("#guiaLic").value       = guiaLic);
+  $("#guiaConductor") && ($("#guiaConductor").value = fullName);
 
-  // (opcional) guarda un snapshot por si luego generas la guía
+ window.Asignacion = window.Asignacion || {};
+  window.Asignacion.id             = asig.id || null;              // t40
+  window.Asignacion.idAsignacionRV = asig.idAsignacionRV || null;
+
+  // Snapshot para la guía
   window.GUIA = {
     transportista: {
       dni: guiaDni,
@@ -62,9 +58,7 @@
       conductor: fullName,
       estadoLicencia: r.licenciaInfo?.estado ?? null
     },
-    vehiculo: {
-      marca: v.marca || "", placa: v.placa || "", modelo: v.modelo || ""
-    }
+    vehiculo: { marca: v.marca || "", placa: v.placa || "", modelo: v.modelo || "" }
   };
 }
 
@@ -73,6 +67,7 @@
     const tb = $("#tblPedidos tbody");
     if (!tb) return;
     tb.innerHTML = "";
+
     pedidos.forEach(p => {
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -82,28 +77,27 @@
         <td data-label="Distrito">${p.distrito ?? ""}</td>
         <td data-label="OSE">${p.ose ?? ""}</td>
         <td data-label="Estado">${p.estado ?? ""}</td>
-        <td data-label="Acción"><button type="button" class="ghost" data-op="${p.op ?? ""}">Ver</button></td>
+        <td data-label="Acción">
+          <button type="button" class="btnAdd" data-op="${p.op ?? ""}">Agregar</button>
+          </td>
       `;
       tb.appendChild(tr);
     });
   }
 
-  /* ============ Búsqueda ============ */
+  /* ============ Buscar ============ */
   async function buscarAsignacion() {
     const input = $("#txtAsignacion");
     const msgEl = $("#msgAsignacion");
 
-    // Validar con Utils24
     const v = window.Utils24.validateNumericInput(input, msgEl, { required: true });
     if (!v.ok) { input?.focus(); return; }
 
-    // Loading
     const btn = $("#btnBuscar");
     btn && (btn.disabled = true);
     input && (input.disabled = true);
     window.Utils24.showMsg(msgEl, "info", "Buscando asignación…", { autoclear: 0 });
 
-    // Llamada
     if (!window.API24?.fetchJSON || !window.API24?.url?.buscarAsignacion) {
       btn && (btn.disabled = false);
       input && (input.disabled = false);
@@ -134,10 +128,13 @@
       return;
     }
 
-    // Encabezado
     pintarEncabezado(res);
+    // en asignacion.js tras pintarEncabezado(res):
+window.Asignacion = window.Asignacion || {};
+window.Asignacion.id = res.asignacion?.id || null;
+window.Asignacion.idAsignacionRV = res.asignacion?.idAsignacionRV || null;
 
-    // Pedidos
+
     const pedidos = Array.isArray(res.pedidos) ? res.pedidos : [];
     if (pedidos.length > 0) {
       if (window.Pedidos?.pintarLista) window.Pedidos.pintarLista(pedidos);
@@ -149,9 +146,19 @@
     }
   }
 
+  /* ============ Delegación en la tabla ============ */
+  // asignacion.js
+function onTablaClick(e) {
+  const btn = e.target.closest(".btnAdd"); // <-- antes .btn-ver-items
+  if (!btn) return;
+  const idOP = parseInt(btn.dataset.op || "0", 10);
+  if (!idOP) { /* mostrar error */ return; }
+  window.ItemsProductos?.cargarPorOP?.(idOP);
+}
+
+
   /* ============ Init ============ */
   function init() {
-    // Validación “live” + Enter que llama a buscarAsignacion
     window.Utils24.bindNumericValidation('#txtAsignacion', '#msgAsignacion', {
       required: true,
       btn: '#btnBuscar',
@@ -159,12 +166,13 @@
       onValid: buscarAsignacion
     });
 
-    // Click en botón
     $("#btnBuscar")?.addEventListener("click", buscarAsignacion);
+
+    // 🡲 Delegación una sola vez: sirve para filas dinámicas
+    $("#tblPedidos tbody")?.addEventListener("click", onTablaClick);
   }
 
   document.addEventListener("DOMContentLoaded", init);
 
-  // Export opcional
   window.Asignacion = { buscar: buscarAsignacion, pintarEncabezado, limpiarUI };
 })();

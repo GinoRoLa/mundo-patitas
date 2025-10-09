@@ -23,7 +23,6 @@
     });
     const tb = $("#tblPedidos tbody");
     if (tb) tb.innerHTML = "";
-    // (opcional) limpiar panel de ítems
     window.ItemsProductos?.limpiar?.();
 
     const txtDest = document.querySelector("#txtDireccionActiva");

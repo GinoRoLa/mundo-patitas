@@ -364,3 +364,103 @@ END$$
 
 DELIMITER ;
 
+/* CUS22*/
+DROP PROCEDURE IF EXISTS sp_generar_orden_asignacion_reparto;
+DELIMITER $$
+
+CREATE PROCEDURE sp_generar_orden_asignacion_reparto(IN p_json LONGTEXT)
+BEGIN
+    DECLARE v_idOrdenAsignacion INT;
+    DECLARE v_idAsignacion INT;
+    DECLARE v_fecha DATE;
+
+    -- =======================================================
+    -- Tablas temporales
+    -- =======================================================
+    DROP TEMPORARY TABLE IF EXISTS tmp_t401;
+    DROP TEMPORARY TABLE IF EXISTS tmp_t402;
+
+    CREATE TEMPORARY TABLE tmp_t401 (
+        Id_OSE INT
+    );
+
+    CREATE TEMPORARY TABLE tmp_t402 (
+        Id_Distrito INT,
+        DireccionSnap VARCHAR(255),
+        Orden INT,
+        RutaPolyline TEXT
+    );
+
+    -- =======================================================
+    -- Extraer datos del JSON
+    -- =======================================================
+    SET v_idAsignacion = JSON_EXTRACT(p_json, '$.t40OrdenAsignacionReparto[0].Id_AsignacionRepartidorVehiculo');
+    SET v_fecha        = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.t40OrdenAsignacionReparto[0].FechaProgramada'));
+
+    INSERT INTO tmp_t401 (Id_OSE)
+    SELECT JSON_EXTRACT(j.value, '$.Id_OSE')
+    FROM JSON_TABLE(p_json, '$.t401DetalleAsignacionReparto[*]' COLUMNS(value JSON PATH '$')) AS j;
+
+    INSERT INTO tmp_t402 (Id_Distrito, DireccionSnap, Orden, RutaPolyline)
+    SELECT JSON_EXTRACT(j.value, '$.Id_Distrito'),
+           JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.DireccionSnap')),
+           JSON_EXTRACT(j.value, '$.Orden'),
+           JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.RutaPolyline'))
+    FROM JSON_TABLE(p_json, '$.t402DetalleRuta[*]' COLUMNS(value JSON PATH '$')) AS j;
+
+    -- =======================================================
+    -- 1. Insertar cabecera de orden (t40)
+    -- =======================================================
+    INSERT INTO t40ordenasignacionreparto (Id_AsignacionRepartidorVehiculo, FechaProgramada)
+    VALUES (v_idAsignacion, v_fecha);
+
+    SET v_idOrdenAsignacion = LAST_INSERT_ID();
+
+    -- =======================================================
+    -- 2. Insertar detalles OSE (t401)
+    -- =======================================================
+    INSERT INTO t401detalleasignacionreparto (Id_OrdenAsignacion, Id_OSE)
+    SELECT v_idOrdenAsignacion, Id_OSE
+    FROM tmp_t401;
+
+    -- =======================================================
+    -- 3. Insertar detalle de rutas (t402)
+    -- =======================================================
+    INSERT INTO t402detalleruta (Id_OrdenAsignacion, Id_Distrito, DireccionSnap, Orden, RutaPolyline)
+    SELECT v_idOrdenAsignacion, Id_Distrito, DireccionSnap, Orden, RutaPolyline
+    FROM tmp_t402;
+
+    -- =======================================================
+    -- 4. Registrar disponibilidad vehículo (t80)
+    -- =======================================================
+    INSERT INTO t80disponibilidadvehiculo (Id_AsignacionRepartidorVehiculo, Id_OrdenAsignacion, Fecha, Estado)
+    VALUES (v_idAsignacion, v_idOrdenAsignacion, v_fecha, 'Ocupado');
+
+    -- =======================================================
+    -- 5. Actualizar OSEs a "Cerrado"
+    -- =======================================================
+    UPDATE t59ordenservicioentrega
+    SET Estado = 'Cerrado'
+    WHERE Id_OSE IN (SELECT Id_OSE FROM tmp_t401);
+
+    -- =======================================================
+    -- 6. Actualizar órdenes de pedido a "Preparado para envío"
+    -- =======================================================
+    UPDATE t02ordenpedido
+    SET Estado = 'Preparado para envío'
+    WHERE Id_OrdenPedido IN (
+        SELECT o.Id_OrdenPedido
+        FROM t02ordenpedido o
+        INNER JOIN t59ordenservicioentrega ose ON ose.Id_OrdenPedido = o.Id_OrdenPedido
+        WHERE ose.Id_OSE IN (SELECT Id_OSE FROM tmp_t401)
+    );
+
+    -- =======================================================
+    -- Retornar el código generado
+    -- =======================================================
+    SELECT v_idOrdenAsignacion AS Id_OrdenAsignacionGenerada;
+
+END$$
+
+DELIMITER ;
+

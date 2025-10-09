@@ -37,9 +37,12 @@ class CUS22Negocio {
                     ON ode.Id_Distrito = dte.Id_Distrito
                 INNER JOIN t76ZonaEnvio ze 
                     ON dte.Id_Zona = ze.Id_Zona
+                WHERE ose.Estado = 'Emitido'
                 ORDER BY 
                     ze.DescZona ASC,
-                    Dias_Restantes ASC;";
+                    Dias_Restantes ASC,
+                    op.Volumen_total ASC;
+                ";
         $res = mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
         $vec = array();
         while ($f = mysqli_fetch_array($res)) {

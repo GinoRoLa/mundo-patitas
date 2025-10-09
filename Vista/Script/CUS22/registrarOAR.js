@@ -5,20 +5,21 @@ $(document).on("click", ".botonesCUS .style-button:first-child", function (e) {
   e.preventDefault();
 
   // Validaciones básicas
-  if (!window.oseSeleccionadas.length) {
-    if (typeof showToast === "function") showToast("No hay órdenes seleccionadas.", "warning");
+  if (!window.oseSeleccionadas || !window.oseSeleccionadas.length) {
+    showToast("No hay órdenes seleccionadas.", "warning");
     return;
-  }
+}
 
-  if (!window.vrSeleccionado.length) {
-    if (typeof showToast === "function") showToast("No hay repartidor seleccionado.", "warning");
+if (!window.vrSeleccionado || !window.vrSeleccionado.length) {
+    showToast("No hay repartidor seleccionado.", "warning");
     return;
-  }
+}
 
-  if (!window.fechaSeleccionGlobal.length) {
-    if (typeof showToast === "function") showToast("No se ha seleccionado una fecha de entrega.", "warning");
+if (!window.fechaSeleccionGlobal || !window.fechaSeleccionGlobal.length) {
+    showToast("No se ha seleccionado una fecha de entrega.", "warning");
     return;
-  }
+}
+
 
   // Construir el payload (JSON)
   const payload = {

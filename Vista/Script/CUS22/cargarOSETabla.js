@@ -3,6 +3,8 @@ let oseOriginales = window.oseOriginales || [];
 let oseDisponibles = [...oseOriginales];
 let oseSeleccionadas = [];
 let zonaSeleccionada = 0;
+const CAPACIDAD_VOLUMEN = 15;
+window.oseSeleccionadas = [];
 
 // Array global para rutas sin duplicados
 window.waypointsConDistrito = []; // { direccion, distrito }
@@ -31,12 +33,12 @@ function showToast(message, type = "info") {
 // 🔹 Actualizar contador dinámico
 // ===================================================
 function actualizarContador() {
-    const pesoTotal = oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Peso_Kg), 0);
-    const volumenTotal = oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Volumen_m3), 0);
-    const cantidad = oseSeleccionadas.length;
+    const pesoTotal = window.oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Peso_Kg), 0);
+    const volumenTotal = window.oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Volumen_m3), 0);
+    const cantidad = window.oseSeleccionadas.length;
 
     const porcentajePeso = (pesoTotal / 1100) * 100;
-    const porcentajeVolumen = (volumenTotal / 8) * 100;
+    const porcentajeVolumen = (volumenTotal / CAPACIDAD_VOLUMEN) * 100; /*CAMBIAR DE 15 A 8*/
     const porcentajeUsado = Math.max(porcentajePeso, porcentajeVolumen);
 
     let color = "#28a745";
@@ -46,8 +48,8 @@ function actualizarContador() {
     const contador = `
         <span><strong>Órdenes seleccionadas:</strong> ${cantidad}</span> |
         <span><strong>Peso total:</strong> ${pesoTotal.toFixed(2)} kg / 1100 kg</span> |
-        <span><strong>Volumen total:</strong> ${volumenTotal.toFixed(2)} m³ / 8 m³</span>
-    `;
+        <span><strong>Volumen total:</strong> ${volumenTotal.toFixed(2)} m³ / ${CAPACIDAD_VOLUMEN} m³</span>
+    `; /*CAMBIAR DE 15 A 8*/
 
     $("#resumenSeleccion").html(contador).css("color", color);
 }
@@ -117,7 +119,7 @@ window.renderOSESeleccionadas = function (lista) {
 function trazarRuta() {
     const origen = window.direcAlmacen.DireccionOrigen;
 
-    if (oseSeleccionadas.length === 0) {
+    if (window.oseSeleccionadas.length === 0) {
         $("#ruta").val(`Origen: ${origen}\nDestino: ${origen}`);
         return;
     }
@@ -186,19 +188,19 @@ $(document).on("click", ".icon-add-ose", function () {
     const item = oseDisponibles.find(o => o.Codigo_OSE == id);
     if (!item) return;
 
-    if (oseSeleccionadas.length > 0 && item.Zona !== oseSeleccionadas[0].Zona) {
+    if (window.oseSeleccionadas.length > 0 && item.Zona !== window.oseSeleccionadas[0].Zona) {
         showToast("Solo puedes seleccionar órdenes de la misma zona.", "warning");
         return;
     }
 
-    const pesoTotal = oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Peso_Kg), 0) + parseFloat(item.Peso_Kg);
-    const volumenTotal = oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Volumen_m3), 0) + parseFloat(item.Volumen_m3);
-    if (pesoTotal > 1100 || volumenTotal > 8) {
-        showToast("No puedes exceder 8 m³ o 1100 kg en total.", "error");
+    const pesoTotal = window.oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Peso_Kg), 0) + parseFloat(item.Peso_Kg);
+    const volumenTotal = window.oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Volumen_m3), 0) + parseFloat(item.Volumen_m3);
+    if (pesoTotal > 1100 || volumenTotal > CAPACIDAD_VOLUMEN) { /*CAMBIAR DE 15 A 8*/
+        showToast("No puedes exceder 15 m³ o 1100 kg en total.", "error");
         return;
     }
 
-    oseSeleccionadas.push(item);
+    window.oseSeleccionadas.push(item);
     oseDisponibles = oseDisponibles.filter(o => o.Codigo_OSE != id);
     showToast("Orden agregada correctamente.", "success");
 
@@ -213,7 +215,7 @@ $(document).on("click", ".icon-add-ose", function () {
     }
     console.log("🟢 Global actualizado (agregar):", window.ordenesSeleccionadasGlobal);
     aplicarFiltroActual();
-    renderOSESeleccionadas(oseSeleccionadas);
+    renderOSESeleccionadas(window.oseSeleccionadas);
     trazarRuta();
 });
 
@@ -222,11 +224,11 @@ $(document).on("click", ".icon-add-ose", function () {
 // ===================================================
 $(document).on("click", ".icon-remove-ose", function () {
     const id = parseInt($(this).data("id"));
-    const item = oseSeleccionadas.find(o => o.Codigo_OSE == id);
+    const item = window.oseSeleccionadas.find(o => o.Codigo_OSE == id);
     if (!item) return;
 
     // Quitar de seleccionadas
-    oseSeleccionadas = oseSeleccionadas.filter(o => o.Codigo_OSE != id);
+    window.oseSeleccionadas = window.oseSeleccionadas.filter(o => o.Codigo_OSE != id);
 
     // Devolver al final del array y luego reordenar
     oseDisponibles.push(item);
@@ -242,7 +244,7 @@ $(document).on("click", ".icon-remove-ose", function () {
     console.log("🔴 Global actualizado (quitar):", window.ordenesSeleccionadasGlobal);
     
     aplicarFiltroActual();
-    renderOSESeleccionadas(oseSeleccionadas);
+    renderOSESeleccionadas(window.oseSeleccionadas);
     trazarRuta();
 });
 
@@ -255,7 +257,7 @@ function aplicarFiltroActual() {
     const zona = parseInt(zonaSeleccionada);
 
     let listaFiltrada = oseDisponibles.filter(o => 
-        !oseSeleccionadas.some(s => s.Codigo_OSE == o.Codigo_OSE)
+        !window.oseSeleccionadas.some(s => s.Codigo_OSE == o.Codigo_OSE)
     );
 
     if (zona && zona !== 0) {
@@ -288,5 +290,5 @@ $(document).on("click", ".botonesFiltro .style-button:nth-child(2)", e => {
 // ===================================================
 $(document).ready(() => {
     renderOSE(oseDisponibles);
-    renderOSESeleccionadas(oseSeleccionadas);
+    renderOSESeleccionadas(window.oseSeleccionadas);
 });

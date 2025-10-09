@@ -406,3 +406,29 @@ INSERT INTO t41LicenciaConductor
   (id_Trabajador, Num_Licencia, Categoria, Fec_Emision, Fec_Revalidacion, Estado)
 VALUES
   (50002, 'Q44444444', 'A-II-a', '2020-03-15', '2025-03-15', 'Vigente');
+
+
+/*PRODUCTOS PARA PRUEBA*/
+INSERT INTO t18CatalogoProducto 
+(NombreProducto, Descripcion, Marca, PrecioUnitario, StockActual, StockMinimo, StockMaximo, Estado, Peso, Volumen, t31CategoriaProducto_Id_Categoria, t34UnidadMedida_Id_UnidadMedida)
+VALUES
+('Producto 1', 'Descripción del producto 1', 'Marca 1', 120.50, 40, 10, 100, 'Disponible', 50.5, 0.8, 24000, 21000),
+('Producto 2', 'Descripción del producto 2', 'Marca 2', 85.00, 40, 10, 100, 'Disponible', 60.2, 1.0, 24001, 21001),
+('Producto 3', 'Descripción del producto 3', 'Marca 3', 310.75, 40, 10, 100, 'Disponible', 45.0, 1.1, 24002, 21002),
+('Producto 4', 'Descripción del producto 4', 'Marca 4', 200.00, 40, 10, 100, 'Disponible', 55.8, 0.9, 24000, 21000),
+('Producto 5', 'Descripción del producto 5', 'Marca 5', 150.30, 40, 10, 100, 'Disponible', 35.2, 0.7, 24001, 21001),
+('Producto 6', 'Descripción del producto 6', 'Marca 1', 220.10, 40, 10, 100, 'Disponible', 65.0, 1.2, 24002, 21002),
+('Producto 7', 'Descripción del producto 7', 'Marca 2', 175.50, 40, 10, 100, 'Disponible', 40.5, 0.6, 24000, 21003),
+('Producto 8', 'Descripción del producto 8', 'Marca 3', 95.00, 40, 10, 100, 'Disponible', 70.0, 1.0, 24001, 21000),
+('Producto 9', 'Descripción del producto 9', 'Marca 4', 135.25, 40, 10, 100, 'Disponible', 20.3, 0.5, 24002, 21001),
+('Producto 10', 'Descripción del producto 10', 'Marca 5', 280.40, 40, 10, 100, 'Disponible', 60.5, 1.1, 24000, 21002),
+('Producto 11', 'Descripción del producto 11', 'Marca 1', 310.00, 40, 10, 100, 'Disponible', 55.0, 0.9, 24001, 21003),
+('Producto 12', 'Descripción del producto 12', 'Marca 2', 180.60, 40, 10, 100, 'Disponible', 25.0, 0.7, 24002, 21000),
+('Producto 13', 'Descripción del producto 13', 'Marca 3', 145.80, 40, 10, 100, 'Disponible', 65.2, 1.2, 24000, 21001),
+('Producto 14', 'Descripción del producto 14', 'Marca 4', 220.90, 40, 10, 100, 'Disponible', 50.0, 0.8, 24001, 21002),
+('Producto 15', 'Descripción del producto 15', 'Marca 5', 195.40, 40, 10, 100, 'Disponible', 45.5, 0.9, 24002, 21003),
+('Producto 16', 'Descripción del producto 16', 'Marca 1', 210.00, 40, 10, 100, 'Disponible', 35.8, 0.6, 24000, 21000),
+('Producto 17', 'Descripción del producto 17', 'Marca 2', 175.25, 40, 10, 100, 'Disponible', 55.6, 0.7, 24001, 21001),
+('Producto 18', 'Descripción del producto 18', 'Marca 3', 320.75, 40, 10, 100, 'Disponible', 60.0, 1.2, 24002, 21002),
+('Producto 19', 'Descripción del producto 19', 'Marca 4', 140.50, 40, 10, 100, 'Disponible', 30.0, 0.5, 24000, 21003),
+('Producto 20', 'Descripción del producto 20', 'Marca 5', 255.30, 40, 10, 100, 'Disponible', 65.5, 1.0, 24001, 21000);

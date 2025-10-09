@@ -176,5 +176,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         </main>
         <script src="../Script/CUS22/cargarOSETabla.js" type="text/javascript"></script>
         <script src="../Script/CUS22/cargarRepartidoresTabla.js" type="text/javascript"></script>
+        <script src="../Script/CUS22/registrarOAR.js" type="text/javascript"></script>
     </body>
 </html>

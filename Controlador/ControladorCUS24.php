@@ -66,7 +66,7 @@ try {
 
       $repo = new Asignacion();
       $enc  = $repo->obtenerEncabezado($id);
-      if (!$enc) err('Asignación no encontrada.', 404);
+      //if (!$enc) err('Asignación no encontrada.', 404);
 
       $pedidos = $repo->obtenerPedidos($id);
       $licNum    = $enc['numLicencia']     ?? null;

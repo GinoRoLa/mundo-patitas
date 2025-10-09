@@ -75,6 +75,20 @@
                         </div>
                     </div>
 
+                    <!-- Card CUS22 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS22</h5>
+                                <p class="card-text flex-grow-1">Generar orden asignacion de reparto</p>
+                                <a href="Vista/Page/CUS22_IU022.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Card CUS24 -->
                     <div class="col">
                         <div class="card shadow-sm h-100">

@@ -3,14 +3,39 @@
   const $ = (sel, ctx = document) => ctx.querySelector(sel);
 
   /* ================== Validadores ================== */
-  function validarSoloDigitos(value, { required = true } = {}) {
-    const v = String(value ?? "").trim();
-    /* if (!v && required) return { ok: false, msg: "Este campo es obligatorio." }; */
-    if (v && !/^\d+$/.test(v)) {
-      return { ok: false, msg: "No se permiten caracteres alfanuméricos." };
-    }
-    return { ok: true };
+ function validarSoloDigitos(value, {
+  required = true,
+  maxLen = 9,             // ajusta: 5 para 80000, 9 para hasta 999,999,999
+  min = 1,
+  max = 2147483647        // INT (signed). Si usas UNSIGNED: 4294967295.
+} = {}) {
+  const raw = String(value ?? "").trim();
+
+  if (!raw) {
+    return required ? { ok: false, msg: "Ingrese el numero de asignacion" } : { ok: true };
   }
+
+  // Solo dígitos (sin e, +, -, ., espacios, etc.)
+  if (!/^\d+$/.test(raw)) {
+    return { ok: false, msg: "Solo números (sin símbolos ni espacios)." };
+  }
+
+  if (maxLen && raw.length > maxLen) {
+    return { ok: false, msg: `Máximo ${maxLen} dígitos.` };
+  }
+
+  // Convertir con seguridad
+  const n = Number(raw);
+  if (!Number.isSafeInteger(n)) {
+    return { ok: false, msg: "Número fuera de rango." };
+  }
+
+  if (n < min) return { ok: false, msg: `Debe ser ≥ ${min}.` };
+  if (n > max) return { ok: false, msg: `Debe ser ≤ ${max}.` };
+
+  return { ok: true, value: n };
+}
+
 
   /* ================== Mensajes con autocierre ================== */
   // Mantenemos un timer por mensaje (clave: selector o nodo)
@@ -82,44 +107,69 @@
   // - Valida al tipear/blur
   // - Habilita/deshabilita botón si se pasa selector en opts.btn
   // - Llama onValid (si existe) cuando el usuario presione Enter y sea válido
-  function bindNumericValidation(inputSel, msgSel, opts = {}) {
-    const { required = true, btn: btnSel, validateOn = "input", onValid } = opts;
-    const input = $(inputSel);
-    const msgEl = $(msgSel);
-    const btn   = btnSel ? $(btnSel) : null;
+  // Reemplaza tu bindNumericValidation por esta versión
+function bindNumericValidation(inputSel, msgSel, opts = {}) {
+  const {
+    btn: btnSel,
+    validateOn = "input",
+    onValid,
+    // NUEVO: control fino
+    requiredOnInput = false,
+    requiredOnBlur  = false,
+  } = opts;
 
-    if (!input) return;
+  const input = $(inputSel);
+  const msgEl = $(msgSel);
+  const btn   = btnSel ? $(btnSel) : null;
+  if (!input) return;
 
-    const run = () => {
-      const r = validateNumericInput(input, msgEl, { required, autoclear: 0 });
-      if (btn) btn.disabled = !r.ok;
-      return r.ok;
-    };
+  const run = (req = false) => {
+    // pasa todas las opciones para respetar maxLen/min/max si las agregas
+    const r = validateNumericInput(input, msgEl, { ...opts, required: req, autoclear: 0 });
+    if (btn) btn.disabled = !r.ok;
+    return r.ok;
+  };
 
-    if (validateOn === "input" || validateOn === "both") {
-      input.addEventListener("input", run);
-    }
-    if (validateOn === "blur" || validateOn === "both") {
-      input.addEventListener("blur", run);
-    } else if (validateOn !== "input" && validateOn !== "both") {
-      // default mínimo
-      input.addEventListener("input", run);
-    }
-
-    // Enter para ejecutar onValid
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        if (run() && typeof onValid === "function") onValid();
-      }
-    });
-
-    // estado inicial
-    run();
-
-    // devuelve una API mínima por si la necesitas
-    return { validateNow: run, destroy: () => {} };
+  // Validación “suave” mientras se tipea/blur (no obligatorio)
+  if (validateOn === "input" || validateOn === "both") {
+    input.addEventListener("input", () => run(requiredOnInput));
   }
+  if (validateOn === "blur" || validateOn === "both") {
+    input.addEventListener("blur", () => run(requiredOnBlur));
+  }
+  if (validateOn !== "input" && validateOn !== "both") {
+    input.addEventListener("input", () => run(requiredOnInput));
+  }
+
+  // Enter = validación “fuerte” (obligatorio)
+  input.addEventListener("keydown", (ev) => {
+    if (ev.key === "Enter") {
+      ev.preventDefault();
+      if (run(true) && typeof onValid === "function") onValid();
+    }
+  });
+
+  // Estado inicial “relajado”
+  run(false);
+
+  return { validateNow: () => run(false), destroy: () => {} };
+}
+
+
+  // ===================================================
+// 🔹 Toast
+// ===================================================
+function showToast(message, type = "info") {
+    const toast = document.createElement("div");
+    toast.className = `custom-toast ${type}`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.add("show"), 100);
+    setTimeout(() => {
+        toast.classList.remove("show");
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
 
   // Exponer API pública
   window.Utils24 = {
@@ -131,5 +181,6 @@
     clearInvalid,
     validateNumericInput,
     bindNumericValidation,
+    showToast
   };
 })();

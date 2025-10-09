@@ -195,9 +195,8 @@
     }
 
     const nro = r.guiaNumeroStr || r.guiaNumero || "(sin nro)";
-    window.Utils24?.showMsg?.(msg, "ok", `Salida registrada. Guía Nº ${nro}.`, {
-      autoclear: 5000,
-    });
+    window.Utils24?.showMsg?.(msg, "ok", `Salida registrada. Guía Nº ${nro}.`, {autoclear: 5000,});
+    window.Utils24.showToast(`Salida registrada. Guía Nº ${nro}.`,"success");
 
 
 

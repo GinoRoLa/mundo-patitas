@@ -365,6 +365,7 @@ END$$
 DELIMITER ;
 
 /* CUS22*/
+
 DROP PROCEDURE IF EXISTS sp_generar_orden_asignacion_reparto;
 DELIMITER $$
 
@@ -446,14 +447,11 @@ BEGIN
     -- =======================================================
     -- 6. Actualizar órdenes de pedido a "Preparado para envío"
     -- =======================================================
-    UPDATE t02ordenpedido
-    SET Estado = 'Preparado para envío'
-    WHERE Id_OrdenPedido IN (
-        SELECT o.Id_OrdenPedido
-        FROM t02ordenpedido o
-        INNER JOIN t59ordenservicioentrega ose ON ose.Id_OrdenPedido = o.Id_OrdenPedido
-        WHERE ose.Id_OSE IN (SELECT Id_OSE FROM tmp_t401)
-    );
+    UPDATE t02ordenpedido o
+	INNER JOIN t59ordenservicioentrega ose ON ose.Id_OrdenPedido = o.Id_OrdenPedido
+	SET o.Estado = 'Preparado'
+	WHERE ose.Id_OSE IN (SELECT Id_OSE FROM tmp_t401);
+
 
     -- =======================================================
     -- Retornar el código generado
@@ -463,4 +461,5 @@ BEGIN
 END$$
 
 DELIMITER ;
+
 

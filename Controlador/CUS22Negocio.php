@@ -20,7 +20,10 @@ class CUS22Negocio {
         $sql = "SELECT 
                     ose.Id_OSE                         AS Codigo_OSE,
                     op.Id_OrdenPedido                  AS Codigo_OP,
+                    ode.DireccionSnap                  AS Direccion,
+                    dte.Id_Distrito                    AS idDistrito,
                     dte.DescNombre                     AS Distrito,
+                    ze.Id_Zona                         AS idZona,
                     ze.DescZona                        AS Zona,
                     op.Peso_total                      AS Peso_Kg,
                     op.Volumen_total                   AS Volumen_m3,
@@ -28,10 +31,10 @@ class CUS22Negocio {
                 FROM t59OrdenServicioEntrega ose
                 INNER JOIN t02OrdenPedido op 
                     ON ose.Id_OrdenPedido = op.Id_OrdenPedido
-                INNER JOIN t70DireccionEnvioCliente decl 
-                    ON op.Id_Cliente = decl.Id_Cliente
+                INNER JOIN t71OrdenDirecEnvio ode 
+                    ON op.Id_OrdenPedido = ode.Id_OrdenPedido
                 INNER JOIN t77DistritoEnvio dte 
-                    ON decl.Id_Distrito = dte.Id_Distrito
+                    ON ode.Id_Distrito = dte.Id_Distrito
                 INNER JOIN t76ZonaEnvio ze 
                     ON dte.Id_Zona = ze.Id_Zona
                 ORDER BY 
@@ -44,7 +47,7 @@ class CUS22Negocio {
         }
         return $vec;
     }
-    
+
     function listaRepartidores() {
         $obj = new Conexion();
         $sql = "SELECT 
@@ -68,7 +71,7 @@ class CUS22Negocio {
         }
         return $vec;
     }
-    
+
     function disponibilidadRepaVehi($CodigoAsignacion) {
         $obj = new Conexion();
         $sql = "select * from t80disponibilidadvehiculo where Id_AsignacionRepartidorVehiculo = $CodigoAsignacion;";
@@ -78,5 +81,47 @@ class CUS22Negocio {
             $vec[] = $f;
         }
         return $vec;
+    }
+
+    function direccionAlmacen() {
+        $obj = new Conexion();
+        $sql = "select * from t73direccionalmacen where Id_DireccionAlmacen = 1;";
+        $res = mysqli_query($obj->Conecta(), $sql) or
+                die(mysqli_error($obj->Conecta()));
+        $fila = mysqli_fetch_array($res);
+        return $fila;
+    }
+
+    function generarOAR($jsonOAR) {
+        $obj = new Conexion();
+        $conn = $obj->conecta();
+
+        // Escapar correctamente el JSON
+        $jsonOrdenes = mysqli_real_escape_string($conn, $jsonOAR);
+
+        // Llamar al procedimiento correcto
+        $sql = "CALL sp_generar_orden_asignacion_reparto('$jsonOrdenes')";
+        $res = mysqli_query($conn, $sql);
+
+        if ($res) {
+            // Obtener el Id_OrdenAsignacionGenerada devuelto por el procedimiento
+            $row = mysqli_fetch_assoc($res);
+            $idGenerado = $row['Id_OrdenAsignacionGenerada'] ?? null;
+
+            // Limpiar posibles resultados adicionales (MySQL devuelve varios result sets con CALL)
+            while (mysqli_more_results($conn) && mysqli_next_result($conn)) {
+                mysqli_store_result($conn);
+            }
+
+            // Cerrar conexión
+            mysqli_close($conn);
+
+            // Retornar el Id generado
+            return $idGenerado;
+        } else {
+            $error = mysqli_error($conn);
+            mysqli_close($conn);
+            throw new Exception("Error en sp_generar_orden_asignacion_reparto: $error");
+        }
     }
 }

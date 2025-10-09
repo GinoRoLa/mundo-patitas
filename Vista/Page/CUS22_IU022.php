@@ -25,10 +25,11 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         include_once '../../Controlador/Negocio.php';
         $obj = new CUS22Negocio();
         $obj2 = new Negocio();
-        $trabajador = $obj2 ->buscarTrabajador(50007);
-        $listaZonas = $obj -> listaZonas();
-        $listaOSE = $obj -> listaOSE();
-        $listaRV = $obj ->listaRepartidores();
+        $trabajador = $obj2->buscarTrabajador(50007);
+        $listaZonas = $obj->listaZonas();
+        $listaOSE = $obj->listaOSE();
+        $listaRV = $obj->listaRepartidores();
+        $direccionAlmacen = $obj->direccionAlmacen();
         $titulo = "IU022 - Generar orden asignacion de reparto";
         $nombreTrabajador = "$trabajador[4] $trabajador[2] $trabajador[3]";
         $rol = $trabajador[8];
@@ -41,11 +42,12 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <script>
             window.oseOriginales = <?php echo json_encode($listaOSE); ?>;
             window.vrOriginales = <?php echo json_encode($listaRV); ?>;
+            window.direcAlmacen = <?php echo json_encode($direccionAlmacen); ?>;
         </script>
 
         <main class="container main-content">
             <?php
-                include "../Componentes/TituloRolResponsableFechaHora.php";
+            include "../Componentes/TituloRolResponsableFechaHora.php";
             ?>
             <section class="servicioentrega">
                 <form class="filtroOSE">
@@ -53,11 +55,11 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <label>Seleccione zona:</label>
                         <select id="zonasReparto" name="zonas-combo" class="zonas">
                             <option value="0">Seleccionar</option>
-                                <?php foreach ($listaZonas as $lz): ?>
-                                    <option value="<?= trim(htmlspecialchars($lz['Id_Zona'])) ?>">
-                                        <?= htmlspecialchars($lz['DescZona']) ?>
-                                    </option>
-                                <?php endforeach; ?>
+                            <?php foreach ($listaZonas as $lz): ?>
+                                <option value="<?= trim(htmlspecialchars($lz['Id_Zona'])) ?>">
+                                    <?= htmlspecialchars($lz['DescZona']) ?>
+                                </option>
+                            <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="botonesFiltro">
@@ -80,7 +82,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                             </tr>
                         </thead>
                         <tbody id="table-body">
-                            
+
                         </tbody>
                     </table>
                 </div>
@@ -93,6 +95,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                     </div>
                     <div class="botonBuscar">
                         <button class="style-button">Buscar</button>
+                        <button class="style-button">Ver todo</button>
                     </div>
                 </form>
                 <div class="product-table filter-repartidor-table">
@@ -109,7 +112,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                             </tr>
                         </thead>
                         <tbody id="table-body-rv">
-                            
+
                         </tbody>
                     </table>
                 </div>
@@ -141,6 +144,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <button class="style-button button-change">Cambiar repartidor</button>
                     </div>
                 </div>
+                <div id="resumenSeleccion" class="resumen-ose"></div>
                 <div class="product-table details-repartidor-table">
                     <table>
                         <thead>
@@ -156,7 +160,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                             </tr>
                         </thead>
                         <tbody id="table-body-rv-selectd">
-                            
+
                         </tbody>
                     </table>
                 </div>

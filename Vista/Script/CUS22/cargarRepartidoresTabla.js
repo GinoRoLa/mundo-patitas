@@ -1,9 +1,13 @@
-// Lista inicial desde PHP
+// ===================================================
+// 🔹 Lista inicial desde PHP
+// ===================================================
 let vrOriginales = window.vrOriginales || [];
 let vrDisponibles = [...vrOriginales]; // Copia inicial
 let vrSeleccionados = [];
 
-// Función para renderizar la tabla de Repartidores-Vehículos disponibles
+// ===================================================
+// 🔹 Renderizar tabla de Repartidores-Vehículos
+// ===================================================
 window.renderRV = function (lista) {
   const tbody = $("#table-body-rv");
   tbody.empty();
@@ -38,10 +42,12 @@ window.renderRV = function (lista) {
     for (let i = currentRows; i < minRows; i++) {
       tbody.append(`<tr><td colspan="7">&nbsp;</td></tr>`);
     }
-  };
+  }
 };
 
-// Manejo de selección/deselección de repartidores
+// ===================================================
+// 🔹 Selección / Deselección de repartidores
+// ===================================================
 $(document).on("change", ".chk-rv", function () {
   const id = parseInt($(this).val());
   const seleccionado = $(this).is(":checked");
@@ -62,16 +68,53 @@ $(document).on("change", ".chk-rv", function () {
     }
   }
 
-  // Re-renderizar la tabla principal
   renderRV(vrDisponibles);
 
-  // Si existe función para renderizar los seleccionados, la llamamos
   if (typeof renderRVSeleccionados === "function") {
     renderRVSeleccionados(vrSeleccionados);
   }
 });
 
-// Inicialización al cargar la página
+// ===================================================
+// 🔹 Filtro de repartidores (Buscar / Ver todo)
+// ===================================================
+$(document).on("submit", ".verDisponibilidad", function (e) {
+  e.preventDefault();
+
+  const botonPresionado = e.originalEvent.submitter?.textContent?.trim();
+  const codigo = $(this).find("input").val().trim();
+
+  // 👉 Ver todo
+  if (botonPresionado === "Ver todo") {
+    $(this).find("input").val("");
+    renderRV(vrOriginales);
+    showToast("Mostrando todos los repartidores disponibles.", "info");
+    return;
+  }
+
+  // 👉 Buscar
+  if (codigo === "") {
+    showToast("Ingrese un código para buscar.", "warning");
+    return;
+  }
+
+  const filtrados = vrOriginales.filter(r =>
+    String(r.CodigoRepartidor).includes(codigo)
+  );
+
+  if (filtrados.length > 0) {
+    renderRV(filtrados);
+    showToast(`${filtrados.length} repartidor(es) encontrados.`, "success");
+  } else {
+    renderRV([]);
+    showToast("No se encontró ningún repartidor con ese código.", "error");
+  }
+});
+
+// ===================================================
+// 🔹 Inicialización
+// ===================================================
 $(document).ready(function () {
   renderRV(vrDisponibles);
 });
+    

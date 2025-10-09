@@ -402,6 +402,20 @@ CREATE TABLE t79AsignacionRepartidorVehiculo (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
+DROP TABLE IF EXISTS t40OrdenAsignacionReparto;
+CREATE TABLE t40OrdenAsignacionReparto (
+  Id_OrdenAsignacion              INT NOT NULL AUTO_INCREMENT,
+  Id_AsignacionRepartidorVehiculo INT NOT NULL,
+  FechaProgramada                 DATE NOT NULL,                  -- Fecha prevista de entrega
+  FecCreacion                     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- Fecha y hora de creación
+  Estado                          VARCHAR(15) NOT NULL DEFAULT 'Pendiente',
+  CONSTRAINT t40OrdenAsignacionReparto_pk PRIMARY KEY (Id_OrdenAsignacion),
+  CONSTRAINT fk_t40_t79 FOREIGN KEY (Id_AsignacionRepartidorVehiculo)
+    REFERENCES t79AsignacionRepartidorVehiculo(Id_AsignacionRepartidorVehiculo)
+    ON UPDATE CASCADE
+    ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=80000;
+
 CREATE TABLE t80disponibilidadvehiculo (
   Id_Disponibilidad INT NOT NULL AUTO_INCREMENT,
   Id_AsignacionRepartidorVehiculo INT NOT NULL,
@@ -467,7 +481,7 @@ CREATE TABLE t74DetalleGuia (
   Id_Guia         INT NOT NULL,
   Id_Producto     INT NOT NULL,
   Descripcion     VARCHAR(200) NOT NULL,
-  Unidad          VARCHAR(10)  NOT NULL,
+  Unidad          VARCHAR(30)  NOT NULL,
   Cantidad        INT NOT NULL,
   PRIMARY KEY (Id_DetalleGuia),
   KEY idx_t74_guia (Id_Guia),
@@ -897,20 +911,6 @@ CREATE TABLE t60DetOrdenPedido (
 -- ==========================================================
 -- 12) Asignación de reparto / hoja de ruta / salida / evidencias
 -- ==========================================================
-DROP TABLE IF EXISTS t40OrdenAsignacionReparto;
-CREATE TABLE t40OrdenAsignacionReparto (
-  Id_OrdenAsignacion              INT NOT NULL AUTO_INCREMENT,
-  Id_AsignacionRepartidorVehiculo INT NOT NULL,
-  FechaProgramada                 DATE NOT NULL,                  -- Fecha prevista de entrega
-  FecCreacion                     DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,  -- Fecha y hora de creación
-  Estado                          VARCHAR(15) NOT NULL DEFAULT 'Pendiente',
-  CONSTRAINT t40OrdenAsignacionReparto_pk PRIMARY KEY (Id_OrdenAsignacion),
-  CONSTRAINT fk_t40_t79 FOREIGN KEY (Id_AsignacionRepartidorVehiculo)
-    REFERENCES t79AsignacionRepartidorVehiculo(Id_AsignacionRepartidorVehiculo)
-    ON UPDATE CASCADE
-    ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=80000;
-
 DROP TABLE IF EXISTS t401DetalleAsignacionReparto;
 CREATE TABLE t401DetalleAsignacionReparto (
   Id_DetalleAsignacion INT NOT NULL AUTO_INCREMENT,

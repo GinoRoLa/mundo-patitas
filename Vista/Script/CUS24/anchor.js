@@ -16,10 +16,16 @@
       direccionNorm: normDir(p.direccion),
       direccionRaw: String(p.direccion || '').trim()
     };
+    // Recalcular botón Generar
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
     return _anchor;
   }
 
-  function clear() { _anchor = null; }
+  function clear() {
+    _anchor = null;
+    // Recalcular botón Generar
+    window.SalidaCUS24?.updateGenerarHabilitado?.();
+  }
 
   function isSet() { return !!_anchor; }
 

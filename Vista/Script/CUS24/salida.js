@@ -41,7 +41,7 @@
       const msg = document.getElementById("msgPedidos");
       if (msg) {
         msg.classList.add("hint");
-        msg.textContent = "Selecciona el primer pedido para fijar el ancla.";
+        msg.textContent = "Selecciona un pedido.";
       }
       return;
     }

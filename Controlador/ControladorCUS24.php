@@ -21,6 +21,8 @@ function err(string $m, int $c = 400, array $x = [])
   exit;
 }
 
+
+
 try {
   $accion = $_GET['accion'] ?? '';
   if ($accion === '' && isset($_SERVER['PATH_INFO'])) $accion = ltrim($_SERVER['PATH_INFO'], '/');

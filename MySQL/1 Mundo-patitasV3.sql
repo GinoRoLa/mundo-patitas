@@ -481,7 +481,7 @@ CREATE TABLE t74DetalleGuia (
   Id_Guia         INT NOT NULL,
   Id_Producto     INT NOT NULL,
   Descripcion     VARCHAR(200) NOT NULL,
-  Unidad          VARCHAR(10)  NOT NULL,
+  Unidad          VARCHAR(30)  NOT NULL,
   Cantidad        INT NOT NULL,
   PRIMARY KEY (Id_DetalleGuia),
   KEY idx_t74_guia (Id_Guia),

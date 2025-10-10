@@ -1,21 +1,15 @@
 // /Vista/Script/CUS24/salida.js
 (function () {
-  // --- helpers modal en salida.js ---
-  function showModal({
-    title = "Mensaje",
-    message = "",
-    okText = "Aceptar",
-    onOk = null,
-  } = {}) {
+  function showModal({ title="Mensaje", message="", okText="Aceptar", onOk=null } = {}) {
     const dlg = document.getElementById("appDialog");
-    const h3 = document.getElementById("appDialogTitle");
-    const p = document.getElementById("appDialogMsg");
-    const ok = document.getElementById("appDialogOk");
+    const h3  = document.getElementById("appDialogTitle");
+    const p   = document.getElementById("appDialogMsg");
+    const ok  = document.getElementById("appDialogOk");
     const cancel = document.getElementById("appDialogCancel");
     if (!dlg) return;
 
     if (h3) h3.textContent = title;
-    if (p) p.textContent = message;
+    if (p)  p.textContent  = message;
     if (cancel) cancel.style.display = "none";
     if (ok) {
       ok.textContent = okText || "Aceptar";
@@ -25,97 +19,54 @@
         if (typeof onOk === "function") onOk();
       });
     }
-    if (dlg.showModal) dlg.showModal();
-    else dlg.setAttribute("open", "open");
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute("open","open");
   }
 
-  function updateGenerarHabilitado() {
-    const tb = document.querySelector("#tblPedidos tbody");
-    const gen = document.getElementById("btnGenerar");
-    const anch = window.AnchorCUS24?.get?.();
-    if (!tb || !gen) return;
-
-    // sin ancla => no generar
-    if (!anch) {
-      gen.disabled = true;
-      const msg = document.getElementById("msgPedidos");
-      if (msg) {
-        msg.classList.add("hint");
-        msg.textContent = "Selecciona un pedido.";
-      }
-      return;
-    }
-
-    const rows = [...tb.querySelectorAll("tr")];
-    const compatibles = rows.filter((tr) => {
-      const btn = tr.querySelector("button");
-      if (!btn) return false;
-      const estado =
-        tr.querySelector('td[data-label="Estado"]')?.textContent.trim() || "";
-      const p = {
-        idOrdenPedido: +btn.dataset.op,
-        receptorDni: btn.dataset.dni,
-        direccion: btn.dataset.dir,
-      };
-      return (
-        estado === "Pagado" && (window.AnchorCUS24?.isCompatible?.(p) ?? true)
-      );
-    });
-
-    const totCompat = compatibles.length;
-    const sel = (window.ItemsProductos?.opsIncluidas ?? []).length;
-    const falta = Math.max(totCompat - sel, 0);
-
-    gen.disabled = falta > 0 || sel === 0;
-
-    const msg = document.getElementById("msgPedidos");
-    if (msg) {
-      msg.classList.add("hint");
-      msg.textContent =
-        falta > 0
-          ? `Faltan ${falta} pedido(s) de esta dirección. Agréguelos para poder generar la guía.`
-          : `Listo: todos los pedidos de esta dirección están seleccionados.`;
-    }
+  function canGenerate() {
+    const grupos = (window.Asignacion?.grupos || []);
+    const email  = document.getElementById("repEmail")?.value || "";
+    const btn    = document.getElementById("btnGenerar");
+    const ok = grupos.length > 0 && !!email;
+    if (btn) btn.disabled = !ok;
+    return ok;
   }
 
   async function onGenerarSalida() {
     const msg = document.getElementById("msg");
-
-    // OPs incluidas (¡capturar antes de limpiar!)
-    const ops = (window.ItemsProductos?.opsIncluidas ?? []).slice();
-    if (!ops.length) {
-      window.Utils24?.showMsg?.(msg, "error", "No hay pedidos seleccionados.", {
-        autoclear: 3000,
-      });
+    const grupos = (window.Asignacion?.grupos || []).slice();
+    if (!grupos.length) {
+      window.Utils24?.showMsg?.(msg, "error", "No hay grupos para generar.", { autoclear: 3000 });
       return;
     }
 
+    const asigId = window.Asignacion?.id ?? null;
     const asigRV = window.Asignacion?.idAsignacionRV ?? null;
-    if (!asigRV) {
-      window.Utils24?.showMsg?.(
-        msg,
-        "error",
-        "Falta la asignación (vehículo/repartidor). Vuelve a buscar la asignación.",
-        { autoclear: 4000 }
-      );
+    if (!asigId || !asigRV) {
+      window.Utils24?.showMsg?.(msg, "error", "Falta la asignación o Id_AsignacionRV.", { autoclear: 3500 });
       return;
     }
 
-    // Anchor (dni + dirección + distrito)
-    const anch = window.AnchorCUS24?.get?.();
-    const destTxt = document.getElementById("txtDireccionActiva")?.value || "";
-    const distrito = destTxt.split("-").pop()?.trim() || ""; // si lo pintaste como "dir - distrito"
-
-    // Origen (almacén)
-    const origen = window.ORIGEN || {}; // {id, nombre, direccion, idDistrito}
+    const origen = window.ORIGEN || {}; // { id, ... }
     if (!origen.id) {
-      window.Utils24?.showMsg?.(msg, "error", "Falta origen (almacén).", {
-        autoclear: 3000,
-      });
+      window.Utils24?.showMsg?.(msg, "error", "Falta origen (almacén).", { autoclear: 3000 });
       return;
     }
 
-    // Transporte (ya los pintaste en la guía)
+    // Normalizamos payload grupos
+    const gruposPayload = grupos.map(g => ({
+      key: g.key,
+      dni: g.dni,
+      nombre: g.nombre || "",
+      direccion: g.dir || g.direccion || "",
+      distritoNombre: g.distritoNombre || "",
+      ops: Array.isArray(g.ops) ? g.ops : [],
+    })).filter(g => g.ops.length > 0);
+
+    if (!gruposPayload.length) {
+      window.Utils24?.showMsg?.(msg, "error", "No hay OP elegibles en los grupos.", { autoclear: 3000 });
+      return;
+    }
+
     const vehiculo = {
       marca: document.getElementById("vehMarca")?.value || "",
       placa: document.getElementById("vehPlaca")?.value || "",
@@ -126,131 +77,103 @@
       licencia: document.getElementById("guiaLic")?.value || "",
     };
 
-    // Destinatario
-    const destinatarioNombre =
-      document.getElementById("NombreRecep")?.value || "";
-
     const payload = {
-      ops,
-      anchor: {
-        dni: anch?.dni || document.getElementById("DniRecep")?.value || "",
-        direccion:
-          anch?.direccionRaw ||
-          (
-            document
-              .getElementById("txtDireccionActiva")
-              ?.value.split("-")[0] || ""
-          ).trim(),
-        distrito,
-      },
-      origen: { id: origen.id },
-      asignacionId: window.Asignacion?.id ?? null,
+      asignacionId: asigId,
       asignacionRV: asigRV,
-      vehiculo: { ...vehiculo },
-      transportista: { ...transportista },
-      destinatarioNombre,
+      origen: { id: origen.id },
+      vehiculo,
+      transportista,
+      // opcional: serie/remitente configurables
+      // serie: "001", remitenteRuc: "...", remitenteRazon: "...",
+      grupos: gruposPayload
     };
 
     const { fetchJSON, url } = window.API24 || {};
-    if (!fetchJSON || !url?.generarSalida) {
-      window.Utils24?.showMsg?.(msg, "error", "API no disponible.", {
-        autoclear: 3000,
-      });
+    if (!fetchJSON || !url?.generarSalidaLote) {
+      window.Utils24?.showMsg?.(msg, "error", "API no disponible.", { autoclear: 3000 });
       return;
     }
 
-    document.getElementById("btnGenerar")?.setAttribute("disabled", "disabled");
-    window.Utils24?.showMsg?.(msg, "info", "Generando salida…", {
-      autoclear: 0,
-    });
+    const btn = document.getElementById("btnGenerar");
+    btn?.setAttribute("disabled", "disabled");
+    window.Utils24?.showMsg?.(msg, "info", "Generando guías…", { autoclear: 0 });
 
     let r;
     try {
-      r = await fetchJSON(url.generarSalida, {
+      r = await fetchJSON(url.generarSalidaLote, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
     } catch (e) {
-      window.Utils24?.showMsg?.(
-        msg,
-        "error",
-        "No se pudo conectar al servidor.",
-        { autoclear: 3500 }
-      );
-      document.getElementById("btnGenerar")?.removeAttribute("disabled");
+      window.Utils24?.showMsg?.(msg, "error", "No se pudo conectar al servidor.", { autoclear: 3500 });
+      btn?.removeAttribute("disabled");
       return;
     }
 
-    if (!r || !r.ok) {
-      window.Utils24?.showMsg?.(
-        msg,
-        "error",
-        r?.error || "No se pudo generar la salida.",
-        { autoclear: 4000 }
-      );
-      document.getElementById("btnGenerar")?.removeAttribute("disabled");
+    if (!r?.ok) {
+      window.Utils24?.showMsg?.(msg, "error", r?.error || "No se pudo generar el lote.", { autoclear: 4000 });
+      btn?.removeAttribute("disabled");
       return;
     }
 
-    const nro = r.guiaNumeroStr || r.guiaNumero || "(sin nro)";
-    window.Utils24?.showMsg?.(msg, "ok", `Salida registrada. Guía Nº ${nro}.`, {autoclear: 5000,});
-    window.Utils24.showToast(`Salida registrada. Guía Nº ${nro}.`,"success");
+    // Construir feedback
+    const total = (r.guias || []).length;
+    const bloqueos = (r.bloqueos || []).length;
+    const estadoAsig = r.asignacion?.estado || "";
+    window.Utils24?.showMsg?.(msg, "ok",
+      `Se generaron ${total} guía(s). ${bloqueos ? bloqueos + " grupo(s) bloqueado(s). " : ""}Estado t40: ${estadoAsig}.`,
+      { autoclear: 6000 }
+    );
 
+    // Modal con la lista de guías
+    try {
+      const ul = document.getElementById("modalGuiasList");
+      if (ul) {
+        ul.innerHTML = "";
+        (r.guias || []).forEach(g => {
+          const li = document.createElement("li");
+          li.innerHTML = `<b>${g.numeroStr || g.numero}</b> — ${g.destino?.direccion || ""} (${g.destino?.distrito || ""})`;
+          ul.appendChild(li);
+        });
+      }
+      const mailInfo = document.getElementById("modalMailInfo");
+      if (mailInfo) {
+        mailInfo.textContent = `Se enviará correo al repartidor: ${document.getElementById("repEmail")?.value || "—"}.`;
+      }
+    } catch {}
 
-
-    // Modal informativo
-    window.ModalCUS24?.show?.({
-      title: "Guía generada",
-      body: `Se emitió la Guía Nº <b>${nro}</b>.`,
-      okText: "Aceptar",
-    });
-
-
-    // Reset UI de ítems
-    window.ItemsProductos?.limpiar?.();
-
-    // === Fallback sin API de recarga ===
-    // Remueve de la grilla las OP usadas (para mostrar disponibles)
-    window.Pedidos?.removeRowsByOps?.(ops);
-
-    // Deshabilita Generar hasta nueva selección
-    document.getElementById("btnGenerar")?.setAttribute("disabled", "disabled");
-
-    // Modal adicional (opcional)
     showModal({
-      title: "Guía de Remisión generada",
-      message: `Se generó la Guía Nº ${r.guiaNumero || nro}.`,
+      title: "Guías generadas",
+      message: total ? `Se generaron ${total} guía(s).` : "No se generaron guías.",
       okText: "Entendido",
       onOk: () => {
-        window.ItemsProductos?.limpiar?.();
-        document.getElementById("btnGenerar")?.setAttribute("disabled", "disabled");
+        // Refrescar la asignación para mostrar pedidos disponibles (los 'Pagado' deberían disminuir)
+        if (window.Asignacion?.buscar) {
+          const txt = document.getElementById("txtAsignacion");
+          if (txt && txt.value.trim()) window.Asignacion.buscar();
+        }
       },
     });
 
-    // Abre guía HTML directamente (con autoprint)
-    const gid = r.guiaId;
-    if (gid) {
-      const urlHTML = `../../Controlador/ControladorGuiaHTML.php?id=${encodeURIComponent(
-        gid
-      )}&autoprint=1`;
-      window.open(urlHTML, "_blank");
-    }
+    // (Opcional) abrir la primera guía en HTML con autoprint DESPUÉS del OK:
+    // Lo haríamos en onOk si quieres. Si prefieres abrir ya mismo, descomenta:
+    // const first = (r.guias || [])[0];
+    // if (first?.id) window.open(`../../Controlador/ControladorGuiaHTML.php?id=${encodeURIComponent(first.id)}&autoprint=1`, "_blank");
 
-    // Recalcular estados por si quedó algo compatible pendiente
-    window.SalidaCUS24?.updateGenerarHabilitado?.();
+    btn?.removeAttribute("disabled");
   }
 
   function init() {
-    document
-      .getElementById("btnGenerar")
-      ?.addEventListener("click", onGenerarSalida);
+    document.getElementById("btnGenerar")?.addEventListener("click", onGenerarSalida);
+    // habilitar/deshabilitar por estado actual (grupos + email)
+    document.addEventListener("DOMContentLoaded", canGenerate);
   }
   document.addEventListener("DOMContentLoaded", init);
 
-  // Exponer util para otros módulos
+  // API expuesta (por si otro módulo quiere recalcular habilitado)
   window.SalidaCUS24 = Object.assign(window.SalidaCUS24 || {}, {
-    updateGenerarHabilitado,
+    canGenerate
   });
 })();

@@ -20,9 +20,8 @@ try {
         'Direccion'     => $_POST['Direccion'],
         'Motivo'        => $_POST['Motivo'],
         'Observaciones' => $_POST['Observaciones'],
-        'Estado'        => ($_POST['Motivo'] === 'Ausencia del receptor' || $_POST['Motivo'] === 'Acceso restringido')
-            ? 'Reprogramada'
-            : 'No entregado'
+        // 👇 Mantener el estado sin alterarlo si ya es "No entregado"
+        'Estado'        => 'No entregado'
     ];
 
     // Si hay imagen
@@ -42,9 +41,9 @@ try {
     $res = $obj->registrarIncidencia($data);
 
     if ($res) {
-        echo json_encode(['success' => true, 'message' => 'Incidencia registrada correctamente.']);
+        echo json_encode(['success' => true, 'message' => '✅ Incidencia registrada correctamente.']);
     } else {
-        echo json_encode(['success' => false, 'message' => 'Error al registrar incidencia.']);
+        echo json_encode(['success' => false, 'message' => '❌ Error al registrar la incidencia.']);
     }
 } catch (Exception $e) {
     echo json_encode(['success' => false, 'message' => $e->getMessage()]);

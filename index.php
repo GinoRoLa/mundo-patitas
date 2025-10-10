@@ -103,6 +103,20 @@
                         </div>
                     </div>
 
+                                        <!-- Card CUS25 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS25</h5>
+                                <p class="card-text flex-grow-1">Consolidacion de Entrega</p>
+                                <a href="Vista/Page/CUS25_IU025.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
         </main>

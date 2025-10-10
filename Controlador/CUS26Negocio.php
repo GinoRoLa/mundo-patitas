@@ -8,10 +8,6 @@ class CUS26Negocio {
         $this->dao = new IncidenciaEntrega();
     }
 
-    public function listarDistritos() {
-        return $this->dao->listarDistritos();
-    }
-
     public function listarPedidosPorDistrito($idDistrito) {
         return $this->dao->listarPedidosPorDistrito($idDistrito);
     }

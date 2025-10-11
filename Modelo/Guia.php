@@ -1,10 +1,112 @@
 <?php
-final class Guia
-{
+final class Guia{
   private $cn;
   public function __construct()
   {
     $this->cn = (new Conexion())->conecta();
+  }
+
+  /** Encabezado de la guía */
+  public function obtenerGuiaEncabezado(int $idGuia): ?array {
+    $sql = "SELECT
+    g.Id_Guia             AS idGuia,
+    g.Numero              AS numero,
+    CONCAT(g.Serie,'-',LPAD(g.Numero,8,'0')) AS numeroStr,
+    DATE(g.Fec_Emision)   AS fecha,
+    g.RemitenteRUC        AS remitenteRuc,
+    g.RemitenteRazonSocial AS remitenteRazon,
+    g.DniReceptor         AS dniReceptor,
+    g.DestinatarioNombre  AS destinatarioNombre,
+    g.DireccionDestino    AS direccionDestino,
+    g.DistritoDestino     AS distritoDestino,
+    g.Conductor           AS conductor,
+    g.Licencia            AS licencia,
+    g.Marca               AS vehMarca,
+    g.Placa               AS vehPlaca,
+    '' AS vehModelo,
+    g.Id_AsignacionRepartidorVehiculo AS idAsignacion,
+    da.DireccionOrigen    AS direccionOrigen,
+    da.NombreAlmacen      AS nombreAlmacen
+FROM t72GuiaRemision g
+LEFT JOIN t73DireccionAlmacen da 
+    ON g.Id_DireccionAlmacen = da.Id_DireccionAlmacen
+WHERE g.Id_Guia = ?";
+    $st  = mysqli_prepare($this->cn, $sql);
+    mysqli_stmt_bind_param($st, "i", $idGuia);
+    mysqli_stmt_execute($st);
+    $rs  = mysqli_stmt_get_result($st);
+    $row = mysqli_fetch_assoc($rs) ?: null;
+    mysqli_free_result($rs);
+    mysqli_stmt_close($st);
+    while (mysqli_more_results($this->cn) && mysqli_next_result($this->cn)) {/* flush */}
+    return $row;
+  }
+
+  /** Detalle de la guía */
+  public function obtenerGuiaDetalle(int $idGuia): array {
+    $sql = "SELECT
+    gd.Id_Producto     AS idProducto,
+    COALESCE(p.Id_Producto, gd.Id_Producto) AS codigo,
+    COALESCE(gd.Descripcion, p.NombreProducto, '') AS descripcion,
+    COALESCE(um.Descripcion, gd.Unidad, 'UND') AS unidad,
+    gd.Cantidad        AS cantidad
+FROM t74DetalleGuia gd
+LEFT JOIN t18CatalogoProducto p ON p.Id_Producto = gd.Id_Producto
+LEFT JOIN t34UnidadMedida um ON um.Id_UnidadMedida = p.t34UnidadMedida_Id_UnidadMedida
+WHERE gd.Id_Guia = ?
+ORDER BY gd.Id_DetalleGuia;";
+    $st  = mysqli_prepare($this->cn, $sql);
+    mysqli_stmt_bind_param($st, "i", $idGuia);
+    mysqli_stmt_execute($st);
+    $rs  = mysqli_stmt_get_result($st);
+
+    $rows = [];
+    while ($r = mysqli_fetch_assoc($rs)) {
+      $rows[] = [
+        'idProducto'  => (int)($r['idProducto'] ?? 0),
+        'codigo'      => (string)($r['codigo'] ?? $r['idProducto'] ?? ''),
+        'descripcion' => (string)($r['descripcion'] ?? ''),
+        'unidad'      => (string)($r['unidad'] ?? ''),   // ← importante para tu PDF
+        'cantidad'    => (float)($r['cantidad'] ?? 0),
+      ];
+    }
+    mysqli_free_result($rs);
+    mysqli_stmt_close($st);
+    while (mysqli_more_results($this->cn) && mysqli_next_result($this->cn)) {/* flush */}
+    return $rows;
+  }
+
+  /** Paquete completo para el controlador HTML/PDF/Email */
+  public function obtenerGuiaCompleta(int $idGuia): ?array {
+    $enc = $this->obtenerGuiaEncabezado($idGuia);
+    if (!$enc) return null;
+    $det = $this->obtenerGuiaDetalle($idGuia);
+
+    // Normaliza nombres esperados por el ControladorGuiaHTML
+    $encabezado = [
+      'id'                 => (int)$enc['idGuia'],
+      'numero'             => $enc['numero'] ?? null,
+      'numeroStr'          => $enc['numeroStr'] ?? null,
+      'fecha'              => $enc['fecha'] ?? date('Y-m-d'),
+      'remitenteRuc'       => $enc['remitenteRuc'] ?? '20123456789',
+      'remitenteRazon'     => $enc['remitenteRazon'] ?? 'Mundo Patitas SAC',
+      'dniReceptor'        => $enc['dniReceptor'] ?? '',
+      'destinatarioNombre' => $enc['destinatarioNombre'] ?? '',
+      'direccionDestino'   => $enc['direccionDestino'] ?? '',
+      'distritoDestino'    => $enc['distritoDestino'] ?? '',
+      'conductor'          => $enc['conductor'] ?? '',
+      'direccionOrigen'    => $enc['direccionOrigen'] ?? '',
+      'licencia'           => $enc['licencia'] ?? '',
+      'vehMarca'           => $enc['vehMarca'] ?? '',
+      'vehPlaca'           => $enc['vehPlaca'] ?? '',
+      'vehModelo'          => $enc['vehModelo'] ?? '',
+      'idAsignacion'       => isset($enc['idAsignacion']) ? (int)$enc['idAsignacion'] : null,
+    ];
+
+    return [
+      'encabezado' => $encabezado,
+      'detalle'    => $det,
+    ];
   }
 
   public function crearGuiaSinNumerador(array $d): array

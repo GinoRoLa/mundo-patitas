@@ -10,18 +10,22 @@ class IncidenciaEntrega {
 
     // Buscar pedidos por código de distrito
     public function listarPedidosPorDistrito($idDistrito) {
-        $sql = "SELECT o.Id_OrdenPedido AS IDPedido,
-                       CONCAT(c.des_nombreCliente, ' ', c.des_apepatCliente, ' ', c.des_apematCliente) AS Cliente,
-                       d.DireccionSnap AS Direccion,
-                       d.TelefonoSnap AS Telefono,
-                       o.Estado,
-                       DATE(o.Fecha) AS Fecha
-                FROM t02OrdenPedido o
-                JOIN t71OrdenDirecEnvio d ON o.Id_OrdenPedido = d.Id_OrdenPedido
-                JOIN t20Cliente c ON o.Id_Cliente = c.Id_Cliente
-                WHERE d.Id_Distrito = ?
-                AND (o.Estado IN ('En reparto', 'No entregado'))
-                AND o.Id_OrdenPedido NOT IN (SELECT IDPedido FROM t405IncidenciaEntrega)";
+        $sql = "SELECT 
+                o.Id_OrdenPedido AS IDPedido,
+                CONCAT(c.des_nombreCliente, ' ', c.des_apepatCliente, ' ', c.des_apematCliente) AS Cliente,
+                d.DireccionSnap AS Direccion,
+                d.TelefonoSnap AS Telefono,
+                o.Estado,
+                DATE(o.Fecha) AS Fecha,
+                -- 🔹 Calculamos cuántos días faltan (5 - días transcurridos)
+                GREATEST(0, 5 - DATEDIFF(CURDATE(), DATE(o.Fecha))) AS DiasRestantes
+            FROM t02OrdenPedido o
+            JOIN t71OrdenDirecEnvio d ON o.Id_OrdenPedido = d.Id_OrdenPedido
+            JOIN t20Cliente c ON o.Id_Cliente = c.Id_Cliente
+            WHERE d.Id_Distrito = ?
+              AND (o.Estado IN ('En reparto', 'No entregado'))
+              AND o.Id_OrdenPedido NOT IN (SELECT IDPedido FROM t405IncidenciaEntrega)";
+
 
         $st = mysqli_prepare($this->cn, $sql);
         if (!$st) throw new Exception("Error preparando SQL listarPedidosPorDistrito: " . mysqli_error($this->cn));

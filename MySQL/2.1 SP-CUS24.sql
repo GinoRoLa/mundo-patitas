@@ -70,34 +70,34 @@ BEGIN
 END$$
 DELIMITER ;
 
-
-
 DROP PROCEDURE IF EXISTS sp_cus24_get_items_por_orden;
 DELIMITER $$
 CREATE PROCEDURE sp_cus24_get_items_por_orden(IN pIdOP INT)
 SQL SECURITY INVOKER
 BEGIN
   SELECT 
-    op.Id_OrdenPedido             AS idOP,
-    d.Id_DetOrdenPedido           AS idDet,
-    p.Id_Producto                 AS idProducto,
-    p.NombreProducto              AS nombreProducto,
-    p.Descripcion                 AS descripcion,
-    p.Marca                       AS marca,
-    p.PrecioUnitario              AS precio,
-    d.Cantidad                    AS cantidad,
-
-    t71.ReceptorDniSnap           AS receptorDni,
-    t71.NombreContactoSnap        AS receptorNombre,
-    t71.DireccionSnap             AS direccionSnap,
-    t71.Id_Distrito               AS idDistrito
+    op.Id_OrdenPedido                           AS idOP,
+    d.Id_DetOrdenPedido                         AS idDet,
+    p.Id_Producto                               AS idProducto,
+    p.NombreProducto                            AS nombreProducto,
+    p.Descripcion                               AS descripcion,
+    p.Marca                                     AS marca,
+    p.PrecioUnitario                            AS precio,
+    d.Cantidad                                  AS cantidad,
+    um.Descripcion                              AS unidad,
+    t71.ReceptorDniSnap                         AS receptorDni,
+    t71.NombreContactoSnap                      AS receptorNombre,
+    t71.DireccionSnap                           AS direccionSnap,
+    t71.Id_Distrito                             AS idDistrito
   FROM t60DetOrdenPedido d
   JOIN t02OrdenPedido       op  ON op.Id_OrdenPedido = d.t02OrdenPedido_Id_OrdenPedido
   JOIN t18CatalogoProducto  p   ON p.Id_Producto     = d.t18CatalogoProducto_Id_Producto
+  LEFT JOIN t34UnidadMedida um  ON um.Id_UnidadMedida = p.t34UnidadMedida_Id_UnidadMedida
   LEFT JOIN t71OrdenDirecEnvio t71 ON t71.Id_OrdenPedido = op.Id_OrdenPedido
   WHERE op.Id_OrdenPedido = pIdOP;
 END$$
 DELIMITER ;
+
 
 DROP PROCEDURE IF EXISTS sp_cus24_registrar_salida;
 DELIMITER $$

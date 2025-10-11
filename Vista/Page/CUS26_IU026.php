@@ -34,7 +34,7 @@ $parametrosComponenteTitulo = [
         <h4>En reparto</h4>
         <table id="tablaReparto">
           <thead>
-            <tr><th>ID</th><th>Cliente</th><th>Dirección</th><th>Teléfono</th><th>Fecha</th><th>Estado</th></tr>
+            <tr><th>ID</th><th>Cliente</th><th>Dirección</th><th>Teléfono</th><th>Fecha</th><th>Días restantes</th><th>Estado</th></tr>
           </thead>
           <tbody></tbody>
         </table>

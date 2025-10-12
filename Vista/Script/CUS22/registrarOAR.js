@@ -20,12 +20,18 @@ if (!window.fechaSeleccionGlobal || !window.fechaSeleccionGlobal.length) {
     return;
 }
 
+if (!window.rutaGenerada || !window.rutaGenerada.length) {
+    showToast("No se ha seleccionado una ruta de entrega.", "warning");
+    return;
+}
+
 
   // Construir el payload (JSON)
   const payload = {
     ose: window.oseSeleccionadas,
     repartidor: window.vrSeleccionado,
-    fechas: window.fechaSeleccionGlobal
+    fechas: window.fechaSeleccionGlobal,
+    ruta: window.rutaGenerada
   };
 
   console.log("🚀 Enviando datos al proxy PHP:", payload);

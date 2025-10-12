@@ -391,17 +391,8 @@ BEGIN
     -- 5. Actualizar OSEs a "Cerrado"
     -- =======================================================
     UPDATE t59ordenservicioentrega
-    SET Estado = 'Cerrado'
+    SET Estado = 'Procesada'
     WHERE Id_OSE IN (SELECT Id_OSE FROM tmp_t401);
-
-    -- =======================================================
-    -- 6. Actualizar órdenes de pedido a "Preparado para envío"
-    -- =======================================================
-    UPDATE t02ordenpedido o
-	INNER JOIN t59ordenservicioentrega ose ON ose.Id_OrdenPedido = o.Id_OrdenPedido
-	SET o.Estado = 'Preparado'
-	WHERE ose.Id_OSE IN (SELECT Id_OSE FROM tmp_t401);
-
 
     -- =======================================================
     -- Retornar el código generado

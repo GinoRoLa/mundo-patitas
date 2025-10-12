@@ -5,6 +5,7 @@ let oseSeleccionadas = [];
 let zonaSeleccionada = 0;
 const CAPACIDAD_VOLUMEN = 15;
 window.oseSeleccionadas = [];
+window.rutaGenerada = [];
 
 // Array global para rutas sin duplicados
 window.waypointsConDistrito = []; // { direccion, distrito }
@@ -173,7 +174,7 @@ function trazarRuta() {
             waypointOrder.forEach(idx => { rutaTexto += `${window.waypointsConDistrito[idx].direccion}\n`; });
             rutaTexto += `Destino: ${origen}`;
             $("#ruta").val(rutaTexto);
-
+            window.rutaGenerada = rutaArray;
             console.log("Array listo para BD:", rutaArray);
         },
         error: function(err) { console.error("Error al llamar al proxy:", err); }

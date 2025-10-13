@@ -127,4 +127,41 @@ class CUS22Negocio {
             throw new Exception("Error en sp_generar_orden_asignacion_reparto: $error");
         }
     }
+    
+    public function filtrarRepartidoresPorDias($diasLimite) {
+        $obj = new Conexion();
+
+        // Calculamos la fecha objetivo: hoy + $diasLimite
+        $sql = "SELECT 
+                    t79.Id_AsignacionRepartidorVehiculo AS CodigoAsignacion,
+                    t16.id_Trabajador AS CodigoRepartidor,
+                    t78.Placa,
+                    t78.Marca,
+                    t78.Modelo,
+                    t78.CapacidadPesoKg AS CargaUtilKg,
+                    t78.Volumen AS CapacidadM3
+                FROM t79AsignacionRepartidorVehiculo t79
+                INNER JOIN t16CatalogoTrabajadores t16 
+                    ON t79.Id_Trabajador = t16.id_Trabajador
+                INNER JOIN t78Vehiculo t78 
+                    ON t79.Id_Vehiculo = t78.Id_Vehiculo
+                WHERE t79.Estado = 'Activo'
+                  AND t79.Id_AsignacionRepartidorVehiculo NOT IN (
+                        SELECT d.Id_AsignacionRepartidorVehiculo
+                        FROM t80DisponibilidadVehiculo d
+                        WHERE d.Fecha = DATE_ADD(CURDATE(), INTERVAL $diasLimite DAY)
+                          AND d.Estado = 'Ocupado'
+                  )
+                ORDER BY t16.id_Trabajador;";
+
+        $res = mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
+
+        $vec = [];
+        while ($f = mysqli_fetch_assoc($res)) {
+            $vec[] = $f;
+        }
+
+        return $vec;
+    }
+
 }

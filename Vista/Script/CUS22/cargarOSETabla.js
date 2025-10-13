@@ -30,6 +30,58 @@ function showToast(message, type = "info") {
     }, 3000);
 }
 
+
+function actualizarMinDiasRestantes() {
+    if (!window.oseSeleccionadas || window.oseSeleccionadas.length === 0) {
+        window.minDiasRestantesSeleccionados = null;
+        window.renderRV(window.vrOriginales); // mostrar todos los repartidores
+        return;
+    }
+
+    const dias = window.oseSeleccionadas.map(o => o.Dias_Restantes);
+    window.minDiasRestantesSeleccionados = Math.min(...dias);
+
+    console.log("🔹 Mínimo de días restantes:", window.minDiasRestantesSeleccionados);
+
+    // Llamada AJAX al proxy PHP
+    $.ajax({
+        url: "../Ajax/CUS22/filtrarRepartidoresProxy.php",
+        method: "POST",
+        data: { dias_limite: window.minDiasRestantesSeleccionados },
+        dataType: "json",
+        success: function (response) {
+            if (response.success) {
+                // Actualizamos las variables globales
+                window.vrOriginales = response.data;
+                window.vrDisponibles = [...response.data];
+
+                // Llamamos a la función del otro script
+                /*if (typeof renderRV === "function") {
+                    renderRV(window.vrDisponibles);
+                }*/
+                window.renderRV(window.vrDisponibles);
+                
+                /*showToast(
+                    `Filtrados repartidores disponibles para ${window.minDiasRestantesSeleccionados} día(s).`,
+                    "info"
+                );*/
+            } else {
+                showToast(response.message || "Error al filtrar repartidores.", "error");
+                window.renderRV([]); 
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("❌ Error al filtrar repartidores:", xhr.responseText || error);
+        }
+    });
+}
+
+// 🔸 Llamamos cuando se agregan o quitan órdenes
+$(document).on("click", ".icon-add-ose, .icon-remove-ose", function () {
+    actualizarMinDiasRestantes();
+});
+
+
 // ===================================================
 // 🔹 Actualizar contador dinámico
 // ===================================================

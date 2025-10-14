@@ -29,9 +29,9 @@
   /* ============ Estado global mínimo ============ */
   // Nota: no guardamos ítems ni "dirección activa".
   window.Asignacion = window.Asignacion || {
-    id: null,               // t40
-    idAsignacionRV: null,   // t79
-    grupos: [],             // [{ key, dni, nombre, dir, distritoId, distritoNombre, ops: [idOP], clientes: Set }]
+    id: null, // t40
+    idAsignacionRV: null, // t79
+    grupos: [], // [{ key, dni, nombre, dir, distritoId, distritoNombre, ops: [idOP], clientes: Set }]
   };
 
   /* ============ Limpieza / Pintado base ============ */
@@ -49,6 +49,7 @@
       "#vehMarca",
       "#vehPlaca",
       "#vehModelo",
+      "#msgPedidos",
     ].forEach((sel) => {
       const el = $(sel);
       if (el) el.value = "";
@@ -99,7 +100,10 @@
     // Licencia / DNI / Conductor (snapshot)
     const licCompat =
       r.licenciaInfo?.numero ?? r.licencia ?? r.licenciaConducir ?? "";
-    const fullName = [r.nombre, r.apePat, r.apeMat].filter(Boolean).join(" ").trim();
+    const fullName = [r.nombre, r.apePat, r.apeMat]
+      .filter(Boolean)
+      .join(" ")
+      .trim();
 
     $("#guiaDni") && ($("#guiaDni").value = r.dni || "");
     $("#guiaLic") && ($("#guiaLic").value = licCompat);
@@ -146,7 +150,7 @@
       const dist = p.distritoNombre || p.distrito || "";
       const ose = p.idOSE || p.ose || "";
 
-      const elegible = (estado === "Pagado");
+      const elegible = estado === "Pagado";
 
       const tr = document.createElement("tr");
       tr.innerHTML = `
@@ -221,123 +225,130 @@
   }
 
   // Helpers de mapeo (reutilizan tu lógica previa)
-function pickCodigo(row) {
-  return (
-    row.codigo ??
-    row.idProducto ??
-    row.codProducto ??
-    row.Id_Producto ??
-    row.t18CatalogoProducto_Id_Producto ??
-    ""
-  );
-}
-function pickDescripcion(row) {
-  return (
-    row.descripcion ??
-    row.desc ??
-    row.producto ??
-    row.nombreProducto ??
-    row.NombreProducto ??
-    ""
-  );
-}
-function pickUM(row) {
-  // Si en items-por-orden no viene UM, puedes dejar vacío o "NIU"
-  return row.unidad ?? row.um ?? row.Unidad ?? row.UnidadMedida ?? "";
-}
-function pickCantidad(row) {
-  const n = Number(row.cantidad ?? row.cant ?? row.Cantidad ?? 0);
-  return Number.isFinite(n) ? n : 0;
-}
-
-async function cargarDetalleGrupo(key, bodyEl) {
-  // 1) localizar grupo por key
-  const grp = (window.Asignacion?.grupos || []).find(g => g.key === key);
-  if (!grp) throw new Error("Grupo no encontrado");
-
-  const loading = bodyEl.querySelector(".group-loading");
-  const content = bodyEl.querySelector(".group-content");
-  const itemsTbody = bodyEl.querySelector(".group-items");
-  const opsValues = bodyEl.querySelector(".ops-values");
-  const warnings = bodyEl.querySelector(".warnings");
-
-  // 2) acumulador por producto
-  const map = new Map(); // codigo -> { codigo, desc, um, qty }
-
-  // 3) fetch items por cada OP del grupo (secuencial simple; si quieres, paraleliza con Promise.all)
-  for (const op of grp.ops) {
-    let res;
-    try {
-      res = await window.API24.fetchJSON(window.API24.url.itemsPorOrden(op), {
-        method: "GET", credentials: "include"
-      });
-    } catch (e) {
-      // Si falla una OP, avisamos y continuamos (o lanza para abortar todo, a tu criterio)
-      window.Utils24?.showToast?.(`No se pudo cargar ítems de la OP ${op}.`, "warn");
-      continue;
-    }
-    if (!res?.ok) {
-      window.Utils24?.showToast?.(`Error al obtener ítems de la OP ${op}.`, "warn");
-      continue;
-    }
-
-    const items = Array.isArray(res.items) ? res.items : [];
-    for (const r of items) {
-      const codigo = pickCodigo(r);
-      if (!codigo && codigo !== 0) continue;
-      const desc = pickDescripcion(r);
-      const um = pickUM(r);
-      const qty = pickCantidad(r);
-
-      if (!map.has(codigo)) {
-        map.set(codigo, { codigo, desc, um, qty });
-      } else {
-        const n = map.get(codigo);
-        n.qty += qty;
-        // si quieres, unifica um si viene vacía
-        if (!n.um && um) n.um = um;
-      }
-    }
+  function pickCodigo(row) {
+    return (
+      row.codigo ??
+      row.idProducto ??
+      row.codProducto ??
+      row.Id_Producto ??
+      row.t18CatalogoProducto_Id_Producto ??
+      ""
+    );
+  }
+  function pickDescripcion(row) {
+    return (
+      row.descripcion ??
+      row.desc ??
+      row.producto ??
+      row.nombreProducto ??
+      row.NombreProducto ??
+      ""
+    );
+  }
+  function pickUM(row) {
+    // Si en items-por-orden no viene UM, puedes dejar vacío o "NIU"
+    return row.unidad ?? row.um ?? row.Unidad ?? row.UnidadMedida ?? "";
+  }
+  function pickCantidad(row) {
+    const n = Number(row.cantidad ?? row.cant ?? row.Cantidad ?? 0);
+    return Number.isFinite(n) ? n : 0;
   }
 
-  // 4) pintar tabla consolidada
-  if (itemsTbody) {
-    itemsTbody.innerHTML = "";
-    const rows = Array.from(map.values())
-      .sort((a, b) => String(a.codigo).localeCompare(String(b.codigo)));
+  async function cargarDetalleGrupo(key, bodyEl) {
+    // 1) localizar grupo por key
+    const grp = (window.Asignacion?.grupos || []).find((g) => g.key === key);
+    if (!grp) throw new Error("Grupo no encontrado");
 
-    if (rows.length === 0) {
-      itemsTbody.innerHTML = `<tr><td colspan="4" style="text-align:center;opacity:.7;">Sin ítems</td></tr>`;
-    } else {
-      const frag = document.createDocumentFragment();
-      for (const it of rows) {
-        const tr = document.createElement("tr");
-        tr.innerHTML = `
+    const loading = bodyEl.querySelector(".group-loading");
+    const content = bodyEl.querySelector(".group-content");
+    const itemsTbody = bodyEl.querySelector(".group-items");
+    const opsValues = bodyEl.querySelector(".ops-values");
+    const warnings = bodyEl.querySelector(".warnings");
+
+    // 2) acumulador por producto
+    const map = new Map(); // codigo -> { codigo, desc, um, qty }
+
+    // 3) fetch items por cada OP del grupo (secuencial simple; si quieres, paraleliza con Promise.all)
+    for (const op of grp.ops) {
+      let res;
+      try {
+        res = await window.API24.fetchJSON(window.API24.url.itemsPorOrden(op), {
+          method: "GET",
+          credentials: "include",
+        });
+      } catch (e) {
+        // Si falla una OP, avisamos y continuamos (o lanza para abortar todo, a tu criterio)
+        window.Utils24?.showToast?.(
+          `No se pudo cargar ítems de la OP ${op}.`,
+          "warn"
+        );
+        continue;
+      }
+      if (!res?.ok) {
+        window.Utils24?.showToast?.(
+          `Error al obtener ítems de la OP ${op}.`,
+          "warn"
+        );
+        continue;
+      }
+
+      const items = Array.isArray(res.items) ? res.items : [];
+      for (const r of items) {
+        const codigo = pickCodigo(r);
+        if (!codigo && codigo !== 0) continue;
+        const desc = pickDescripcion(r);
+        const um = pickUM(r);
+        const qty = pickCantidad(r);
+
+        if (!map.has(codigo)) {
+          map.set(codigo, { codigo, desc, um, qty });
+        } else {
+          const n = map.get(codigo);
+          n.qty += qty;
+          // si quieres, unifica um si viene vacía
+          if (!n.um && um) n.um = um;
+        }
+      }
+    }
+
+    // 4) pintar tabla consolidada
+    if (itemsTbody) {
+      itemsTbody.innerHTML = "";
+      const rows = Array.from(map.values()).sort((a, b) =>
+        String(a.codigo).localeCompare(String(b.codigo))
+      );
+
+      if (rows.length === 0) {
+        itemsTbody.innerHTML = `<tr><td colspan="4" style="text-align:center;opacity:.7;">Sin ítems</td></tr>`;
+      } else {
+        const frag = document.createDocumentFragment();
+        for (const it of rows) {
+          const tr = document.createElement("tr");
+          tr.innerHTML = `
           <td>${it.codigo ?? ""}</td>
           <td>${it.desc ?? ""}</td>
           <td>${it.um ?? ""}</td>
           <td>${it.qty}</td>
         `;
-        frag.appendChild(tr);
+          frag.appendChild(tr);
+        }
+        itemsTbody.appendChild(frag);
       }
-      itemsTbody.appendChild(frag);
     }
+
+    // 5) lista de OP incluidas
+    if (opsValues) opsValues.textContent = grp.ops.join(", ");
+
+    // 6) advertencias (ejemplo: UM vacías)
+    const umVacias = Array.from(map.values()).filter((x) => !x.um).length;
+    warnings.innerHTML = umVacias
+      ? `<div class="badge warn">Advertencia</div> ${umVacias} producto(s) sin unidad definida; se aplicará mapeo/truncado al generar.`
+      : "";
+
+    // 7) mostrar contenido y ocultar “cargando”
+    if (loading) loading.setAttribute("hidden", "hidden");
+    if (content) content.removeAttribute("hidden");
   }
-
-  // 5) lista de OP incluidas
-  if (opsValues) opsValues.textContent = grp.ops.join(", ");
-
-  // 6) advertencias (ejemplo: UM vacías)
-  const umVacias = Array.from(map.values()).filter(x => !x.um).length;
-  warnings.innerHTML = umVacias
-    ? `<div class="badge warn">Advertencia</div> ${umVacias} producto(s) sin unidad definida; se aplicará mapeo/truncado al generar.`
-    : "";
-
-  // 7) mostrar contenido y ocultar “cargando”
-  if (loading) loading.setAttribute("hidden", "hidden");
-  if (content) content.removeAttribute("hidden");
-}
-
 
   /* ============ Render de grupos (pre-visualización) ============ */
   function renderGrupos(groups = []) {
@@ -370,7 +381,9 @@ async function cargarDetalleGrupo(key, bodyEl) {
       <span>#OP: ${g.ops.length}</span>
     </div>
     <div class="estado"><span class="badge ok">Listo</span></div>
-    <button class="btn btn-ghost btn-sm group-toggle" type="button" data-key="${g.key}">
+    <button class="btn btn-ghost btn-sm group-toggle" type="button" data-key="${
+      g.key
+    }">
       Ver detalle
     </button>
   </header>
@@ -402,17 +415,34 @@ async function cargarDetalleGrupo(key, bodyEl) {
     setBtnGenerarEnabled(enable);
   }
 
+  function todayLocalISO() {
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    return `${y}-${m}-${day}`; // YYYY-MM-DD
+  }
+  function onlyDate(s) {
+    return String(s || "")
+      .trim()
+      .slice(0, 10); // toma solo 'YYYY-MM-DD'
+  }
+
   /* ============ Buscar Asignación ============ */
   async function buscarAsignacion() {
+    const { validateNumericInput, showMsg, showToast, $ } =
+      window.Utils24 || {};
     const input = $("#txtAsignacion");
     const msgEl = $("#msgAsignacion");
 
-    const v = window.Utils24?.validateNumericInput
-      ? window.Utils24.validateNumericInput(input, msgEl, { required: true })
+    // Validación
+    const v = validateNumericInput
+      ? validateNumericInput(input, msgEl, { required: true })
       : { ok: !!(input && /^\d+$/.test(input.value.trim())) };
 
     if (!v.ok) {
       input?.focus();
+      showToast?.("Ingrese un número de asignación válido.", "error");
       return;
     }
 
@@ -423,11 +453,13 @@ async function cargarDetalleGrupo(key, bodyEl) {
     if (!window.API24?.fetchJSON || !window.API24?.url?.buscarAsignacion) {
       if (btn) btn.disabled = false;
       if (input) input.disabled = false;
-      window.Utils24?.showMsg?.(msgEl, "error", "API no disponible.", { autoclear: 3500 });
+      showMsg?.(msgEl, "error", "API no disponible.", { autoclear: 3500 });
+      showToast?.("API no disponible", "error");
       return;
     }
 
     limpiarUI();
+    //showToast?.("Buscando asignación…", "info");
 
     let res;
     try {
@@ -438,7 +470,9 @@ async function cargarDetalleGrupo(key, bodyEl) {
     } catch {
       if (btn) btn.disabled = false;
       if (input) input.disabled = false;
-      window.Utils24?.showMsg?.(msgEl, "error", "No se pudo conectar al servidor.", { autoclear: 4000 });
+      showMsg?.(msgEl, "error", "No se pudo conectar al servidor.", {
+        autoclear: 4000,
+      });
       return;
     }
 
@@ -446,34 +480,88 @@ async function cargarDetalleGrupo(key, bodyEl) {
     if (input) input.disabled = false;
 
     if (!res || res.ok !== true) {
-      const mensaje = (typeof res?.error === "string" && res.error.trim())
-        ? res.error
-        : "Asignación no encontrada.";
-      window.Utils24?.showMsg?.(msgEl, "error", mensaje, { autoclear: 4000 });
+      const mensaje =
+        typeof res?.error === "string" && res.error.trim()
+          ? res.error
+          : "Asignación no encontrada.";
+      //showMsg?.(msgEl, "error", mensaje, { autoclear: 4000 });
+      showToast?.(mensaje, "error");
+      limpiarUI();
       return;
     }
 
     // 1) Encabezado (repartidor / unidad / ids)
     pintarEncabezado(res);
 
-    // 2) Tabla de pedidos (auto-incluidos si Pagado)
     const pedidos = Array.isArray(res.pedidos) ? res.pedidos : [];
-    pintarPedidos(pedidos);
+    const tot = pedidos.length;
 
-    // 3) Agrupar por destino y renderizar previsualización
+    // (A) Sin pedidos => mensaje y fin
+    if (tot === 0) {
+      // limpiar vista de pedidos/grupos por si acaso
+      const tb = document.querySelector("#tblPedidos tbody");
+      if (tb) tb.innerHTML = "";
+      const gruposWrap = document.querySelector("#gruposLista");
+      if (gruposWrap) gruposWrap.innerHTML = "";
+      setResumenGruposText([]);
+      window.Asignacion.grupos = [];
+
+      const msg = document.querySelector("#msgPedidos");
+      if (msg) {
+        msg.classList.add("hint");
+        msg.textContent = "No hay pedidos pendientes en esta asignación.";
+      }
+      window.Utils24?.showToast?.(
+        "No hay pedidos pendientes en esta asignación.",
+        "info"
+      );
+      setBtnGenerarEnabled(false);
+      return;
+    }
+
+    // (B) Hay pedidos => verifica fecha programada
+    const fp = onlyDate(res?.asignacion?.fechaProgramada);
+    const hoy = todayLocalISO();
+    if (fp && fp !== hoy) {
+      // Deshabilitar y limpiar
+      setBtnGenerarEnabled(false);
+      const tb = document.querySelector("#tblPedidos tbody");
+      if (tb) tb.innerHTML = "";
+      const gruposWrap = document.querySelector("#gruposLista");
+      if (gruposWrap) gruposWrap.innerHTML = "";
+      setResumenGruposText([]);
+      window.Asignacion.grupos = [];
+
+      const msg = document.querySelector("#msgPedidos");
+      if (msg) {
+        msg.classList.add("hint");
+        msg.textContent = `No se puede atender: la asignación está programada para ${fp}.`;
+      }
+      window.Utils24?.showToast?.(
+        `No se puede atender: la asignación está programada para ${fp} (hoy ${hoy}).`,
+        "error"
+      );
+      return;
+    }
+
+    // (C) OK: hay pedidos y la fecha es hoy -> continúa flujo normal
+    pintarPedidos(pedidos);
     const grupos = agruparPorDestino(pedidos);
     window.Asignacion.grupos = grupos;
     renderGrupos(grupos);
 
-    // 4) Mensaje informativo
-    const msg = $("#msgPedidos");
+    // Mensaje + toast de éxito
+    const msg = document.querySelector("#msgPedidos");
     if (msg) {
-      const tot = pedidos.length;
       msg.classList.add("hint");
-      msg.textContent = tot
-        ? `Se encontraron ${tot} pedido(s). Los que están en estado "Pagado" se procesarán automáticamente.`
-        : "No hay pedidos pendientes en esta asignación.";
+      msg.textContent = `Se encontraron ${tot} pedido(s). Se procesarán automáticamente.`;
     }
+    window.Utils24?.showToast?.(
+      `Asignación #${input?.value?.trim() || ""} cargada (${tot} pedido${
+        tot === 1 ? "" : "s"
+      }).`,
+      "success" // usa "ok" para coincidir con tus variantes CSS
+    );
   }
 
   /* ============ Init ============ */
@@ -500,33 +588,37 @@ async function cargarDetalleGrupo(key, bodyEl) {
     setBtnGenerarEnabled(false);
 
     // Delegación en la lista de grupos
-$("#gruposLista")?.addEventListener("click", async (e) => {
-  const btn = e.target.closest(".group-toggle");
-  if (!btn) return;
+    $("#gruposLista")?.addEventListener("click", async (e) => {
+      const btn = e.target.closest(".group-toggle");
+      if (!btn) return;
 
-  const key = btn.dataset.key;
-  const body = document.querySelector(`.group-body[data-key="${CSS.escape(key)}"]`);
-  if (!body) return;
+      const key = btn.dataset.key;
+      const body = document.querySelector(
+        `.group-body[data-key="${CSS.escape(key)}"]`
+      );
+      if (!body) return;
 
-  const isHidden = body.hasAttribute("hidden");
-  if (isHidden) {
-    // Primer expand: si no está cacheado, cargar
-    if (!body.dataset.loaded) {
-      try {
-        await cargarDetalleGrupo(key, body);
-        body.dataset.loaded = "1";
-      } catch (err) {
-        window.Utils24?.showToast?.("No se pudo cargar el detalle del grupo.", "error");
+      const isHidden = body.hasAttribute("hidden");
+      if (isHidden) {
+        // Primer expand: si no está cacheado, cargar
+        if (!body.dataset.loaded) {
+          try {
+            await cargarDetalleGrupo(key, body);
+            body.dataset.loaded = "1";
+          } catch (err) {
+            window.Utils24?.showToast?.(
+              "No se pudo cargar el detalle del grupo.",
+              "error"
+            );
+          }
+        }
+        body.removeAttribute("hidden");
+        btn.textContent = "Ocultar detalle";
+      } else {
+        body.setAttribute("hidden", "hidden");
+        btn.textContent = "Ver detalle";
       }
-    }
-    body.removeAttribute("hidden");
-    btn.textContent = "Ocultar detalle";
-  } else {
-    body.setAttribute("hidden", "hidden");
-    btn.textContent = "Ver detalle";
-  }
-});
-
+    });
   }
 
   document.addEventListener("DOMContentLoaded", init);

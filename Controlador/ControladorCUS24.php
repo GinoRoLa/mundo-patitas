@@ -288,7 +288,6 @@ try {
               ];
             }
 
-            // ✨ ENVIAR CORREO usando el servicio
             $resultado = EmailService::enviarGuias(
               $toEmail,
               $toName,
@@ -304,7 +303,6 @@ try {
               'total'        => count($archivos)
             ];
 
-            // ✨ LIMPIAR archivos temporales
             GuiaPDFService::limpiarTemporales(array_values($archivos));
 
           } else {
@@ -334,5 +332,5 @@ try {
       err('Acción no encontrada', 404, ['accion' => $accion]);
   }
 } catch (Throwable $e) {
-  err('Error inesperado', 500, ['detail' => $e->getMessage()]);
+  err('Error inesperado Back', 500, ['detail' => $e->getMessage()]);
 }

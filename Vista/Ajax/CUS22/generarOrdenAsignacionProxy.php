@@ -19,7 +19,7 @@ try {
     // Arrays originales
     $oseArray = $data['ose'] ?? [];
     $fechasArray = $data['fechas'] ?? [];
-    $rutasArray = $data['rutas'] ?? $data['repartidor'] ?? [];
+    $rutasArray = $data['ruta'] ?? $data['repartidor'] ?? [];
 
     // =====================================================
     // 🔹 t40OrdenAsignacionReparto
@@ -27,7 +27,7 @@ try {
     $ordenAsignacion = [];
     foreach ($fechasArray as $item) {
         $ordenAsignacion[] = [
-            'Id_AsignacionRepartidorVehiculo' => $item['idAsignacion'],
+            'Id_AsignacionRepartidorVehiculo' => (int)$item['idAsignacion'],
             'FechaProgramada' => $item['fecha']
         ];
     }
@@ -39,7 +39,7 @@ try {
     foreach ($oseArray as $item) {
         if (isset($item['Codigo_OSE'])) {
             $detalleAsignacion[] = [
-                'Id_OSE' => $item['Codigo_OSE']
+                'Id_OSE' => (int)$item['Codigo_OSE']
             ];
         }
     }
@@ -51,9 +51,9 @@ try {
     foreach ($rutasArray as $item) {
         if (isset($item['Id_Distrito'], $item['DireccionSnap'], $item['Orden'], $item['RutaPolyline'])) {
             $detalleRuta[] = [
-                'Id_Distrito'   => $item['Id_Distrito'],
+                'Id_Distrito'   => (int)$item['Id_Distrito'],
                 'DireccionSnap' => $item['DireccionSnap'],
-                'Orden'         => $item['Orden'],
+                'Orden'         => (int)$item['Orden'],
                 'RutaPolyline'  => $item['RutaPolyline']
             ];
         }

@@ -18,7 +18,7 @@
   // Solo dígitos (sin e, +, -, ., espacios, etc.)
   if (!/^\d+$/.test(raw)) {
     return { ok: false, msg: "Solo números (sin símbolos ni espacios)." };
-  }
+  } 
 
   if (maxLen && raw.length > maxLen) {
     return { ok: false, msg: `Máximo ${maxLen} dígitos.` };

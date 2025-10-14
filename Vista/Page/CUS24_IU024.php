@@ -74,7 +74,7 @@ $fecha = date('Y-m-d');
       <!-- Pedidos a despachar (auto-incluidos) -->
       <h3>Pedidos a despachar</h3>
       <div id="msgPedidosAuto" class="msg hint">
-        Todas las Órdenes de Pedido en estado <b>Pagado</b> se consideran automáticamente.
+        Todas las Órdenes de Pedido de la <b>asignación</b> se consideran automáticamente.
       </div>
       <div class="table-scroll">
       <table id="tblPedidos" class="table">
@@ -114,17 +114,17 @@ $fecha = date('Y-m-d');
         <article class="group-card">
           <header class="group-head">
             <div class="destino">
-              <div><b>DNI:</b> 12345678</div>
-              <div><b>Nombre:</b> Juan Pérez</div>
-              <div><b>Dirección:</b> Av. Siempre Viva 742</div>
-              <div><b>Distrito:</b> Lince</div>
+              <div><b>DNI:</b> </div>
+              <div><b>Nombre:</b> </div>
+              <div><b>Dirección:</b> </div>
+              <div><b>Distrito:</b> </div>
             </div>
             <div class="resumen">
-              <span>#OP: 3</span>
-              <span>#Productos: 12</span>
-              <span>Unidades: 24</span>
+              <span>#OP: </span>
+              <span>#Productos: </span>
+              <span>Unidades: </span>
             </div>
-            <div class="estado"><span class="badge ok">Listo</span></div>
+            <!-- <div class="estado"><span class="badge ok"></span></div> -->
             <button class="btn btn-ghost btn-sm group-toggle" type="button">Ver detalle</button>
           </header>
           <section class="group-body" hidden>
@@ -220,6 +220,13 @@ $fecha = date('Y-m-d');
       </div>
     </form>
   </dialog>
+  <dialog id="appLoading" class="loading-dialog">
+  <div class="loading-content">
+    <div class="spinner" aria-hidden="true"></div>
+    <div class="loading-text" id="appLoadingText">Generando guías…</div>
+  </div>
+</dialog>
+
 
   <!-- JS -->
   <script src="../Script/CUS24/apiCUS24.js"></script>

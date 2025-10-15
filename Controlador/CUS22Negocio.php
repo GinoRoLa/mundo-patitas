@@ -128,9 +128,9 @@ class CUS22Negocio {
         }
     }
     
-    public function filtrarRepartidoresPorDias($diasLimite) {
+    /*public function filtrarRepartidoresPorDias($diasLimite) {
         $obj = new Conexion();
-
+        $dias = $diasLimite - 1;
         // Calculamos la fecha objetivo: hoy + $diasLimite
         $sql = "SELECT 
                     t79.Id_AsignacionRepartidorVehiculo AS CodigoAsignacion,
@@ -149,8 +149,54 @@ class CUS22Negocio {
                   AND t79.Id_AsignacionRepartidorVehiculo NOT IN (
                         SELECT d.Id_AsignacionRepartidorVehiculo
                         FROM t80DisponibilidadVehiculo d
-                        WHERE d.Fecha = DATE_ADD(CURDATE(), INTERVAL $diasLimite DAY)
+                        WHERE d.Fecha = DATE_ADD(CURDATE(), INTERVAL $dias DAY)
                           AND d.Estado = 'Ocupado'
+                  )
+                ORDER BY t16.id_Trabajador;";
+
+        $res = mysqli_query($obj->conecta(), $sql) or die(mysqli_error($obj->conecta()));
+
+        $vec = [];
+        while ($f = mysqli_fetch_assoc($res)) {
+            $vec[] = $f;
+        }
+
+        return $vec;
+    }*/
+    
+    public function filtrarRepartidoresPorDias($diasLimite) {
+        $obj = new Conexion();
+        $dias = $diasLimite + 1;
+        // Calculamos la fecha objetivo: hoy + $diasLimite
+        $sql = "SELECT 
+                    t79.Id_AsignacionRepartidorVehiculo AS CodigoAsignacion,
+                    t16.id_Trabajador AS CodigoRepartidor,
+                    t78.Placa,
+                    t78.Marca,
+                    t78.Modelo,
+                    t78.CapacidadPesoKg AS CargaUtilKg,
+                    t78.Volumen AS CapacidadM3
+                FROM t79AsignacionRepartidorVehiculo t79
+                INNER JOIN t16CatalogoTrabajadores t16 
+                    ON t79.Id_Trabajador = t16.id_Trabajador
+                INNER JOIN t78Vehiculo t78 
+                    ON t79.Id_Vehiculo = t78.Id_Vehiculo
+                WHERE t79.Estado = 'Activo'
+                  AND EXISTS (
+                      SELECT 1
+                      FROM (
+                          SELECT DATE_ADD(CURDATE(), INTERVAL n DAY) AS Fecha
+                          FROM (
+                              SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 
+                              UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
+                          ) AS dias
+                          WHERE n < $diasLimite
+                      ) AS fechas
+                      LEFT JOIN t80DisponibilidadVehiculo d
+                          ON d.Id_AsignacionRepartidorVehiculo = t79.Id_AsignacionRepartidorVehiculo
+                          AND d.Fecha = fechas.Fecha
+                          AND d.Estado = 'Ocupado'
+                      WHERE d.Id_AsignacionRepartidorVehiculo IS NULL
                   )
                 ORDER BY t16.id_Trabajador;";
 

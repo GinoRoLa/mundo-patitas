@@ -170,7 +170,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                 </div>
             </section>
             <section class="botonesCUS">
-                <button class="style-button">Generar orden de asignación</button>
+                <button id="btnGenerarOrden" class="style-button-disabled" disabled>Generar orden de asignación</button>
                 <button class="style-button">Cancelar</button>
             </section>
         </main>

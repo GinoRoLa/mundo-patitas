@@ -4,7 +4,7 @@
 header("Content-Type: application/json; charset=UTF-8");
 header("Access-Control-Allow-Origin: *"); 
 
-$apiKey = "MIAPI";
+$apiKey = "AIzaSyA33c_8VWoGbwpmTe8Geeh2juM4NyKK9wo";
 
 if (!isset($_GET["origin"]) || !isset($_GET["destination"])) {
     echo json_encode(["status" => "ERROR", "message" => "Faltan parámetros"]);

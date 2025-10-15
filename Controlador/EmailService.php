@@ -16,7 +16,7 @@ class EmailService{
     private const SMTP_HOST = 'smtp.gmail.com';
     private const SMTP_PORT = 587;
     private const SMTP_USER = 'mundopatitas.venta@gmail.com';
-    private const SMTP_PASS = 'fczx jhga rkop uekf';
+    private const SMTP_PASS = 'password';
     private const SMTP_FROM = 'mundopatitas.venta@gmail.com';
     private const SMTP_FROM_NAME = 'Mundo Patitas';
 

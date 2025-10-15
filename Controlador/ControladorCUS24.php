@@ -319,7 +319,7 @@ try {
       ok([
         'asignacion' => [
           'id'            => $asigId,
-          'estado'        => $quedanPagados > 0 ? 'Parcial' : 'Despachada',
+          'estado'        => $quedanPagados > 0 ? 'Despachada' : 'Despachada',
           'quedanPagados' => $quedanPagados,
         ],
         'guias'   => $outGuias,

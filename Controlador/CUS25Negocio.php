@@ -7,7 +7,7 @@ $host = 'localhost';
 $port = '3306';
 $dbname = 'mundo_patitas3';
 $username = 'root';
-$password = 'mysql';
+$password = '12345';
 
 try {
     // Conexión a la base de datos
@@ -30,7 +30,7 @@ function obtenerRepartidor($pdo) {
                     des_nombreTrabajador, 
                     des_apepatTrabajador
                 FROM t16CatalogoTrabajadores
-                WHERE id_Trabajador = 50008";
+                WHERE id_Trabajador = 50009";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
@@ -66,9 +66,10 @@ function obtenerDirecciones($pdo, $idTrabajador) {
         }
 
         $sql = "SELECT 
+                    t02.Id_OrdenPedido AS OrdenPedido,
+                    t72.NumeroTexto AS GuiaRemision,
                     t77.DescNombre AS Distrito,
-                    t71.DireccionSnap AS Direccion,
-                    t02.Id_OrdenPedido AS OrdenPedido
+                    t71.DireccionSnap AS Direccion
                 FROM t16CatalogoTrabajadores AS t16
                 JOIN t79AsignacionRepartidorVehiculo AS t79 
                     ON t16.id_Trabajador = t79.Id_Trabajador
@@ -80,12 +81,16 @@ function obtenerDirecciones($pdo, $idTrabajador) {
                     ON t401.Id_OSE = t59.Id_OSE
                 JOIN t02OrdenPedido AS t02
                     ON t59.Id_OrdenPedido = t02.Id_OrdenPedido
+                JOIN t93guia_ordenpedido AS t93
+                    ON t02.Id_OrdenPedido = t93.Id_OrdenPedido
+                JOIN t72GuiaRemision AS t72
+                    ON t93.Id_Guia = t72.Id_Guia
                 JOIN t71OrdenDirecEnvio AS t71
                     ON t02.Id_OrdenPedido = t71.Id_OrdenPedido
                 JOIN t77DistritoEnvio AS t77
                     ON t71.Id_Distrito = t77.Id_Distrito
                 WHERE t16.id_Trabajador = :idTrabajador 
-                AND t02.Estado = 'Generada'";
+                AND t02.Estado = 'En reparto'";
 
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':idTrabajador', $idTrabajador);
@@ -181,6 +186,74 @@ function obtenerDestinatarioPorOrden($pdo, $idOrdenPedido) {
     }
 }
 
+// Función para obtener Id_OrdenAsignacion por repartidor
+function obtenerOrdenAsignacionPorRepartidor($pdo, $idTrabajador) {
+    try {
+        if (!$idTrabajador) {
+            return [
+                'success' => false,
+                'message' => 'Falta el parámetro requerido: idTrabajador'
+            ];
+        }
+
+        $sql = "SELECT t40.Id_OrdenAsignacion
+                FROM t16CatalogoTrabajadores AS t16
+                JOIN t79AsignacionRepartidorVehiculo AS t79
+                    ON t16.id_Trabajador = t79.Id_Trabajador
+                JOIN t40OrdenAsignacionReparto AS t40
+                    ON t79.Id_AsignacionRepartidorVehiculo = t40.Id_AsignacionRepartidorVehiculo
+                WHERE t16.id_Trabajador = :idTrabajador";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':idTrabajador', $idTrabajador);
+        $stmt->execute();
+        $row = $stmt->fetch();
+
+        if ($row && isset($row['Id_OrdenAsignacion'])) {
+            return [ 'success' => true, 'data' => $row['Id_OrdenAsignacion'] ];
+        }
+
+        return [ 'success' => true, 'data' => null ];
+
+    } catch(PDOException $e) {
+        return [
+            'success' => false,
+            'message' => 'Error al obtener orden asignada: ' . $e->getMessage()
+        ];
+    }
+}
+
+// Función para finalizar orden de asignación
+function finalizarOrdenAsignacion($pdo, $idOrdenAsignacion) {
+    try {
+        if (!$idOrdenAsignacion) {
+            return [
+                'success' => false,
+                'message' => 'Falta el parámetro requerido: idOrdenAsignacion'
+            ];
+        }
+
+        $sql = "UPDATE t40OrdenAsignacionReparto 
+                SET Estado = 'Finalizado' 
+                WHERE Id_OrdenAsignacion = :idOrdenAsignacion";
+
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':idOrdenAsignacion', $idOrdenAsignacion);
+        $stmt->execute();
+
+        return [
+            'success' => true,
+            'message' => 'Orden de asignación finalizada exitosamente'
+        ];
+
+    } catch(PDOException $e) {
+        return [
+            'success' => false,
+            'message' => 'Error al finalizar orden de asignación: ' . $e->getMessage()
+        ];
+    }
+}
+
 // Función para procesar el registro de consolidación
 function procesarRegistroConsolidacion($pdo, $datos) {
     try {
@@ -224,7 +297,7 @@ function procesarRegistroConsolidacion($pdo, $datos) {
         $observaciones = $datos['observaciones'];
 
         // Construir la llamada al procedimiento almacenado
-        $sql = "CALL RegistrarConsolidacion(
+        $sql = "CALL sp_cus25_RegistrarConsolidacion(
             :idOrdenPedido,
             :fotoDireccion,
             :fotoDni,
@@ -290,6 +363,16 @@ switch ($action) {
     case 'obtener_destinatario':
         $idOrdenPedido = isset($_GET['idOrdenPedido']) ? $_GET['idOrdenPedido'] : null;
         echo json_encode(obtenerDestinatarioPorOrden($pdo, $idOrdenPedido));
+        break;
+        
+    case 'obtener_orden_asignacion':
+        $idTrabajador = isset($_GET['idTrabajador']) ? $_GET['idTrabajador'] : null;
+        echo json_encode(obtenerOrdenAsignacionPorRepartidor($pdo, $idTrabajador));
+        break;
+        
+    case 'finalizar_orden_asignacion':
+        $idOrdenAsignacion = isset($_GET['idOrdenAsignacion']) ? $_GET['idOrdenAsignacion'] : null;
+        echo json_encode(finalizarOrdenAsignacion($pdo, $idOrdenAsignacion));
         break;
         
     case 'procesar_entrega':

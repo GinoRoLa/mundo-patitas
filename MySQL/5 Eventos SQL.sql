@@ -1,4 +1,4 @@
-use mundo_patitas2;
+use mundo_patitas3;
 
 SHOW VARIABLES LIKE 'event_scheduler';
 SET GLOBAL event_scheduler = ON;

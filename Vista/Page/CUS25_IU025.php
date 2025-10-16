@@ -313,15 +313,15 @@
             <div class="form-row">
                 <div class="form-group">
                     <label for="repartidorId">ID Repartidor:</label>
-                    <input type="text" id="repartidorId" value="R002" readonly>
+                    <input type="text" id="repartidorId" value="" readonly>
                 </div>
                 <div class="form-group">
                     <label for="repartidorNombre">Nombre:</label>
-                    <input type="text" id="repartidorNombre" value="Victor" readonly>
+                    <input type="text" id="repartidorNombre" value="" readonly>
                 </div>
                 <div class="form-group">
                     <label for="repartidorApellido">Ap. Paterno:</label>
-                    <input type="text" id="repartidorApellido" value="Torres" readonly>
+                    <input type="text" id="repartidorApellido" value="" readonly>
                 </div>
             </div>
         </div>
@@ -334,19 +334,24 @@
         </div>
 
         <div class="section">
-            <h2>Ordenes Asignadas</h2>
+            <h2>Orden Asignada: <span id="ordenAsignadaLabel" style="font-weight:600; color:#333;">-</span></h2>
             <div class="table-container pedidos-asignados-container">
                 <table>
                     <thead>
                         <tr>
-                            <th>Distrito</th>
-                            <th>Dirección</th>
                             <th>Orden de Pedido</th>
+                            <th>Guía de Remisión</th>
+                            <th>
+                                Distrito
+                                <button type="button" id="btnOrdenDistrito" class="btn btn-secondary" style="padding:4px 8px; margin-left:6px; font-size:12px;"
+                                    onclick="toggleOrdenDistrito()">A-Z</button>
+                            </th>
+                            <th>Dirección</th>
                         </tr>
                     </thead>
                     <tbody id="direccionesTable">
                         <tr>
-                            <td colspan="3" style="text-align: center; color: #666;">
+                        <td colspan="4" style="text-align: center; color: #666;">
                                 Cargando direcciones...
                             </td>
                         </tr>
@@ -473,7 +478,7 @@
         </div>
 
         <div class="footer">
-            <button type="submit" class="btn btn-primary">Registrar</button>
+            <button type="submit" class="btn btn-primary" disabled>Registrar</button>
             <button type="button" class="btn btn-secondary" onclick="salir()">Salir</button>
         </div>
     </div>
@@ -492,7 +497,9 @@
         updateDateTime();
 
         // Variables globales para almacenar datos
-        let todasLasDirecciones = {};
+        let todasLasDirecciones = [];
+        let direccionesOriginal = [];
+        let ordenDistritoActivo = false;
         let direccionesFiltradas = [];
 
         // Cargar datos al iniciar la página
@@ -516,6 +523,12 @@
                 repartidorIdInput.addEventListener('input', recargarDireccionesPorRepartidor);
                 repartidorIdInput.addEventListener('change', recargarDireccionesPorRepartidor);
             }
+
+            // Cargar Orden Asignada ante cambios manuales del ID
+            if (repartidorIdInput) {
+                repartidorIdInput.addEventListener('input', cargarOrdenAsignada);
+                repartidorIdInput.addEventListener('change', cargarOrdenAsignada);
+            }
         });
 
         // Función para cargar todas las direcciones al inicio
@@ -529,9 +542,11 @@
                 const responseDirecciones = await fetch(`../Controlador/CUS25Negocio.php?action=obtener_direcciones&idTrabajador=${encodeURIComponent(idTrabajador)}`);
                 const dataDirecciones = await responseDirecciones.json();
                 
-                if (dataDirecciones.success) {
-                    todasLasDirecciones = dataDirecciones.data;
-                    mostrarTodasLasDirecciones();
+            if (dataDirecciones.success) {
+                    todasLasDirecciones = Array.isArray(dataDirecciones.data) ? dataDirecciones.data : [];
+                    direccionesOriginal = [...todasLasDirecciones];
+                    ordenDistritoActivo = false;
+                    renderDirecciones(todasLasDirecciones);
                 } else {
                     console.error('Error al cargar direcciones:', dataDirecciones.message);
                     mostrarError('Error al cargar las direcciones');
@@ -550,8 +565,10 @@
                 const responseDirecciones = await fetch(`../Controlador/CUS25Negocio.php?action=obtener_direcciones&idTrabajador=${encodeURIComponent(idTrabajador)}`);
                 const dataDirecciones = await responseDirecciones.json();
                 if (dataDirecciones.success) {
-                    todasLasDirecciones = dataDirecciones.data;
-                    mostrarTodasLasDirecciones();
+                    todasLasDirecciones = Array.isArray(dataDirecciones.data) ? dataDirecciones.data : [];
+                    direccionesOriginal = [...todasLasDirecciones];
+                    ordenDistritoActivo = false;
+                    renderDirecciones(todasLasDirecciones);
                 } else {
                     mostrarError('Error al recargar direcciones');
                 }
@@ -577,6 +594,9 @@
                     
                     // Cargar direcciones después de cargar los datos del repartidor
                     await cargarDirecciones(data.data.id_Trabajador);
+
+                    // Cargar Orden Asignada ahora que tenemos el ID del repartidor
+                    cargarOrdenAsignada();
                 } else {
                     console.error('Error al cargar datos del repartidor:', data.message);
                     // Mantener valores por defecto si hay error
@@ -594,7 +614,7 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    mostrarDirecciones(data.data);
+                    renderDirecciones(data.data);
                     console.log('Direcciones cargadas:', data.data);
                 } else {
                     console.error('Error al cargar direcciones:', data.message);
@@ -606,20 +626,86 @@
             }
         }
 
+        // Habilitar/Deshabilitar botón Registrar según selección y foto de dirección
+        function updateRegistrarState() {
+            try {
+                const submitBtn = document.querySelector('button[type="submit"]');
+                const hasSelectedRow = !!document.querySelector('.pedidos-asignados-container tbody tr.selected-row');
+                const fotoDireccionInput = document.getElementById('fotoDireccion');
+                const hasFotoDireccion = fotoDireccionInput && fotoDireccionInput.files && fotoDireccionInput.files.length > 0;
+                submitBtn.disabled = !(hasSelectedRow && hasFotoDireccion);
+            } catch (e) {
+                console.error('Error actualizando estado del botón Registrar:', e);
+            }
+        }
 
-        // Mostrar direcciones en la tabla
-        function mostrarDirecciones(direccionesData) {
+        // Finalizar orden de asignación cuando no hay filas en la tabla
+        async function finalizarOrdenAsignacionSiEsNecesario() {
+            try {
+                const tbody = document.getElementById('direccionesTable');
+                const filas = tbody.querySelectorAll('tr');
+                const tieneFilasConDatos = Array.from(filas).some(fila => {
+                    const celdas = fila.querySelectorAll('td');
+                    return celdas.length > 0 && !celdas[0].textContent.includes('No hay direcciones') && !celdas[0].textContent.includes('Cargando');
+                });
+
+                if (!tieneFilasConDatos) {
+                    const ordenAsignadaLabel = document.getElementById('ordenAsignadaLabel');
+                    const idOrdenAsignacion = ordenAsignadaLabel ? ordenAsignadaLabel.textContent.trim() : null;
+                    
+                    if (idOrdenAsignacion && idOrdenAsignacion !== '-') {
+                        console.log('No hay filas en la tabla, finalizando orden de asignación:', idOrdenAsignacion);
+                        
+                        const response = await fetch(`../../Controlador/CUS25Negocio.php?action=finalizar_orden_asignacion&idOrdenAsignacion=${encodeURIComponent(idOrdenAsignacion)}`);
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            console.log('Orden de asignación finalizada exitosamente');
+                        } else {
+                            console.error('Error al finalizar orden de asignación:', data.message);
+                        }
+                    }
+                }
+            } catch (error) {
+                console.error('Error al verificar si finalizar orden de asignación:', error);
+            }
+        }
+
+        // Cargar Id_OrdenAsignacion en el label
+        async function cargarOrdenAsignada() {
+            try {
+                const idTrabajador = document.getElementById('repartidorId').value;
+                const label = document.getElementById('ordenAsignadaLabel');
+                if (!idTrabajador) {
+                    label.textContent = '-';
+                    return;
+                }
+                const resp = await fetch(`../../Controlador/CUS25Negocio.php?action=obtener_orden_asignacion&idTrabajador=${encodeURIComponent(idTrabajador)}`);
+                const data = await resp.json();
+                label.textContent = data.success && data.data ? data.data : '-';
+            } catch (err) {
+                console.error('Error al cargar Orden Asignada:', err);
+                const label = document.getElementById('ordenAsignadaLabel');
+                if (label) label.textContent = '-';
+            }
+        }
+
+        // Renderizar direcciones en la tabla
+        function renderDirecciones(direccionesData) {
             const tbody = document.getElementById('direccionesTable');
             tbody.innerHTML = '';
             
             if (!direccionesData || direccionesData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="3" style="text-align: center; color: #666;">
+                        <td colspan="4" style="text-align: center; color: #666;">
                             No hay direcciones disponibles
                         </td>
                     </tr>
                 `;
+                
+                // Verificar si debe finalizar la orden de asignación
+                setTimeout(() => finalizarOrdenAsignacionSiEsNecesario(), 100);
                 return;
             }
             
@@ -627,15 +713,37 @@
                 const tr = document.createElement('tr');
                 tr.onclick = () => selectAddress(tr);
                 tr.innerHTML = `
+                    <td>${item.OrdenPedido}</td>
+                    <td>${item.GuiaRemision || ''}</td>
                     <td>${item.Distrito}</td>
                     <td>${item.Direccion}</td>
-                    <td>${item.OrdenPedido}</td>
                 `;
                 tbody.appendChild(tr);
             });
             
             // Guardar datos para uso posterior
-            todasLasDirecciones = direccionesData;
+            todasLasDirecciones = Array.isArray(direccionesData) ? direccionesData : [];
+            if (!ordenDistritoActivo) {
+                direccionesOriginal = [...todasLasDirecciones];
+            }
+        }
+        // Alternar orden por Distrito A-Z y volver a original
+        function toggleOrdenDistrito() {
+            const btn = document.getElementById('btnOrdenDistrito');
+            if (!ordenDistritoActivo) {
+                const ordenadas = [...todasLasDirecciones].sort((a, b) => {
+                    const ad = (a.Distrito || '').toString().toLowerCase();
+                    const bd = (b.Distrito || '').toString().toLowerCase();
+                    if (ad < bd) return -1; if (ad > bd) return 1; return 0;
+                });
+                ordenDistritoActivo = true;
+                btn.textContent = 'Original';
+                renderDirecciones(ordenadas);
+            } else {
+                ordenDistritoActivo = false;
+                btn.textContent = 'A-Z';
+                renderDirecciones(direccionesOriginal);
+            }
         }
 
 
@@ -660,7 +768,7 @@
             limpiarCamposDestinatario();
 
             // Obtener el ID de la orden de pedido de la tercera columna
-            const idOrdenPedido = row.cells[2] ? row.cells[2].textContent.trim() : '';
+            const idOrdenPedido = row.cells[0] ? row.cells[0].textContent.trim() : '';
             if (!idOrdenPedido) return;
 
             const pedidosBody = document.getElementById('pedidosTable');
@@ -709,6 +817,7 @@
                     </tr>
                 `;
             }
+            updateRegistrarState();
         }
 
         function renderProductosPorOrden(productos) {
@@ -963,6 +1072,9 @@
                 };
                 reader.readAsDataURL(file);
             }
+            if (type === 'direccion') {
+                updateRegistrarState();
+            }
         }
 
         function deleteImage(type) {
@@ -986,6 +1098,9 @@
                     return;
             }
             document.getElementById(inputId).value = '';
+            if (type === 'direccion') {
+                updateRegistrarState();
+            }
         }
 
         // Manejar envío del formulario
@@ -999,8 +1114,8 @@
                 return;
             }
             
-            // Obtener el ID de la orden de pedido
-            const idOrdenPedido = selectedRow.cells[2].textContent.trim();
+            // Obtener el ID de la orden de pedido (ahora está en la primera columna)
+            const idOrdenPedido = selectedRow.cells[0].textContent.trim();
             if (!idOrdenPedido) {
                 alert('No se pudo obtener el ID de la orden de pedido');
                 return;
@@ -1086,6 +1201,15 @@
             // Resetear comboboxes
             document.getElementById('estadoEntrega').selectedIndex = 0;
             actualizarOpcionesObservaciones();
+            updateRegistrarState();
+            
+            // Recargar direcciones para verificar si quedan más pedidos
+            setTimeout(async () => {
+                const idTrabajador = document.getElementById('repartidorId').value;
+                if (idTrabajador) {
+                    await cargarDirecciones(idTrabajador);
+                }
+            }, 500);
         }
 
         function salir() {

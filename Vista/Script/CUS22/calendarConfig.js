@@ -30,7 +30,7 @@ function formatLocalDate(d) {
 document.addEventListener("DOMContentLoaded", function () {
   const calendarEl = document.getElementById("calendar");
 
-  calendar = new FullCalendar.Calendar(calendarEl, {
+  window.calendar = new FullCalendar.Calendar(calendarEl, {
     initialView: "dayGridMonth",
     locale: "es",
     height: 320,
@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", function () {
     },
   });
 
-  calendar.render();
+  window.calendar.render();
 
   // ----------------------
   // BOTÓN "VER DISPONIBILIDAD"
@@ -91,8 +91,8 @@ document.addEventListener("DOMContentLoaded", function () {
       return;
     }
 
-    calendar.removeAllEvents();
-    calendar.gotoDate(new Date());
+    window.calendar.removeAllEvents();
+    window.calendar.gotoDate(new Date());
     $("#nombreCliente, #telefonoCliente, #apepatCliente, #apematCliente, #emailCliente").val("");
     if (filaActiva) $(filaActiva).removeClass("fila-seleccionada");
 
@@ -131,7 +131,7 @@ function cargarDisponibilidad(codAsignacion) {
     data: { CodigoAsignacion: codAsignacion },
     dataType: "json",
     success: function (data) {
-      calendar.removeAllEvents();
+      window.calendar.removeAllEvents();
       const hoy = new Date();
       const rango = [];
       for (let i = 0; i < 5; i++) {
@@ -152,14 +152,14 @@ function cargarDisponibilidad(codAsignacion) {
         };
       });
 
-      calendar.addEventSource(eventos);
-      calendar.gotoDate(hoy);
+      window.calendar.addEventSource(eventos);
+      window.calendar.gotoDate(hoy);
 
       // -------- CLICK EN FECHA DISPONIBLE --------
-      calendar.setOption("dateClick", function (info) {
+      window.calendar.setOption("dateClick", function (info) {
         const fechaClick = formatLocalDate(info.date);
 
-        const evs = calendar.getEvents().filter(ev => formatLocalDate(ev.start) === fechaClick);
+        const evs = window.calendar.getEvents().filter(ev => formatLocalDate(ev.start) === fechaClick);
         const disponible = evs.some(ev => ev.title.toLowerCase() === "disponible");
         if (!disponible) {
           if (typeof showToast === "function") showToast("Fecha no disponible", "warning");

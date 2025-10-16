@@ -32,18 +32,36 @@ function showToast(message, type = "info") {
 
 
 function actualizarMinDiasRestantes() {
+    // Si no hay órdenes seleccionadas → restaurar estado original
     if (!window.oseSeleccionadas || window.oseSeleccionadas.length === 0) {
         window.minDiasRestantesSeleccionados = null;
-        window.renderRV(window.vrOriginales); // mostrar todos los repartidores
+
+        console.log("🔹 Mínimo de días restantes: null");
+        console.log("♻️ Restaurando repartidores originales...");
+
+        // ✅ Restaurar las listas globales completas
+        if (Array.isArray(window.vrOriginalesBackup)) {
+            window.vrOriginales = [...window.vrOriginalesBackup];
+            window.vrDisponibles = [...window.vrOriginalesBackup];
+        } else {
+            // Si aún no se ha guardado el respaldo, lo crea ahora
+            window.vrOriginalesBackup = [...window.vrOriginales];
+            window.vrDisponibles = [...window.vrOriginales];
+        }
+
+        // Renderizar todo el listado
+        window.renderRV(window.vrDisponibles);
+        console.log("✅ Tabla de repartidores actualizada con el filtro de null día(s).");
         return;
     }
 
+    // Si hay órdenes seleccionadas → filtrar por el mínimo de días
     const dias = window.oseSeleccionadas.map(o => o.Dias_Restantes);
     window.minDiasRestantesSeleccionados = Math.min(...dias);
 
     console.log("🔹 Mínimo de días restantes:", window.minDiasRestantesSeleccionados);
 
-    // Llamada AJAX al proxy PHP
+    // Llamada AJAX para filtrar repartidores
     $.ajax({
         url: "../Ajax/CUS22/filtrarRepartidoresProxy.php",
         method: "POST",
@@ -51,23 +69,20 @@ function actualizarMinDiasRestantes() {
         dataType: "json",
         success: function (response) {
             if (response.success) {
-                // Actualizamos las variables globales
+                // ✅ Hacer respaldo de los repartidores originales (solo la primera vez)
+                if (!Array.isArray(window.vrOriginalesBackup)) {
+                    window.vrOriginalesBackup = [...window.vrOriginales];
+                }
+
+                // Actualizar los arrays visibles
                 window.vrOriginales = response.data;
                 window.vrDisponibles = [...response.data];
 
-                // Llamamos a la función del otro script
-                /*if (typeof renderRV === "function") {
-                    renderRV(window.vrDisponibles);
-                }*/
                 window.renderRV(window.vrDisponibles);
-                
-                /*showToast(
-                    `Filtrados repartidores disponibles para ${window.minDiasRestantesSeleccionados} día(s).`,
-                    "info"
-                );*/
+                console.log(`✅ Tabla de repartidores actualizada con el filtro de ${window.minDiasRestantesSeleccionados} día(s).`);
             } else {
-                showToast(response.message || "Error al filtrar repartidores.", "error");
-                window.renderRV([]); 
+                console.warn("⚠️ No se pudo actualizar la tabla de repartidores (sin éxito en respuesta).");
+                window.renderRV([]);
             }
         },
         error: function (xhr, status, error) {
@@ -76,10 +91,6 @@ function actualizarMinDiasRestantes() {
     });
 }
 
-// 🔸 Llamamos cuando se agregan o quitan órdenes
-$(document).on("click", ".icon-add-ose, .icon-remove-ose", function () {
-    actualizarMinDiasRestantes();
-});
 
 
 // ===================================================
@@ -252,6 +263,24 @@ $(document).on("click", ".icon-add-ose", function () {
         showToast("No puedes exceder 15 m³ o 1100 kg en total.", "error");
         return;
     }
+    
+    // ===================================================
+    // 🧹 LIMPIAR repartidor y calendario antes de filtrar
+    // ===================================================
+    if (typeof window.vrSeleccionados !== "undefined") {
+        window.vrDisponibles = [...window.vrOriginales];
+        window.vrSeleccionados = [];
+        if (typeof renderRV === "function") renderRV(window.vrDisponibles);
+        if (typeof renderRVSeleccionados === "function") renderRVSeleccionados([]);
+    }
+
+    // Limpieza del calendario con v6
+    if (window.calendar) {
+        window.calendar.removeAllEvents();  // Elimina todos los eventos
+        window.calendar.unselect();         // Cancela selección activa
+    } else {
+        console.warn("Calendario no inicializado aún.");
+    }
 
     window.oseSeleccionadas.push(item);
     oseDisponibles = oseDisponibles.filter(o => o.Codigo_OSE != id);
@@ -270,6 +299,8 @@ $(document).on("click", ".icon-add-ose", function () {
     aplicarFiltroActual();
     renderOSESeleccionadas(window.oseSeleccionadas);
     trazarRuta();
+    actualizarMinDiasRestantes();
+    window.actualizarEstadoBotones();
 });
 
 // ===================================================
@@ -279,7 +310,25 @@ $(document).on("click", ".icon-remove-ose", function () {
     const id = parseInt($(this).data("id"));
     const item = window.oseSeleccionadas.find(o => o.Codigo_OSE == id);
     if (!item) return;
+    
+    // ===================================================
+    // 🧹 LIMPIAR repartidor y calendario antes de filtrar
+    // ===================================================
+    if (typeof window.vrSeleccionados !== "undefined") {
+        window.vrDisponibles = [...window.vrOriginales];
+        window.vrSeleccionados = [];
+        if (typeof renderRV === "function") renderRV(window.vrDisponibles);
+        if (typeof renderRVSeleccionados === "function") renderRVSeleccionados([]);
+    }
 
+    // Limpieza del calendario con v6
+    if (window.calendar) {
+        window.calendar.removeAllEvents();  // Elimina todos los eventos
+        window.calendar.unselect();         // Cancela selección activa
+    } else {
+        console.warn("Calendario no inicializado aún.");
+    }
+    
     // Quitar de seleccionadas
     window.oseSeleccionadas = window.oseSeleccionadas.filter(o => o.Codigo_OSE != id);
 
@@ -299,6 +348,8 @@ $(document).on("click", ".icon-remove-ose", function () {
     aplicarFiltroActual();
     renderOSESeleccionadas(window.oseSeleccionadas);
     trazarRuta();
+    actualizarMinDiasRestantes();
+    window.actualizarEstadoBotones();
 });
 
 
@@ -337,6 +388,43 @@ $(document).on("click", ".botonesFiltro .style-button:nth-child(2)", e => {
     $("#zonasReparto").val("0");
     aplicarFiltroActual();
 });
+
+
+// ===================================================
+// 🔹 Habilitar o deshabilitar botones según selección (GLOBAL)
+// ===================================================
+window.actualizarEstadoBotones = function () {
+    const hayOrdenes = window.oseSeleccionadas && window.oseSeleccionadas.length > 0;
+
+    // 🔸 Botón principal "Generar orden de asignación"
+    const botonGenerar = $("#btnGenerarOrden");
+    if (hayOrdenes) {
+        botonGenerar
+            .removeAttr("disabled")
+            .removeClass("style-button-disabled")
+            .addClass("style-button");
+    } else {
+        botonGenerar
+            .attr("disabled", true)
+            .removeClass("style-button")
+            .addClass("style-button-disabled");
+    }
+
+    // 🔸 Botones "Ver" de repartidores
+    $("#table-body-rv button").each(function () {
+        if (hayOrdenes) {
+            $(this)
+                .removeAttr("disabled")
+                .removeClass("btn-disponibilidad-disabled")
+                .addClass("btn-disponibilidad");
+        } else {
+            $(this)
+                .attr("disabled", true)
+                .removeClass("btn-disponibilidad")
+                .addClass("btn-disponibilidad-disabled");
+        }
+    });
+};
 
 // ===================================================
 // 🔹 Inicialización

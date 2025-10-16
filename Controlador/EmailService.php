@@ -11,8 +11,7 @@ use PHPMailer\PHPMailer\PHPMailer;
 use PHPMailer\PHPMailer\SMTP;
 use PHPMailer\PHPMailer\Exception;
 
-class EmailService
-{
+class EmailService{
     // Configuración SMTP
     private const SMTP_HOST = 'smtp.gmail.com';
     private const SMTP_PORT = 587;

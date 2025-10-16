@@ -344,3 +344,20 @@ select::-ms-expand {
   opacity: 0.6;
   pointer-events: none;
 }
+
+
+.btn-disponibilidad-disabled {
+    margin-left: 30px;
+    padding: 0.3rem 1rem;
+    border: 2px solid #ccc;
+    border-radius: 1rem;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    cursor: not-allowed;
+    font-weight: 700;
+    color: #888;
+    opacity: 0.6;
+}

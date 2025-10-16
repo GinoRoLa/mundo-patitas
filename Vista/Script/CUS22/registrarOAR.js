@@ -25,7 +25,20 @@ if (!window.rutaGenerada || !window.rutaGenerada.length) {
     return;
 }
 
+// ======================================================
+  // 🔹 NUEVA VALIDACIÓN: verificar ocupación mínima de 60%
+  // ======================================================
+  const pesoTotal = window.oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Peso_Kg), 0);
+  const volumenTotal = window.oseSeleccionadas.reduce((sum, o) => sum + parseFloat(o.Volumen_m3), 0);
 
+  const porcentajePeso = (pesoTotal / 1100) * 100;
+  const porcentajeVolumen = (volumenTotal / 15) * 100; // o usa CAPACIDAD_VOLUMEN si ya está global
+  const porcentajeOcupado = Math.max(porcentajePeso, porcentajeVolumen);
+
+  if (porcentajeOcupado < 60) {
+    showToast("Debe ocupar al menos el 60% de la capacidad del vehículo antes de generar la orden.", "warning");
+    return;
+  }
   // Construir el payload (JSON)
   const payload = {
     ose: window.oseSeleccionadas,

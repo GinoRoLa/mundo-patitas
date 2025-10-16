@@ -1,102 +1,139 @@
-<?php
-include_once '../../Controlador/CUS26Negocio.php';
-$titulo = "IU026 - Registrar incidencia de entrega";
-$trabajador = "Anglas Geraldine";
-$rol = "Repartidor";
-$parametrosComponenteTitulo = [
-  "titulo" => $titulo,
-  "trabajador" => $trabajador,
-  "rol" => $rol
-];
+<?php 
+require_once '../../Controlador/CUS26Negocio.php';
+date_default_timezone_set('America/Lima');
+$fecha = date('Y-m-d');
+
+$negocio = new CUS26Negocio();
+$consol = $negocio->listarNoEntregadas();
 ?>
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title><?= htmlspecialchars($titulo) ?></title>
-  <link rel="stylesheet" href="../Style/CUS26/CUS26_IU026.css">
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <meta charset="UTF-8">
+    <title>CUS026 – Gestionar Pedidos No Entregados</title>
+    <link rel="stylesheet" href="../Style/CUS26/CUS26_IU026.css">
 </head>
 <body>
-<main class="container">
-  <?php include "../Componentes/TituloRolResponsableFechaHora.php"; ?>
+<div class="contenedor">
+    <h2>CUS026 – Gestionar Pedidos No Entregados</h2>
 
-  <section>
-    <h2>Buscar pedidos por código de distrito</h2>
-    <input type="number" id="txtCodigoDistrito" placeholder="Ingrese código de distrito (Ej: 103)">
-    <button id="btnBuscar">Buscar</button>
-  </section>
-
-  <section>
-    <h3>Pedidos del distrito</h3>
-    <div class="tablas-flex">
-      <div class="tabla">
-        <h4>En reparto</h4>
-        <table id="tablaReparto">
-          <thead>
-            <tr><th>ID</th><th>Cliente</th><th>Dirección</th><th>Teléfono</th><th>Fecha</th><th>Días restantes</th><th>Estado</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
-      <div class="tabla">
-        <h4>No entregado</h4>
-        <table id="tablaNoEntregado">
-          <thead>
-            <tr><th>ID</th><th>Cliente</th><th>Dirección</th><th>Teléfono</th><th>Fecha</th><th>Seleccionar</th></tr>
-          </thead>
-          <tbody></tbody>
-        </table>
-      </div>
+    <div class="encabezado">
+        <label>Responsable:</label>
+        <input type="text" value="Geraldine Anglas" readonly>
+        <label>Fecha:</label>
+        <input type="text" value="<?php echo $fecha; ?>" readonly>
     </div>
-  </section>
 
-  <section id="datosIncidencia">
-    <h3>Registrar incidencia</h3>
-    <form id="formIncidencia" enctype="multipart/form-data">
-      <label>ID Pedido:</label>
-      <input type="text" name="IDPedido" id="txtIDPedido" readonly>
+    <div class="tabla-contenedor">
+        <table id="tablaConsolidacion">
+            <thead>
+                <tr>
+                    <th>ID Consolidación</th>
+                    <th>ID Pedido</th>
+                    <th>ID Cliente</th>
+                    <th>Nombre Cliente</th>
+                    <th>Fecha Consolidación</th>
+                    <th>Estado</th>
+                    <th>Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php foreach($consol as $fila): ?>
+                <tr class='fila' 
+                    data-id='<?php echo $fila['ID_Consolidacion']; ?>' 
+                    data-idpedido='<?php echo $fila['Id_OrdenPedido']; ?>' 
+                    data-idcliente='<?php echo $fila['Id_Cliente']; ?>' 
+                    data-nombrecliente='<?php echo $fila['NombreCliente']; ?>' 
+                    data-fecha='<?php echo $fila['Fecha']; ?>'
+                    data-estado='<?php echo $fila['Estado']; ?>'>
+                    <td><?php echo $fila['ID_Consolidacion']; ?></td>
+                    <td><?php echo $fila['Id_OrdenPedido']; ?></td>
+                    <td><?php echo $fila['Id_Cliente']; ?></td>
+                    <td><?php echo $fila['NombreCliente']; ?></td>
+                    <td><?php echo $fila['Fecha']; ?></td>
+                    <td><?php echo $fila['Estado']; ?></td>
+                    <td>
+                        <input type="radio" name="seleccionPedido" class="radio-seleccionar">
+                    </td>
+                </tr>
+                <?php endforeach; ?>
 
-      <label>Cliente:</label>
-      <input type="text" name="Cliente" id="txtCliente" readonly>
+            </tbody>
 
-      <label>Dirección:</label>
-      <input type="text" name="Direccion" id="txtDireccion" readonly>
+        </table>
+    </div>
 
-      <label>Motivo:</label>
-      <select name="Motivo" required>
-        <option value="">Seleccione...</option>
-        <option>Ausencia del receptor</option>
-        <option>Rechazo del pedido</option>
-        <option>Acceso restringido</option>
-        <option>Dirección incorrecta</option>
-        <option>Otro</option>
-      </select>
+    <!-- Formulario Reprogramación siempre visible -->
+    <div id="formReprogramacion" class="formulario">
+        <h4>Reprogramación de Pedido</h4>
+        <input type="hidden" id="idConsolidacionRep">
+        <label>ID Pedido:</label>
+        <input type="text" id="idPedidoRep" readonly>
+        <label>ID Cliente:</label>
+        <input type="text" id="idClienteRep" readonly>
+        <label>Nombre del Cliente:</label>
+        <input type="text" id="nombreClienteRep" readonly>
+        <label>Fecha Consolidación:</label>
+        <input type="date" id="fechaConsolRep" readonly>
+        <label>Estado:</label>
+        <input type="text" id="estadoRep" readonly>
+        <button type="button" id="btnRegistrarReprogramacion">Registrar Reprogramación</button>
+    </div>
 
-      <label>Observación:</label>
-      <textarea name="Observaciones" required></textarea>
+    <h3>Gestión de Pedidos Reprogramados</h3>
+    <div class="tabla-contenedor">
+        <table id="tablaGestionReprogramados">
+            <thead>
+                <tr>
+                    <th>ID Gestión</th>
+                    <th>ID Consolidación</th>
+                    <th>ID Pedido</th>
+                    <th>ID Cliente</th>
+                    <th>Nombre Cliente</th>
+                    <th>Fecha Reprogramación</th>
+                    <th>Estado</th>
+                </tr>
+            </thead>
+            <tbody id="bodyTablaGestion"></tbody>
+        </table>
+    </div>
 
-      <label>Foto (evidencia):</label>
-      <input type="file" name="foto" accept="image/*">
+    <h3>Pedidos Cambiados</h3>
+    <div class="tabla-contenedor">
+        <table id="tablaPedidos">
+            <thead>
+                <tr>
+                    <th>ID Pedido</th>
+                    <th>ID Cliente</th>
+                    <th>Fecha Pedido</th>
+                    <th>Estado Pedido</th>
+                </tr>
+            </thead>
+            <tbody id="bodyTablaPedidos"></tbody>
+        </table>
+    </div>
 
-      <div class="botones">
-        <button type="submit">Registrar incidencia</button>
-        <button type="button" id="btnVerIncidencias">Ver incidencias</button>
-      </div>
-    </form>
-  </section>
+    <h3>Ordenes de Servicio de Entrega</h3>
+    <div class="tabla-contenedor">
+        <table id="tablaOSE">
+            <thead>
+                <tr>
+                    <th>ID OSE</th>
+                    <th>ID Pedido</th>
+                    <th>Estado OSE</th>
+                </tr>
+            </thead>
+            <tbody id="bodyTablaOSE"></tbody>
+        </table>
+    </div>
 
-  <section id="tablaIncidencias" style="display:none;">
-    <h3>Incidencias registradas</h3>
-    <table>
-      <thead><tr><th>ID</th><th>Pedido</th><th>Cliente</th><th>Motivo</th><th>Estado</th><th>Fecha</th></tr></thead>
-      <tbody id="tbodyIncidencias"></tbody>
-    </table>
-  </section>
-</main>
+</div>
 
-<script src="../Script/CUS26/buscarPedidosPorDistrito.js"></script>
-<script src="../Script/CUS26/registrarIncidencia.js"></script>
-<script src="../Script/CUS26/verIncidencias.js"></script>
+<script src="../Script/CUS26/registrarReprogramacion.js"></script>
+<script src="../Script/CUS26/listarGestion.js"></script>
+
 </body>
 </html>
+
+

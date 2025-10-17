@@ -122,7 +122,7 @@
                         <div class="card shadow-sm h-100">
                             <div class="card-body d-flex flex-column">
                                 <h5 class="card-title">CUS26</h5>
-                                <p class="card-text flex-grow-1">Generar Incidencia de Entrega</p>
+                                <p class="card-text flex-grow-1">Gestionar Pedidos no Entregados</p>
                                 <a href="vista/page/CUS26_IU026.php" 
                                    class="btn btn-primary mt-auto" target="_blank">
                                     Ir al caso de uso

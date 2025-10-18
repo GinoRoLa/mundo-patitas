@@ -12,13 +12,15 @@ require_once '../Modelo/Guia.php';
 require_once __DIR__ . '/GuiaPDFService.php';
 require_once __DIR__ . '/EmailService.php';
 
-function ok(array $d = [], int $c = 200) {
+function ok(array $d = [], int $c = 200)
+{
   http_response_code($c);
   echo json_encode(['ok' => true] + $d, JSON_UNESCAPED_UNICODE);
   exit;
 }
 
-function err(string $m, int $c = 400, array $x = []) {
+function err(string $m, int $c = 400, array $x = [])
+{
   http_response_code($c);
   echo json_encode(['ok' => false, 'error' => $m] + $x, JSON_UNESCAPED_UNICODE);
   exit;
@@ -65,7 +67,7 @@ try {
       $repo = new Asignacion();
       $enc  = $repo->obtenerEncabezado($id);
       $pedidos = $repo->obtenerPedidos($id);
-      
+
       $licNum    = $enc['numLicencia'] ?? null;
       $licEstado = $enc['licenciaEstado'] ?? null;
 
@@ -134,7 +136,7 @@ try {
 
       $in = json_decode(file_get_contents('php://input'), true) ?? [];
 
-      // Validaciones
+      // ===== Validaciones mínimas =====
       $asigId = (int)($in['asignacionId'] ?? 0);
       if ($asigId <= 0) err('Id de asignación inválido', 422);
 
@@ -146,6 +148,7 @@ try {
       $grupos = $in['grupos'] ?? null;
       if (!is_array($grupos) || count($grupos) === 0) err('No hay grupos para generar', 422);
 
+      // (Opcional) remitente fijo / configurable
       $serieGuia       = $in['serie'] ?? '001';
       $remitenteRuc    = $in['remitenteRuc'] ?? '20123456789';
       $remitenteRazon  = $in['remitenteRazon'] ?? 'Mundo Patitas SAC';
@@ -157,11 +160,11 @@ try {
       $guiaM    = new Guia();
       $repo     = new Asignacion();
 
-      $outGuias = [];
-      $bloqueos = [];
-      $guiasParaPDF = []; // Paquetes completos para generar PDFs
+      $outGuias     = [];
+      $bloqueos     = [];
+      $guiasParaPDF = []; // paquetes completos para generar PDFs
 
-      // ========== GENERAR GUÍAS ==========
+      // ===== GENERAR GUÍAS =====
       foreach ($grupos as $g) {
         $ops = $g['ops'] ?? [];
         if (!is_array($ops) || count($ops) === 0) {
@@ -180,7 +183,7 @@ try {
         }
 
         try {
-          // 1) Registrar salida en almacén
+          // 1) Salida + kardex + estados
           $almacenM->registrarSalida($ops);
 
           // 2) Crear guía
@@ -201,10 +204,10 @@ try {
             'motivo'             => 'Venta'
           ]);
 
-          // 3) Insertar detalle
+          // 3) Detalle desde OPs
           $guiaM->insertarDetalleDesdeOps($guia['idGuia'], $ops);
 
-          // 4) Guardar en respuesta
+          // 4) Para respuesta
           $outGuias[] = [
             'key'       => ($g['key'] ?? ''),
             'id'        => $guia['idGuia'],
@@ -219,14 +222,12 @@ try {
             ],
           ];
 
-          // 5) Cargar paquete completo para PDF/correo
+          // 5) Paquete completo para PDF/correo
           if ($enviarCorreo) {
             $paquete = $guiaM->obtenerGuiaCompleta($guia['idGuia']);
-            if ($paquete) {
-              $guiasParaPDF[] = $paquete;
-            }
+            if ($paquete) $guiasParaPDF[] = $paquete;
+            else error_log("obtenerGuiaCompleta({$guia['idGuia']}) => null");
           }
-
         } catch (Throwable $e) {
           $bloqueos[] = [
             'key'     => ($g['key'] ?? ''),
@@ -236,20 +237,17 @@ try {
         }
       }
 
-      // ========== ACTUALIZAR ESTADO DE ASIGNACIÓN ==========
+      // ===== Recomputar estado de asignación =====
       $quedanPagados = 0;
       try {
         $quedanPagados = $repo->contarPedidosPendientes($asigId);
-        if ($quedanPagados > 0) {
-          $repo->actualizarEstado($asigId, 'Parcial');
-        } else {
-          $repo->actualizarEstado($asigId, 'Despachada');
-        }
+        if ($quedanPagados > 0) $repo->actualizarEstado($asigId, 'Parcial');
+        else                    $repo->actualizarEstado($asigId, 'Despachada');
       } catch (Throwable $e) {
         error_log("Error actualizando estado asignación: " . $e->getMessage());
       }
 
-      // ========== GENERAR PDFs Y ENVIAR CORREO ==========
+      // ===== GENERAR PDFs y ENVIAR CORREO =====
       $correoResultado = [
         'enviado'      => false,
         'destinatario' => null,
@@ -257,37 +255,52 @@ try {
         'total'        => 0
       ];
 
+      // diagnóstico adicional de PDFs
+      $pdfDiag = [
+        'errores' => [],
+        'tmpBase' => realpath(__DIR__ . '/../tmp')
+      ];
+
       if ($enviarCorreo && !empty($guiasParaPDF)) {
         try {
-          // Obtener email del repartidor
+          if (!class_exists('GuiaPDFService')) {
+            throw new Exception('GuiaPDFService no está disponible (revisa require_once y composer install)');
+          }
+
+          // Email del repartidor
           $encAsig = $repo->obtenerEncabezado($asigId);
           $toEmail = (string)($encAsig['email'] ?? '');
           $toName  = trim(($encAsig['nombre'] ?? '') . ' ' . ($encAsig['apePat'] ?? '') . ' ' . ($encAsig['apeMat'] ?? ''));
 
-          // Override desde cliente si es necesario
+          // Override desde el cliente
           if (empty($toEmail) && !empty($in['correoDestino'])) {
             $toEmail = $in['correoDestino'];
             $toName  = $in['nombreDestino'] ?? '';
           }
 
-          if (!empty($toEmail)) {
-            // ✨ GENERAR PDFs usando el servicio
-            $archivos = GuiaPDFService::generarPDFsLote($guiasParaPDF);
+          // 1) Generar PDFs (ahora con errores por guía)
+          $lote = GuiaPDFService::generarPDFsLote($guiasParaPDF);
+          $archivos = $lote['archivos'] ?? [];
+          $pdfDiag['errores'] = $lote['errores'] ?? [];
 
-            if (empty($archivos)) {
-              throw new Exception('No se pudieron generar los PDFs');
-            }
+          if (empty($archivos)) {
+            throw new Exception('No se pudieron generar los PDFs');
+          }
 
-            // Preparar info para el correo
-            $guiasInfo = [];
-            foreach ($guiasParaPDF as $pkg) {
-              $enc = $pkg['encabezado'] ?? [];
-              $guiasInfo[] = [
-                'numero'  => $enc['numeroStr'] ?? '',
-                'destino' => trim(($enc['direccionDestino'] ?? '') . ' - ' . ($enc['distritoDestino'] ?? ''))
-              ];
-            }
+          // 2) Armar info para el correo
+          $guiasInfo = [];
+          foreach ($guiasParaPDF as $pkg) {
+            $enc = $pkg['encabezado'] ?? [];
+            $guiasInfo[] = [
+              'numero'  => $enc['numeroStr'] ?? '',
+              'destino' => trim(($enc['direccionDestino'] ?? '') . ' - ' . ($enc['distritoDestino'] ?? ''))
+            ];
+          }
 
+          if (empty($toEmail)) {
+            $correoResultado['error'] = 'No se encontró email del destinatario';
+          } else {
+            // 3) Enviar correo (usa tu servicio / función)
             $resultado = EmailService::enviarGuias(
               $toEmail,
               $toName,
@@ -299,32 +312,33 @@ try {
             $correoResultado = [
               'enviado'      => $resultado['success'],
               'destinatario' => $toEmail,
-              'error'        => $resultado['error'],
+              'error'        => $resultado['error'] ?? null,
               'total'        => count($archivos)
             ];
-
-            GuiaPDFService::limpiarTemporales(array_values($archivos));
-
-          } else {
-            $correoResultado['error'] = 'No se encontró email del destinatario';
           }
-
         } catch (Throwable $e) {
           $correoResultado['error'] = $e->getMessage();
           error_log("Error en proceso de correo: " . $e->getMessage());
+        } finally {
+          // Limpieza de temporales si hubo
+          if (!empty($archivos)) {
+            GuiaPDFService::limpiarTemporales(array_values($archivos));
+          }
         }
       }
 
-      // ========== RESPUESTA ==========
+      // ===== RESPUESTA =====
       ok([
         'asignacion' => [
           'id'            => $asigId,
-          'estado'        => $quedanPagados > 0 ? 'Despachada' : 'Despachada',
+          'estado'        => $quedanPagados > 0 ? 'Parcial' : 'Despachada', // fix
           'quedanPagados' => $quedanPagados,
         ],
-        'guias'   => $outGuias,
+        'guias'    => $outGuias,
         'bloqueos' => $bloqueos,
-        'correo'  => $correoResultado
+        'correo'   => $correoResultado,
+        // diagnóstico de PDFs para esa PC
+        'pdf'      => $pdfDiag
       ]);
       break;
 

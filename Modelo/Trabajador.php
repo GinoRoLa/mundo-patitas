@@ -8,7 +8,7 @@ final class Trabajador {
 
     public function buscarPorDni(string $dni): ?array {
         $sql = "SELECT id_Trabajador, DniTrabajador, des_apepatTrabajador, des_apematTrabajador,
-                       des_nombreTrabajador, cargo, estado
+                       des_nombreTrabajador, cargo, email,estado
                   FROM t16CatalogoTrabajadores
                  WHERE DniTrabajador = ? AND estado='Activo' LIMIT 1";
         $st = mysqli_prepare($this->cn, $sql);

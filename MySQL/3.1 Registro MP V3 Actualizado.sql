@@ -32,6 +32,13 @@ VALUES
   (50027, '83456789', 'Sánchez', 'Rojas',   'Pedro',   '999222444', 'Jr. Lima 234',             'pedro.sanchez@mp.com','Repartidor', 'Activo');
 
 
+-- t37DetalleRequerimiento
+INSERT INTO t37DetalleRequerimiento (Id_DetaRequerimiento, Observacion) VALUES
+  (37001, 'Reposición estándar'),
+  (37002, 'Campaña'),
+  (37003, 'Urgente');
+
+
 -- t31CategoriaProducto
 INSERT INTO t31CategoriaProducto (Id_Categoria, Descripcion) VALUES
 (24000, 'Alimento para perro'),
@@ -853,4 +860,3 @@ INSERT INTO t10Kardex (TipoTransaccion, id_Producto, precio, Cantidad, Fec_Trans
 ('Salida',1020,77.99,3,'2025-10-23'),
 ('Ingreso',1020,77.99,1,'2025-10-27'),
 ('Salida',1020,77.99,2,'2025-10-31');
-

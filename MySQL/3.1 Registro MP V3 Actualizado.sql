@@ -32,13 +32,6 @@ VALUES
   (50027, '83456789', 'Sánchez', 'Rojas',   'Pedro',   '999222444', 'Jr. Lima 234',             'pedro.sanchez@mp.com','Repartidor', 'Activo');
 
 
--- t37DetalleRequerimiento
-INSERT INTO t37DetalleRequerimiento (Id_DetaRequerimiento, Observacion) VALUES
-  (37001, 'Reposición estándar'),
-  (37002, 'Campaña'),
-  (37003, 'Urgente');
-
-
 -- t31CategoriaProducto
 INSERT INTO t31CategoriaProducto (Id_Categoria, Descripcion) VALUES
 (24000, 'Alimento para perro'),

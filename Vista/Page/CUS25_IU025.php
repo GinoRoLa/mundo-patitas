@@ -417,7 +417,7 @@
                         <button type="button" class="btn btn-danger" onclick="deleteImage('direccion')">Eliminar</button>
                     </div>
                 </div>
-                <input type="file" id="fotoDireccion" name="fotoDireccion" accept="image/*" style="display: none;">
+                <input type="file" id="fotoDireccion" name="fotoDireccion" accept=".jpg,.jpeg,.png" style="display: none;">
             </div>
         </div>
 
@@ -426,7 +426,8 @@
             <div class="form-group">
                 <label for="estadoEntrega">Estado:</label>
                 <select id="estadoEntrega">
-                    <option value="entregado" selected>Entregado</option>
+                    <option value="" selected disabled hidden>Seleccione estado...</option>
+                    <option value="entregado">Entregado</option>
                     <option value="no-entregado">No entregado</option>
                 </select>
             </div>
@@ -435,7 +436,7 @@
         <div class="photos-container">
             <div class="photo-section">
                 <div class="section">
-                    <h2>DNI del cliente o receptor</h2>
+                    <h2>DNI del destinatario o receptor</h2>
                     <div class="image-upload">
                         <div class="image-placeholder" id="dni-placeholder">
                             <span>&#128247;</span>
@@ -445,7 +446,7 @@
                             <button type="button" class="btn btn-danger" onclick="deleteImage('dni')">Eliminar</button>
                         </div>
                     </div>
-                    <input type="file" id="fotoDni" name="fotoDni" accept="image/*" style="display: none;">
+                    <input type="file" id="fotoDni" name="fotoDni" accept=".jpg,.jpeg,.png" style="display: none;">
                 </div>
             </div>
             
@@ -461,7 +462,7 @@
                             <button type="button" class="btn btn-danger" onclick="deleteImage('entrega')">Eliminar</button>
                         </div>
                     </div>
-                    <input type="file" id="fotoEntrega" name="fotoEntrega" accept="image/*" style="display: none;">
+                    <input type="file" id="fotoEntrega" name="fotoEntrega" accept=".jpg,.jpeg,.png" style="display: none;">
                 </div>
             </div>
         </div>
@@ -471,8 +472,7 @@
             <div class="form-group">
                 <label for="observaciones">Observaciones:</label>
                 <select id="observaciones">
-                    <option value="entregado-destinatario" selected>Se entregó al destinatario</option>
-                    <option value="entregado-familiar">Se entregó a algún conocido o familiar del destinatario</option>
+                    <option value="" selected disabled hidden>Seleccione observación...</option>
                 </select>
             </div>
         </div>
@@ -516,6 +516,12 @@
                 estadoEntregaSelect.addEventListener('change', actualizarOpcionesObservaciones);
             }
             
+            // Agregar event listener al combobox de observaciones
+            const observacionesSelect = document.getElementById('observaciones');
+            if (observacionesSelect) {
+                observacionesSelect.addEventListener('change', updateRegistrarState);
+            }
+            
             cargarDatosRepartidor();
             // Si cambia el ID del repartidor, recargar direcciones
             const repartidorIdInput = document.getElementById('repartidorId');
@@ -542,7 +548,7 @@
                 const responseDirecciones = await fetch(`../Controlador/CUS25Negocio.php?action=obtener_direcciones&idTrabajador=${encodeURIComponent(idTrabajador)}`);
                 const dataDirecciones = await responseDirecciones.json();
                 
-            if (dataDirecciones.success) {
+                if (dataDirecciones.success) {
                     todasLasDirecciones = Array.isArray(dataDirecciones.data) ? dataDirecciones.data : [];
                     direccionesOriginal = [...todasLasDirecciones];
                     ordenDistritoActivo = false;
@@ -626,14 +632,47 @@
             }
         }
 
-        // Habilitar/Deshabilitar botón Registrar según selección y foto de dirección
+        // Habilitar/Deshabilitar botón Registrar según selección, foto de dirección y estado
         function updateRegistrarState() {
             try {
                 const submitBtn = document.querySelector('button[type="submit"]');
+                
+                // Condiciones básicas (siempre requeridas)
                 const hasSelectedRow = !!document.querySelector('.pedidos-asignados-container tbody tr.selected-row');
                 const fotoDireccionInput = document.getElementById('fotoDireccion');
                 const hasFotoDireccion = fotoDireccionInput && fotoDireccionInput.files && fotoDireccionInput.files.length > 0;
-                submitBtn.disabled = !(hasSelectedRow && hasFotoDireccion);
+                const estadoEntrega = document.getElementById('estadoEntrega').value;
+                
+                // Si no se cumplen las condiciones básicas, deshabilitar
+                if (!hasSelectedRow || !hasFotoDireccion || !estadoEntrega) {
+                    submitBtn.disabled = true;
+                    return;
+                }
+                
+                // Condiciones específicas según el estado
+                let condicionesEspecificas = false;
+                
+                if (estadoEntrega === 'entregado') {
+                    // Para "Entregado": requiere foto DNI + foto Entrega + observación
+                    const fotoDniInput = document.getElementById('fotoDni');
+                    const fotoEntregaInput = document.getElementById('fotoEntrega');
+                    const observaciones = document.getElementById('observaciones').value;
+                    
+                    const hasFotoDni = fotoDniInput && fotoDniInput.files && fotoDniInput.files.length > 0;
+                    const hasFotoEntrega = fotoEntregaInput && fotoEntregaInput.files && fotoEntregaInput.files.length > 0;
+                    const hasObservacion = observaciones && observaciones !== '';
+                    
+                    condicionesEspecificas = hasFotoDni && hasFotoEntrega && hasObservacion;
+                    
+                } else if (estadoEntrega === 'no-entregado') {
+                    // Para "No entregado": solo requiere observación
+                    const observaciones = document.getElementById('observaciones').value;
+                    condicionesEspecificas = observaciones && observaciones !== '';
+                }
+                
+                // Habilitar solo si se cumplen todas las condiciones
+                submitBtn.disabled = !condicionesEspecificas;
+                
             } catch (e) {
                 console.error('Error actualizando estado del botón Registrar:', e);
             }
@@ -963,8 +1002,15 @@
                 const estadoEntrega = document.getElementById('estadoEntrega').value;
                 const observacionesSelect = document.getElementById('observaciones');
                 
-                // Limpiar opciones actuales
+                // Limpiar opciones actuales y agregar placeholder primero
                 observacionesSelect.innerHTML = '';
+                const placeholder = document.createElement('option');
+                placeholder.value = '';
+                placeholder.textContent = 'Seleccione observación...';
+                placeholder.disabled = true;
+                placeholder.hidden = true;
+                placeholder.selected = true;
+                observacionesSelect.appendChild(placeholder);
                 
                 if (estadoEntrega === 'entregado') {
                     // Opciones para "Entregado"
@@ -980,7 +1026,7 @@
                         observacionesSelect.appendChild(option);
                     });
                     
-                    // Seleccionar la primera opción por defecto
+                    // Mantener placeholder, no seleccionar automáticamente
                     observacionesSelect.selectedIndex = 0;
                     
                 } else if (estadoEntrega === 'no-entregado') {
@@ -1001,12 +1047,15 @@
                         observacionesSelect.appendChild(option);
                     });
                     
-                    // Seleccionar la primera opción por defecto
+                    // Mantener placeholder, no seleccionar automáticamente
                     observacionesSelect.selectedIndex = 0;
                 }
                 
                 // Manejar botones de imágenes según el estado
                 manejarBotonesImagenes(estadoEntrega);
+                
+                // Actualizar estado del botón Registrar
+                updateRegistrarState();
                 
                 console.log('Opciones de observaciones actualizadas para:', estadoEntrega);
             } catch (error) {
@@ -1064,6 +1113,17 @@
         function handleFileSelect(e, type) {
             const file = e.target.files[0];
             if (file) {
+                // Validar formato de archivo
+                const allowedExtensions = ['jpg', 'jpeg', 'png'];
+                const fileExtension = file.name.split('.').pop().toLowerCase();
+                
+                if (!allowedExtensions.includes(fileExtension)) {
+                    alert('Solo se permiten archivos en formato .jpg, .jpeg y .png');
+                    // Limpiar el input
+                    e.target.value = '';
+                    return;
+                }
+                
                 const reader = new FileReader();
                 reader.onload = function(e) {
                     const placeholderId = type + '-placeholder';
@@ -1072,9 +1132,8 @@
                 };
                 reader.readAsDataURL(file);
             }
-            if (type === 'direccion') {
-                updateRegistrarState();
-            }
+            // Actualizar estado del botón para cualquier tipo de foto
+            updateRegistrarState();
         }
 
         function deleteImage(type) {
@@ -1098,9 +1157,8 @@
                     return;
             }
             document.getElementById(inputId).value = '';
-            if (type === 'direccion') {
-                updateRegistrarState();
-            }
+            // Actualizar estado del botón para cualquier tipo de foto
+            updateRegistrarState();
         }
 
         // Manejar envío del formulario
@@ -1121,12 +1179,15 @@
                 return;
             }
             
-            // Validar estado de entrega
+            // Validar estado de entrega y observaciones con placeholder
             const estadoEntrega = document.getElementById('estadoEntrega').value;
             const observaciones = document.getElementById('observaciones').value;
-            
-            if (!estadoEntrega || !observaciones) {
-                alert('Por favor complete todos los campos requeridos');
+            if (!estadoEntrega) {
+                alert('Seleccione un estado de entrega');
+                return;
+            }
+            if (!observaciones) {
+                alert('Seleccione una observación');
                 return;
             }
             
@@ -1198,9 +1259,13 @@
             // Deseleccionar fila
             document.querySelectorAll('tbody tr').forEach(r => r.classList.remove('selected-row'));
             
-            // Resetear comboboxes
-            document.getElementById('estadoEntrega').selectedIndex = 0;
-            actualizarOpcionesObservaciones();
+            // Resetear comboboxes con placeholder
+            const estado = document.getElementById('estadoEntrega');
+            if (estado) estado.selectedIndex = 0;
+            const observ = document.getElementById('observaciones');
+            if (observ) {
+                observ.innerHTML = '<option value="" selected disabled hidden>Seleccione observación...</option>';
+            }
             updateRegistrarState();
             
             // Recargar direcciones para verificar si quedan más pedidos
@@ -1214,7 +1279,7 @@
 
         function salir() {
             if (confirm('¿Está seguro que desea salir?')) {
-                window.close();
+                window.location.href = '../../index.php';
             }
         }
     </script>

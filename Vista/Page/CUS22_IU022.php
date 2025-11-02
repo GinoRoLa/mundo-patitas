@@ -13,7 +13,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         <link href="../Style/CUS01/StyleButtonGeneral.css" rel="stylesheet" type="text/css"/>
         <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
         <link href="../Style/CUS22/CUS22_IU022.css" rel="stylesheet" type="text/css"/>
-        <link href="../Style/CUS01/StyleInputGeneral.css" rel="stylesheet" type="text/css"/>
         <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" rel="stylesheet">
         <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js"></script>
         <script src="../Script/CUS22/calendarConfig.js" type="text/javascript"></script>

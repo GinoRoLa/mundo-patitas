@@ -30,7 +30,7 @@ function obtenerRepartidor($pdo) {
                     des_nombreTrabajador, 
                     des_apepatTrabajador
                 FROM t16CatalogoTrabajadores
-                WHERE id_Trabajador = 50009";
+                WHERE id_Trabajador = 50010";
         
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
@@ -90,7 +90,7 @@ function obtenerDirecciones($pdo, $idTrabajador) {
                 JOIN t77DistritoEnvio AS t77
                     ON t71.Id_Distrito = t77.Id_Distrito
                 WHERE t16.id_Trabajador = :idTrabajador 
-                AND t02.Estado = 'En reparto'";
+                AND t02.Estado = 'En Reparto'";
 
         $stmt = $pdo->prepare($sql);
         $stmt->bindParam(':idTrabajador', $idTrabajador);

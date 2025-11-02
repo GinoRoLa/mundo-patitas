@@ -1,3 +1,4 @@
+use mundo_patitas4;
 -- ==========================================================
 -- Mundo Patitas - Script Definitivo (MySQL 8 / InnoDB / utf8mb4)
 -- V3 FIXED: orden de creación, FKs coherentes, nombres consistentes
@@ -123,8 +124,6 @@ CREATE TABLE t18CatalogoProducto (
   Marca VARCHAR(30) NOT NULL,
   PrecioUnitario DECIMAL(12,2) NOT NULL,
   StockActual INT NOT NULL,
-  StockMinimo INT NOT NULL,
-  StockMaximo INT NOT NULL,
   Estado VARCHAR(15) NOT NULL,
   Peso DECIMAL(8,4) NOT NULL COMMENT 'kg',
   Volumen DECIMAL(8,4) NOT NULL COMMENT 'litros',
@@ -141,9 +140,7 @@ CREATE TABLE t18CatalogoProducto (
     REFERENCES t34UnidadMedida (Id_UnidadMedida)
     ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT t18_chk_precio CHECK (PrecioUnitario >= 0),
-  CONSTRAINT t18_chk_stock1 CHECK (StockActual >= 0),
-  CONSTRAINT t18_chk_stock2 CHECK (StockMinimo >= 0),
-  CONSTRAINT t18_chk_stock3 CHECK (StockMaximo >= 0)
+  CONSTRAINT t18_chk_stock1 CHECK (StockActual >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=1000;
 
 CREATE TABLE t58Producto (
@@ -568,21 +565,17 @@ CREATE TABLE t11OrdenSalida (
 
 CREATE TABLE t10Kardex (
   Id_Kardex INT NOT NULL AUTO_INCREMENT,
-  Fec_Transaccion DATE NOT NULL,
+  TipoTransaccion VARCHAR(15) NOT NULL,
   id_Producto INT NOT NULL,
+  precio DECIMAL(12,2),
   Cantidad INT NOT NULL CHECK (Cantidad >= 0),
-  Estado VARCHAR(15) NOT NULL,
-  t11OrdenSalida_Id_ordenSalida INT NOT NULL,
+  Fec_Transaccion DATE NOT NULL,
   PRIMARY KEY (Id_Kardex),
-  KEY fk_t10_t11 (t11OrdenSalida_Id_ordenSalida),
   KEY fk_t10_prod (id_Producto),
-  CONSTRAINT fk_t10_t11 FOREIGN KEY (t11OrdenSalida_Id_ordenSalida)
-    REFERENCES t11OrdenSalida (Id_ordenSalida)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t10_prod FOREIGN KEY (id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
     ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=30001;
+) ENGINE=InnoDB AUTO_INCREMENT=5000;
 
 CREATE TABLE t19OrdenIngresoCompra (
   Id_OrdenIngresoCompra INT NOT NULL AUTO_INCREMENT,
@@ -996,6 +989,65 @@ CREATE TABLE t405IncidenciaEntrega (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=85001;
 
+CREATE TABLE t13Stock (
+  IdStock INT NOT NULL AUTO_INCREMENT,
+  id_Producto INT NOT NULL,
+  Cantidad INT NOT NULL,
+  precioPromedio DECIMAL(12,2),
+  Periodo VARCHAR(25) NOT NULL,      -- Ej: '01/09/2025 - 30/09/2025'
+  PeriodoClave DATE NOT NULL,        -- Ej: '2025-09-01'
+  Fecha DATE NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (IdStock),
+  KEY fk_t11_prod (id_Producto),
+  CONSTRAINT fk_t11_prod FOREIGN KEY (id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=1100;
+
+
+CREATE TABLE t14RequerimientoCompra (
+  Id_Requerimiento INT NOT NULL AUTO_INCREMENT,
+  FechaRequerimiento DATE NOT NULL,
+  Total DECIMAL(12,2) NOT NULL,
+  PrecioPromedio DECIMAL(12,2) NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (Id_Requerimiento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci AUTO_INCREMENT=4500;
+
+CREATE TABLE t15DetalleRequerimientoCompra (
+  Id_Detalle INT NOT NULL AUTO_INCREMENT,
+  Id_Requerimiento INT NOT NULL,
+  Id_Producto INT NOT NULL,
+  Cantidad INT NOT NULL,
+  PrecioPromedio DECIMAL(12,2) NOT NULL,
+  PRIMARY KEY (Id_Detalle),
+  KEY fk_t15_t14 (Id_Requerimiento),
+  KEY fk_t15_prod (Id_Producto),
+  CONSTRAINT fk_t15_t14 FOREIGN KEY (Id_Requerimiento)
+    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t15_prod FOREIGN KEY (Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT t15_chk_cantidad CHECK (Cantidad > 0),
+  CONSTRAINT t15_chk_precio CHECK (PrecioPromedio >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=23450 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE t29DetalleStockProducto (
+  Id_DetalleStockProducto INT NOT NULL AUTO_INCREMENT,
+  t18CatalogoProducto_Id_Producto INT NOT NULL,
+  StockMaximo INT NOT NULL,
+  StockMinimo INT NOT NULL,
+  FechaUltimaActualizacion DATE NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (Id_DetalleStockProducto),
+  KEY fk_t29_producto (t18CatalogoProducto_Id_Producto),
+  CONSTRAINT fk_t29_producto FOREIGN KEY (t18CatalogoProducto_Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT t29_chk_stockmax CHECK (StockMaximo >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=5000;
 -- ==========================================================
 -- 13) Índices adicionales
 -- ==========================================================

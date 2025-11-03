@@ -1,4 +1,4 @@
-use mundo_patitas4;
+use mundo_patitas3;
 -- ==========================================================
 -- Mundo Patitas - Script Definitivo (MySQL 8 / InnoDB / utf8mb4)
 -- V3 FIXED: orden de creación, FKs coherentes, nombres consistentes
@@ -166,96 +166,6 @@ CREATE TABLE t17CatalogoProveedor (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
-
-CREATE TABLE t406PartidaPeriodo (
-  Id_PartidaPeriodo INT NOT NULL AUTO_INCREMENT,
-  CodigoPartida VARCHAR(15) NOT NULL,
-  Descripcion VARCHAR(200) NOT NULL,
-  Mes VARCHAR(15) NOT NULL,
-  MontoPeriodo DECIMAL(12,2) NOT NULL,
-  MontoConsumido DECIMAL(12,2) DEFAULT 0,
-  Estado VARCHAR(15) NOT NULL DEFAULT 'Activo',
-  PRIMARY KEY (Id_PartidaPeriodo),
-  CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0 AND MontoConsumido >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=1000;
-
-CREATE TABLE t407EvaluacionRequerimiento (
-  Id_Evaluacion INT NOT NULL AUTO_INCREMENT,
-  Id_Requerimiento INT NOT NULL,
-  Id_PartidaPeriodo INT NOT NULL,
-  CriterioEvaluacion VARCHAR(50) NOT NULL,
-  MontoSolicitado DECIMAL(12,2) NOT NULL,
-  MontoAprobado DECIMAL(12,2) NOT NULL,
-  SaldoRestantePeriodo DECIMAL(12,2) NOT NULL,
-  ResultadoEvaluacion VARCHAR(20) NOT NULL,
-  FechaEvaluacion DATETIME NOT NULL,
-  Observaciones TEXT,
-  PRIMARY KEY (Id_Evaluacion),
-  KEY fk_t407_t14 (Id_Requerimiento),
-  KEY fk_t407_t406 (Id_PartidaPeriodo),
-  CONSTRAINT fk_t407_t14 FOREIGN KEY (Id_Requerimiento)
-    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t407_t406 FOREIGN KEY (Id_PartidaPeriodo)
-    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_montos_eval CHECK (MontoSolicitado >= 0 AND MontoAprobado >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=2000;
-
-
-CREATE TABLE t408DetalleEvaluacion (
-  Id_DetalleEvaluacion INT NOT NULL AUTO_INCREMENT,
-  Id_Evaluacion INT NOT NULL,
-  Id_DetalleRequerimiento INT NOT NULL,
-  PrecioAprobado DECIMAL(12,2) NOT NULL,
-  CantidadAprobada INT NOT NULL,
-  MontoAsignado DECIMAL(12,2) NOT NULL,
-  EstadoProducto VARCHAR(20) NOT NULL,
-  Motivo VARCHAR(150),
-  PRIMARY KEY (Id_DetalleEvaluacion),
-  KEY fk_t408_eval (Id_Evaluacion),
-  KEY fk_t408_detreq (Id_DetalleRequerimiento),
-  CONSTRAINT fk_t408_eval FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t408_detreq FOREIGN KEY (Id_DetalleRequerimiento)
-    REFERENCES t15DetalleRequerimientoCompra (Id_Detalle)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_cant_aprobada CHECK (CantidadAprobada >= 0),
-  CONSTRAINT chk_monto_asignado CHECK (MontoAsignado >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=3000;
-
-
-CREATE TABLE t409HistorialEvaluacion (
-  Id_Historial INT NOT NULL AUTO_INCREMENT,
-  Id_Evaluacion INT NOT NULL,
-  FechaCambio DATETIME NOT NULL,
-  DetalleCambio TEXT NOT NULL,
-  PRIMARY KEY (Id_Historial),
-  KEY fk_t409_eval (Id_Evaluacion),
-  CONSTRAINT fk_t409_eval FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
-    ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=5000;
-
-CREATE TABLE t410ConsumoPartida (
-  Id_Consumo INT NOT NULL AUTO_INCREMENT,
-  Id_PartidaPeriodo INT NOT NULL,
-  Id_Evaluacion INT NOT NULL,
-  MontoConsumido DECIMAL(12,2) NOT NULL,
-  FechaRegistro DATETIME NOT NULL,
-  SaldoDespues DECIMAL(12,2) DEFAULT 0,
-  PRIMARY KEY (Id_Consumo),
-  KEY fk_t410_t406 (Id_PartidaPeriodo),
-  KEY fk_t410_t407 (Id_Evaluacion),
-  CONSTRAINT fk_t410_t406 FOREIGN KEY (Id_PartidaPeriodo)
-    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t410_t407 FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_consumo CHECK (MontoConsumido >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=8000;
 
 -- ==========================================================
 -- 3) Métodos de entrega / direcciones / zonas
@@ -1240,6 +1150,97 @@ CREATE TABLE t29DetalleStockProducto (
     ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT t29_chk_stockmax CHECK (StockMaximo >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=5000;
+
+
+CREATE TABLE t406PartidaPeriodo (
+  Id_PartidaPeriodo INT NOT NULL AUTO_INCREMENT,
+  CodigoPartida VARCHAR(15) NOT NULL,
+  Descripcion VARCHAR(200) NOT NULL,
+  Mes VARCHAR(15) NOT NULL,
+  MontoPeriodo DECIMAL(12,2) NOT NULL,
+  MontoConsumido DECIMAL(12,2) DEFAULT 0,
+  Estado VARCHAR(15) NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (Id_PartidaPeriodo),
+  CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0 AND MontoConsumido >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=1000;
+
+CREATE TABLE t407EvaluacionRequerimiento (
+  Id_Evaluacion INT NOT NULL AUTO_INCREMENT,
+  Id_Requerimiento INT NOT NULL,
+  Id_PartidaPeriodo INT NOT NULL,
+  CriterioEvaluacion VARCHAR(50) NOT NULL,
+  MontoSolicitado DECIMAL(12,2) NOT NULL,
+  MontoAprobado DECIMAL(12,2) NOT NULL,
+  SaldoRestantePeriodo DECIMAL(12,2) NOT NULL,
+  ResultadoEvaluacion VARCHAR(20) NOT NULL,
+  FechaEvaluacion DATETIME NOT NULL,
+  Observaciones TEXT,
+  PRIMARY KEY (Id_Evaluacion),
+  KEY fk_t407_t14 (Id_Requerimiento),
+  KEY fk_t407_t406 (Id_PartidaPeriodo),
+  CONSTRAINT fk_t407_t14 FOREIGN KEY (Id_Requerimiento)
+    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t407_t406 FOREIGN KEY (Id_PartidaPeriodo)
+    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_montos_eval CHECK (MontoSolicitado >= 0 AND MontoAprobado >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=2000;
+
+
+CREATE TABLE t408DetalleEvaluacion (
+  Id_DetalleEvaluacion INT NOT NULL AUTO_INCREMENT,
+  Id_Evaluacion INT NOT NULL,
+  Id_DetalleRequerimiento INT NOT NULL,
+  PrecioAprobado DECIMAL(12,2) NOT NULL,
+  CantidadAprobada INT NOT NULL,
+  MontoAsignado DECIMAL(12,2) NOT NULL,
+  EstadoProducto VARCHAR(20) NOT NULL,
+  Motivo VARCHAR(150),
+  PRIMARY KEY (Id_DetalleEvaluacion),
+  KEY fk_t408_eval (Id_Evaluacion),
+  KEY fk_t408_detreq (Id_DetalleRequerimiento),
+  CONSTRAINT fk_t408_eval FOREIGN KEY (Id_Evaluacion)
+    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t408_detreq FOREIGN KEY (Id_DetalleRequerimiento)
+    REFERENCES t15DetalleRequerimientoCompra (Id_Detalle)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_cant_aprobada CHECK (CantidadAprobada >= 0),
+  CONSTRAINT chk_monto_asignado CHECK (MontoAsignado >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=3000;
+
+
+CREATE TABLE t409HistorialEvaluacion (
+  Id_Historial INT NOT NULL AUTO_INCREMENT,
+  Id_Evaluacion INT NOT NULL,
+  FechaCambio DATETIME NOT NULL,
+  DetalleCambio TEXT NOT NULL,
+  PRIMARY KEY (Id_Historial),
+  KEY fk_t409_eval (Id_Evaluacion),
+  CONSTRAINT fk_t409_eval FOREIGN KEY (Id_Evaluacion)
+    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=5000;
+
+CREATE TABLE t410ConsumoPartida (
+  Id_Consumo INT NOT NULL AUTO_INCREMENT,
+  Id_PartidaPeriodo INT NOT NULL,
+  Id_Evaluacion INT NOT NULL,
+  MontoConsumido DECIMAL(12,2) NOT NULL,
+  FechaRegistro DATETIME NOT NULL,
+  SaldoDespues DECIMAL(12,2) DEFAULT 0,
+  PRIMARY KEY (Id_Consumo),
+  KEY fk_t410_t406 (Id_PartidaPeriodo),
+  KEY fk_t410_t407 (Id_Evaluacion),
+  CONSTRAINT fk_t410_t406 FOREIGN KEY (Id_PartidaPeriodo)
+    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t410_t407 FOREIGN KEY (Id_Evaluacion)
+    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_consumo CHECK (MontoConsumido >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=8000;
 -- ==========================================================
 -- 13) Índices adicionales
 -- ==========================================================

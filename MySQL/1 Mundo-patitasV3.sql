@@ -154,7 +154,7 @@ CREATE TABLE t58Producto (
 CREATE TABLE t17CatalogoProveedor (
   Id_NumRuc VARCHAR(11) NOT NULL,
   des_RazonSocial VARCHAR(50) NOT NULL,
-  DDireccionProv VARCHAR(50) NOT NULL,
+  DireccionProv VARCHAR(50) NOT NULL,
   Telefono VARCHAR(15) NOT NULL,
   Correo VARCHAR(100) NOT NULL,
   estado VARCHAR(15) NOT NULL,
@@ -166,6 +166,156 @@ CREATE TABLE t17CatalogoProveedor (
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB;
 
+CREATE TABLE t13Stock (
+  IdStock INT NOT NULL AUTO_INCREMENT,
+  id_Producto INT NOT NULL,
+  Cantidad INT NOT NULL,
+  precioPromedio DECIMAL(12,2),
+  Periodo VARCHAR(25) NOT NULL,      -- Ej: '01/09/2025 - 30/09/2025'
+  PeriodoClave DATE NOT NULL,        -- Ej: '2025-09-01'
+  Fecha DATE NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (IdStock),
+  KEY fk_t11_prod (id_Producto),
+  CONSTRAINT fk_t11_prod FOREIGN KEY (id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=1100;
+
+
+CREATE TABLE t14RequerimientoCompra (
+  Id_Requerimiento INT NOT NULL AUTO_INCREMENT,
+  FechaRequerimiento DATE NOT NULL,
+  Total DECIMAL(12,2) NOT NULL,
+  PrecioPromedio DECIMAL(12,2) NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (Id_Requerimiento)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci AUTO_INCREMENT=4500;
+
+CREATE TABLE t15DetalleRequerimientoCompra (
+  Id_Detalle INT NOT NULL AUTO_INCREMENT,
+  Id_Requerimiento INT NOT NULL,
+  Id_Producto INT NOT NULL,
+  Cantidad INT NOT NULL,
+  PrecioPromedio DECIMAL(12,2) NOT NULL,
+  PRIMARY KEY (Id_Detalle),
+  KEY fk_t15_t14 (Id_Requerimiento),
+  KEY fk_t15_prod (Id_Producto),
+  CONSTRAINT fk_t15_t14 FOREIGN KEY (Id_Requerimiento)
+    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t15_prod FOREIGN KEY (Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT t15_chk_cantidad CHECK (Cantidad > 0),
+  CONSTRAINT t15_chk_precio CHECK (PrecioPromedio >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=23450 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE t29DetalleStockProducto (
+  Id_DetalleStockProducto INT NOT NULL AUTO_INCREMENT,
+  t18CatalogoProducto_Id_Producto INT NOT NULL,
+  StockMaximo INT NOT NULL,
+  StockMinimo INT NOT NULL,
+  FechaUltimaActualizacion DATE NOT NULL,
+  Estado VARCHAR(15) NOT NULL,
+  PRIMARY KEY (Id_DetalleStockProducto),
+  KEY fk_t29_producto (t18CatalogoProducto_Id_Producto),
+  CONSTRAINT fk_t29_producto FOREIGN KEY (t18CatalogoProducto_Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT t29_chk_stockmax CHECK (StockMaximo >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=5000;
+
+
+CREATE TABLE t406PartidaPeriodo (
+  Id_PartidaPeriodo INT NOT NULL AUTO_INCREMENT,
+  CodigoPartida VARCHAR(15) NOT NULL,
+  Descripcion VARCHAR(200) NOT NULL,
+  Mes VARCHAR(15) NOT NULL,
+  MontoPeriodo DECIMAL(12,2) NOT NULL,
+  MontoConsumido DECIMAL(12,2) DEFAULT 0,
+  Estado VARCHAR(15) NOT NULL DEFAULT 'Activo',
+  PRIMARY KEY (Id_PartidaPeriodo),
+  CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0 AND MontoConsumido >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=1000;
+
+CREATE TABLE t407EvaluacionRequerimiento (
+  Id_Evaluacion INT NOT NULL AUTO_INCREMENT,
+  Id_Requerimiento INT NOT NULL,
+  Id_PartidaPeriodo INT NOT NULL,
+  CriterioEvaluacion VARCHAR(50) NOT NULL,
+  MontoSolicitado DECIMAL(12,2) NOT NULL,
+  MontoAprobado DECIMAL(12,2) NOT NULL,
+  SaldoRestantePeriodo DECIMAL(12,2) NOT NULL,
+  ResultadoEvaluacion VARCHAR(20) NOT NULL,
+  FechaEvaluacion DATETIME NOT NULL,
+  Observaciones TEXT,
+  PRIMARY KEY (Id_Evaluacion),
+  KEY fk_t407_t14 (Id_Requerimiento),
+  KEY fk_t407_t406 (Id_PartidaPeriodo),
+  CONSTRAINT fk_t407_t14 FOREIGN KEY (Id_Requerimiento)
+    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t407_t406 FOREIGN KEY (Id_PartidaPeriodo)
+    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_montos_eval CHECK (MontoSolicitado >= 0 AND MontoAprobado >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=2000;
+
+
+CREATE TABLE t408DetalleEvaluacion (
+  Id_DetalleEvaluacion INT NOT NULL AUTO_INCREMENT,
+  Id_Evaluacion INT NOT NULL,
+  Id_DetalleRequerimiento INT NOT NULL,
+  PrecioAprobado DECIMAL(12,2) NOT NULL,
+  CantidadAprobada INT NOT NULL,
+  MontoAsignado DECIMAL(12,2) NOT NULL,
+  EstadoProducto VARCHAR(20) NOT NULL,
+  Motivo VARCHAR(150),
+  PRIMARY KEY (Id_DetalleEvaluacion),
+  KEY fk_t408_eval (Id_Evaluacion),
+  KEY fk_t408_detreq (Id_DetalleRequerimiento),
+  CONSTRAINT fk_t408_eval FOREIGN KEY (Id_Evaluacion)
+    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t408_detreq FOREIGN KEY (Id_DetalleRequerimiento)
+    REFERENCES t15DetalleRequerimientoCompra (Id_Detalle)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_cant_aprobada CHECK (CantidadAprobada >= 0),
+  CONSTRAINT chk_monto_asignado CHECK (MontoAsignado >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=3000;
+
+
+CREATE TABLE t409HistorialEvaluacion (
+  Id_Historial INT NOT NULL AUTO_INCREMENT,
+  Id_Evaluacion INT NOT NULL,
+  FechaCambio DATETIME NOT NULL,
+  DetalleCambio TEXT NOT NULL,
+  PRIMARY KEY (Id_Historial),
+  KEY fk_t409_eval (Id_Evaluacion),
+  CONSTRAINT fk_t409_eval FOREIGN KEY (Id_Evaluacion)
+    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=5000;
+
+CREATE TABLE t410ConsumoPartida (
+  Id_Consumo INT NOT NULL AUTO_INCREMENT,
+  Id_PartidaPeriodo INT NOT NULL,
+  Id_Evaluacion INT NOT NULL,
+  MontoConsumido DECIMAL(12,2) NOT NULL,
+  FechaRegistro DATETIME NOT NULL,
+  SaldoDespues DECIMAL(12,2) DEFAULT 0,
+  PRIMARY KEY (Id_Consumo),
+  KEY fk_t410_t406 (Id_PartidaPeriodo),
+  KEY fk_t410_t407 (Id_Evaluacion),
+  CONSTRAINT fk_t410_t406 FOREIGN KEY (Id_PartidaPeriodo)
+    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT fk_t410_t407 FOREIGN KEY (Id_Evaluacion)
+    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_consumo CHECK (MontoConsumido >= 0)
+) ENGINE=InnoDB AUTO_INCREMENT=8000;
 
 -- ==========================================================
 -- 3) Métodos de entrega / direcciones / zonas
@@ -635,22 +785,7 @@ CREATE TABLE t07DetalleOrdenCompra (
       ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE t07DetalleOrdenCompra (
-  Id_Detalle INT NOT NULL AUTO_INCREMENT,
-  Id_OrdenCompra INT NOT NULL,
-  Id_Producto INT NOT NULL,
-  Cantidad INT NOT NULL CHECK (Cantidad >= 0),
-  PrecioUnitario DECIMAL(12,2) NOT NULL CHECK (PrecioUnitario >= 0),
-  PRIMARY KEY (Id_Detalle),
-  KEY fk_t07_oc (Id_OrdenCompra),
-  KEY fk_t07_prod (Id_Producto),
-  CONSTRAINT fk_t07_oc FOREIGN KEY (Id_OrdenCompra)
-    REFERENCES t06OrdenCompra (Id_OrdenCompra)
-    ON UPDATE RESTRICT ON DELETE CASCADE,
-  CONSTRAINT fk_t07_prod FOREIGN KEY (Id_Producto)
-    REFERENCES t18CatalogoProducto (Id_Producto)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=200001;
+
 
 CREATE TABLE t11OrdenSalida (
   Id_ordenSalida INT NOT NULL AUTO_INCREMENT,
@@ -1091,156 +1226,7 @@ CREATE TABLE t405IncidenciaEntrega (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=85001;
 
-CREATE TABLE t13Stock (
-  IdStock INT NOT NULL AUTO_INCREMENT,
-  id_Producto INT NOT NULL,
-  Cantidad INT NOT NULL,
-  precioPromedio DECIMAL(12,2),
-  Periodo VARCHAR(25) NOT NULL,      -- Ej: '01/09/2025 - 30/09/2025'
-  PeriodoClave DATE NOT NULL,        -- Ej: '2025-09-01'
-  Fecha DATE NOT NULL,
-  Estado VARCHAR(15) NOT NULL,
-  PRIMARY KEY (IdStock),
-  KEY fk_t11_prod (id_Producto),
-  CONSTRAINT fk_t11_prod FOREIGN KEY (id_Producto)
-    REFERENCES t18CatalogoProducto (Id_Producto)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=1100;
 
-
-CREATE TABLE t14RequerimientoCompra (
-  Id_Requerimiento INT NOT NULL AUTO_INCREMENT,
-  FechaRequerimiento DATE NOT NULL,
-  Total DECIMAL(12,2) NOT NULL,
-  PrecioPromedio DECIMAL(12,2) NOT NULL,
-  Estado VARCHAR(15) NOT NULL,
-  PRIMARY KEY (Id_Requerimiento)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci AUTO_INCREMENT=4500;
-
-CREATE TABLE t15DetalleRequerimientoCompra (
-  Id_Detalle INT NOT NULL AUTO_INCREMENT,
-  Id_Requerimiento INT NOT NULL,
-  Id_Producto INT NOT NULL,
-  Cantidad INT NOT NULL,
-  PrecioPromedio DECIMAL(12,2) NOT NULL,
-  PRIMARY KEY (Id_Detalle),
-  KEY fk_t15_t14 (Id_Requerimiento),
-  KEY fk_t15_prod (Id_Producto),
-  CONSTRAINT fk_t15_t14 FOREIGN KEY (Id_Requerimiento)
-    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t15_prod FOREIGN KEY (Id_Producto)
-    REFERENCES t18CatalogoProducto (Id_Producto)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT t15_chk_cantidad CHECK (Cantidad > 0),
-  CONSTRAINT t15_chk_precio CHECK (PrecioPromedio >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=23450 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
-
-CREATE TABLE t29DetalleStockProducto (
-  Id_DetalleStockProducto INT NOT NULL AUTO_INCREMENT,
-  t18CatalogoProducto_Id_Producto INT NOT NULL,
-  StockMaximo INT NOT NULL,
-  StockMinimo INT NOT NULL,
-  FechaUltimaActualizacion DATE NOT NULL,
-  Estado VARCHAR(15) NOT NULL,
-  PRIMARY KEY (Id_DetalleStockProducto),
-  KEY fk_t29_producto (t18CatalogoProducto_Id_Producto),
-  CONSTRAINT fk_t29_producto FOREIGN KEY (t18CatalogoProducto_Id_Producto)
-    REFERENCES t18CatalogoProducto (Id_Producto)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT t29_chk_stockmax CHECK (StockMaximo >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=5000;
-
-
-CREATE TABLE t406PartidaPeriodo (
-  Id_PartidaPeriodo INT NOT NULL AUTO_INCREMENT,
-  CodigoPartida VARCHAR(15) NOT NULL,
-  Descripcion VARCHAR(200) NOT NULL,
-  Mes VARCHAR(15) NOT NULL,
-  MontoPeriodo DECIMAL(12,2) NOT NULL,
-  MontoConsumido DECIMAL(12,2) DEFAULT 0,
-  Estado VARCHAR(15) NOT NULL DEFAULT 'Activo',
-  PRIMARY KEY (Id_PartidaPeriodo),
-  CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0 AND MontoConsumido >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=1000;
-
-CREATE TABLE t407EvaluacionRequerimiento (
-  Id_Evaluacion INT NOT NULL AUTO_INCREMENT,
-  Id_Requerimiento INT NOT NULL,
-  Id_PartidaPeriodo INT NOT NULL,
-  CriterioEvaluacion VARCHAR(50) NOT NULL,
-  MontoSolicitado DECIMAL(12,2) NOT NULL,
-  MontoAprobado DECIMAL(12,2) NOT NULL,
-  SaldoRestantePeriodo DECIMAL(12,2) NOT NULL,
-  ResultadoEvaluacion VARCHAR(20) NOT NULL,
-  FechaEvaluacion DATETIME NOT NULL,
-  Observaciones TEXT,
-  PRIMARY KEY (Id_Evaluacion),
-  KEY fk_t407_t14 (Id_Requerimiento),
-  KEY fk_t407_t406 (Id_PartidaPeriodo),
-  CONSTRAINT fk_t407_t14 FOREIGN KEY (Id_Requerimiento)
-    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t407_t406 FOREIGN KEY (Id_PartidaPeriodo)
-    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_montos_eval CHECK (MontoSolicitado >= 0 AND MontoAprobado >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=2000;
-
-
-CREATE TABLE t408DetalleEvaluacion (
-  Id_DetalleEvaluacion INT NOT NULL AUTO_INCREMENT,
-  Id_Evaluacion INT NOT NULL,
-  Id_DetalleRequerimiento INT NOT NULL,
-  PrecioAprobado DECIMAL(12,2) NOT NULL,
-  CantidadAprobada INT NOT NULL,
-  MontoAsignado DECIMAL(12,2) NOT NULL,
-  EstadoProducto VARCHAR(20) NOT NULL,
-  Motivo VARCHAR(150),
-  PRIMARY KEY (Id_DetalleEvaluacion),
-  KEY fk_t408_eval (Id_Evaluacion),
-  KEY fk_t408_detreq (Id_DetalleRequerimiento),
-  CONSTRAINT fk_t408_eval FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t408_detreq FOREIGN KEY (Id_DetalleRequerimiento)
-    REFERENCES t15DetalleRequerimientoCompra (Id_Detalle)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_cant_aprobada CHECK (CantidadAprobada >= 0),
-  CONSTRAINT chk_monto_asignado CHECK (MontoAsignado >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=3000;
-
-
-CREATE TABLE t409HistorialEvaluacion (
-  Id_Historial INT NOT NULL AUTO_INCREMENT,
-  Id_Evaluacion INT NOT NULL,
-  FechaCambio DATETIME NOT NULL,
-  DetalleCambio TEXT NOT NULL,
-  PRIMARY KEY (Id_Historial),
-  KEY fk_t409_eval (Id_Evaluacion),
-  CONSTRAINT fk_t409_eval FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
-    ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=5000;
-
-CREATE TABLE t410ConsumoPartida (
-  Id_Consumo INT NOT NULL AUTO_INCREMENT,
-  Id_PartidaPeriodo INT NOT NULL,
-  Id_Evaluacion INT NOT NULL,
-  MontoConsumido DECIMAL(12,2) NOT NULL,
-  FechaRegistro DATETIME NOT NULL,
-  SaldoDespues DECIMAL(12,2) DEFAULT 0,
-  PRIMARY KEY (Id_Consumo),
-  KEY fk_t410_t406 (Id_PartidaPeriodo),
-  KEY fk_t410_t407 (Id_Evaluacion),
-  CONSTRAINT fk_t410_t406 FOREIGN KEY (Id_PartidaPeriodo)
-    REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t410_t407 FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_consumo CHECK (MontoConsumido >= 0)
-) ENGINE=InnoDB AUTO_INCREMENT=8000;
 -- ==========================================================
 -- 13) Índices adicionales
 -- ==========================================================

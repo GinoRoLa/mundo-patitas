@@ -154,16 +154,17 @@ BEGIN
             Fec_Transaccion,
             id_Producto,
             Cantidad,
-            Estado,
-            t11OrdenSalida_Id_ordenSalida
+            TipoTransaccion,
+            Precio
         )
         SELECT
-            NOW(),
+            CURDATE(),
             d.t18CatalogoProducto_Id_Producto,
             d.Cantidad,
             'Salida',
-            v_id_t11
+            p.PrecioUnitario
         FROM t60DetOrdenPedido d
+        JOIN t18CatalogoProducto p ON p.Id_Producto = d.t18CatalogoProducto_Id_Producto
         WHERE d.t02OrdenPedido_Id_OrdenPedido = v_op;
 
         /* --- Descuento de stock --- */
@@ -187,15 +188,12 @@ BEGIN
         SET Estado = 'En Reparto'
         WHERE Id_OrdenPedido = v_op;
 
-        /* 
-           Si quieres asegurar transiciones válidas, puedes usar:
-           WHERE Id_OrdenPedido = v_op AND Estado IN ('Pagado','Pendiente');
-        */
     END LOOP;
     CLOSE cur;
 
     COMMIT;
 END$$
+
 DELIMITER ;
 
 

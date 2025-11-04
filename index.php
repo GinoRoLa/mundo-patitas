@@ -75,6 +75,20 @@
                         </div>
                     </div>
 
+                    <!-- Card CUS15 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS15</h5>
+                                <p class="card-text flex-grow-1">Generar Orden de Compra</p>
+                                <a href="Vista/Page/CUS15_IU015.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Card CUS22 -->
                     <div class="col">
                         <div class="card shadow-sm h-100">

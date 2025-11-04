@@ -38,7 +38,6 @@ INSERT INTO t37DetalleRequerimiento (Id_DetaRequerimiento, Observacion) VALUES
   (37002, 'Campaña'),
   (37003, 'Urgente');
 
-
 -- t31CategoriaProducto
 INSERT INTO t31CategoriaProducto (Id_Categoria, Descripcion) VALUES
 (24000, 'Alimento para perro'),
@@ -861,7 +860,6 @@ INSERT INTO t10Kardex (TipoTransaccion, id_Producto, precio, Cantidad, Fec_Trans
 ('Ingreso',1020,77.99,1,'2025-10-27'),
 ('Salida',1020,77.99,2,'2025-10-31');
 
-
 CREATE OR REPLACE VIEW vReporteInventarioGeneral AS
 SELECT 
     p.Id_Producto,
@@ -935,3 +933,4 @@ GROUP BY
     k.TotalEntradas, k.TotalSalidas
 HAVING StockActual > 0
 ORDER BY PrecioPromedio;
+

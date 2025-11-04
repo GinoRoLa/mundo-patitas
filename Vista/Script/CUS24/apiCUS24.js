@@ -1,7 +1,7 @@
 // /Vista/Script/CUS24/apiCUS24.js
 (function () {
-  //window.SERVICIOURL = "http://localhost:8080";
-  window.SERVICIOURL = "http://localhost";
+  window.SERVICIOURL = "http://localhost:8080";
+  //window.SERVICIOURL = "http://localhost";
   const BASE = `${window.SERVICIOURL}/mundo-patitas/Controlador/ControladorCUS24.php`;
 
   async function fetchJSON(url, opts = {}) {

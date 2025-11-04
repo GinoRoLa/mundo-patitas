@@ -16,7 +16,7 @@ class EmailService{
     private const SMTP_HOST = 'smtp.gmail.com';
     private const SMTP_PORT = 587;
     private const SMTP_USER = 'mundopatitas.venta@gmail.com';
-    private const SMTP_PASS = 'password';
+    private const SMTP_PASS = 'passworde';
     private const SMTP_FROM = 'mundopatitas.venta@gmail.com';
     private const SMTP_FROM_NAME = 'Mundo Patitas';
 
@@ -221,6 +221,32 @@ class EmailService{
 
 HTML;
     }
+
+    public static function generarHTMLOC(
+  string $nombreProveedor,
+  int $idOC,
+  string $moneda,
+  float $total,
+  ?string $empresa = 'Mundo Patitas'
+): string {
+  $totalFmt = number_format($total, 2, '.', ',');
+  $nom = htmlspecialchars($nombreProveedor, ENT_QUOTES, 'UTF-8');
+  $emp = htmlspecialchars($empresa, ENT_QUOTES, 'UTF-8');
+  return <<<HTML
+<!DOCTYPE html>
+<html lang="es">
+<meta charset="utf-8">
+<body style="font-family:Arial,Helvetica,sans-serif;color:#243145">
+  <h2 style="margin:0 0 6px">Orden de Compra N° {$idOC}</h2>
+  <p>Estimado(a) <strong>{$nom}</strong>,</p>
+  <p>Adjuntamos la <strong>Orden de Compra</strong> emitida por <strong>{$emp}</strong>.</p>
+  <p><b>Total:</b> {$moneda} {$totalFmt}</p>
+  <p>Quedamos atentos a su confirmación.</p>
+  <p>Saludos,<br><b>{$emp}</b></p>
+</body>
+</html>
+HTML;
+}
 
 
     /**

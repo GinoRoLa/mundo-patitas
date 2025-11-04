@@ -861,3 +861,77 @@ INSERT INTO t10Kardex (TipoTransaccion, id_Producto, precio, Cantidad, Fec_Trans
 ('Ingreso',1020,77.99,1,'2025-10-27'),
 ('Salida',1020,77.99,2,'2025-10-31');
 
+
+CREATE OR REPLACE VIEW vReporteInventarioGeneral AS
+SELECT 
+    p.Id_Producto,
+    p.NombreProducto AS Descripcion,
+    p.Marca,
+    c.Descripcion AS Categoria,
+
+    -- 🔹 STOCK ACTUAL
+    COALESCE(s.Cantidad, 0)
+      + COALESCE(k.TotalEntradas, 0)
+      - COALESCE(k.TotalSalidas, 0) AS StockActual,
+
+    -- 🔹 PRECIO PROMEDIO CALCULADO
+    ROUND(
+      (
+        (COALESCE(st.precioPromedio, 0) * COALESCE(st.Cantidad, 0))
+        + COALESCE(SUM(kk.Cantidad * kk.precio), 0)
+      ) /
+      NULLIF(
+        (COALESCE(st.Cantidad, 0) + COALESCE(SUM(kk.Cantidad), 0)),
+        0
+      ),
+      2
+    ) AS PrecioPromedio,
+
+    -- 🔹 STOCK MÁXIMO
+    COALESCE(dsp.StockMaximo, 0) AS StockMaximo,
+
+    -- 🔹 CANTIDAD A SOLICITAR
+    GREATEST(
+        COALESCE(dsp.StockMaximo, 0)
+        - (
+            COALESCE(s.Cantidad, 0)
+            + COALESCE(k.TotalEntradas, 0)
+            - COALESCE(k.TotalSalidas, 0)
+        ),
+        0
+    ) AS CantidadSolicitar
+
+FROM t18CatalogoProducto p
+JOIN t31CategoriaProducto c 
+    ON p.t31CategoriaProducto_Id_Categoria = c.Id_Categoria
+LEFT JOIN (
+    SELECT id_Producto, Cantidad
+    FROM t13Stock
+    WHERE Estado = 'Activo'
+) s ON p.Id_Producto = s.id_Producto
+LEFT JOIN (
+    SELECT 
+        id_Producto,
+        SUM(CASE WHEN TipoTransaccion = 'Ingreso' THEN Cantidad ELSE 0 END) AS TotalEntradas,
+        SUM(CASE WHEN TipoTransaccion = 'Salida' THEN Cantidad ELSE 0 END) AS TotalSalidas
+    FROM t10Kardex
+    GROUP BY id_Producto
+) k ON p.Id_Producto = k.id_Producto
+LEFT JOIN (
+    SELECT id_Producto, Cantidad, precioPromedio, PeriodoClave
+    FROM t13Stock
+    WHERE Estado = 'Activo'
+) st ON p.Id_Producto = st.id_Producto
+LEFT JOIN t10Kardex kk
+    ON p.Id_Producto = kk.id_Producto
+    AND kk.TipoTransaccion = 'Ingreso'
+    AND kk.Fec_Transaccion BETWEEN st.PeriodoClave AND LAST_DAY(st.PeriodoClave)
+LEFT JOIN t29DetalleStockProducto dsp 
+    ON p.Id_Producto = dsp.t18CatalogoProducto_Id_Producto
+
+GROUP BY 
+    p.Id_Producto, p.NombreProducto, p.Marca, c.Descripcion,
+    s.Cantidad, st.precioPromedio, st.Cantidad, dsp.StockMaximo,
+    k.TotalEntradas, k.TotalSalidas
+HAVING StockActual > 0
+ORDER BY PrecioPromedio;

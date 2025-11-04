@@ -4,14 +4,10 @@
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
             <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Page/CUS12_IU012.php</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Page/CUS22_IU022.php</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Style/CUS12/CUS12_IU012.css</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/CUS12/cargarReporte.js</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Controlador/Conexion.php</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Style/CUS01/StyleTbodyTable.css</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Style/CUS22/CUS22_IU022.css</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/MySQL/1%20Mundo-patitasV3.sql</file>
-            <file>file:/C:/xampp/htdocs/mundo-patitas/MySQL/3.1%20Registro%20MP%20V3%20Actualizado.sql</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Script/CUS12/registrarRequerimiento.js</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Vista/Ajax/CUS12/registrarRC.php</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/Controlador/CUS12Negocio.php</file>
+            <file>file:/C:/xampp/htdocs/mundo-patitas/MySQL/2%20Procedure-view%20MP%20V3.sql</file>
         </group>
     </open-files>
 </project-private>

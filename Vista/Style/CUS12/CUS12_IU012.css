@@ -26,6 +26,8 @@
 }
 
 .product-stock-section {
+    border-bottom: 1px solid #cccccc;
+    padding: 0.5rem 0;
 }
 
 .product-stock-table {
@@ -35,7 +37,7 @@
 
 .product-stock-table tbody {
     display: block;
-    max-height: 50rem;
+    max-height: 45rem;
     overflow-y: auto;
 }
 
@@ -47,3 +49,41 @@
     gap: 1rem;
     padding: 1.5rem 1rem;
 }
+
+.custom-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #323232;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  z-index: 9999;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.custom-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.custom-toast.info { background: #2196f3; }
+.custom-toast.success { background: #4caf50; }
+.custom-toast.warning { background: #ff9800; }
+.custom-toast.error { background: #f44336; }
+
+
+.detail-requirement {
+    border-bottom: 1px solid #cccccc;
+}
+.detail-requirement, .detail {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 1rem;
+    align-items: center;
+    padding: 1rem 0;
+}
+

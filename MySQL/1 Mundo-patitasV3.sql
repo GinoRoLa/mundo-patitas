@@ -1,4 +1,4 @@
-use mundo_patitas4;
+use mundo_patitas3;
 -- ==========================================================
 -- Mundo Patitas - Script Definitivo (MySQL 8 / InnoDB / utf8mb4)
 -- V3 FIXED: orden de creación, FKs coherentes, nombres consistentes

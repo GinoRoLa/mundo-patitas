@@ -61,11 +61,24 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                     </table>
                 </div>
             </section>
+            <section class="detalleRequerimiento">
+                <div class="detail-requirement">
+                    <div class="detail">
+                        <h2>Total requerimiento:</h2>
+                        <input id="total" class="input-style" placeholder="Total Requerimiento" readonly>
+                    </div>
+                    <div class="detail">
+                        <h2>Precio promedio requerimiento:</h2>
+                        <input id="precioPromedio" class="input-style" placeholder="Precio promedio" readonly>
+                    </div>
+                </div>
+            </section>
             <section class="botonesCUS">
                 <button id="btnGenerarRequerimiento" class="style-button">Generar requerimiento</button>
                 <button class="style-button">Cancelar</button>
             </section>
         </main>
         <script src="../Script/CUS12/cargarReporte.js" type="text/javascript"></script>
+        <script src="../Script/CUS12/registrarRequerimiento.js" type="text/javascript"></script>
     </body>
 </html>

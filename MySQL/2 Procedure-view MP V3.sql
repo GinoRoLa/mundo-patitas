@@ -404,3 +404,68 @@ END$$
 DELIMITER ;
 
 
+DELIMITER $$
+
+CREATE PROCEDURE sp_GenerarRequerimientoCompra(
+    IN p_json LONGTEXT,
+    IN p_total DECIMAL(12,2),
+    IN p_precioPromedio DECIMAL(12,2)
+)
+BEGIN
+    DECLARE v_idRequerimiento INT;
+    DECLARE v_count INT DEFAULT 0;
+
+    -- Iniciar transacción
+    START TRANSACTION;
+    
+    -- Crear tabla temporal para leer el JSON
+    DROP TEMPORARY TABLE IF EXISTS tmp_detalle;
+    CREATE TEMPORARY TABLE tmp_detalle (
+        Id_Producto INT,
+        PrecioPromedio DECIMAL(12,2),
+        CantidadSolicitar INT
+    );
+
+    -- Cargar datos del JSON
+    INSERT INTO tmp_detalle (Id_Producto, PrecioPromedio, CantidadSolicitar)
+    SELECT 
+        JSON_EXTRACT(j.value, '$.Id_Producto'),
+        JSON_EXTRACT(j.value, '$.PrecioPromedio'),
+        JSON_EXTRACT(j.value, '$.CantidadSolicitar')
+    FROM JSON_TABLE(p_json, "$[*]" COLUMNS (value JSON PATH "$")) AS j;
+
+    -- Verificar si hay registros válidos
+    SELECT COUNT(*) INTO v_count FROM tmp_detalle;
+
+    IF v_count = 0 THEN
+        ROLLBACK;
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'El JSON no contiene productos válidos.';
+    ELSE
+        -- Insertar encabezado del requerimiento
+        INSERT INTO t14RequerimientoCompra (
+            FechaRequerimiento, Total, PrecioPromedio, Estado
+        )
+        VALUES (CURDATE(), p_total, p_precioPromedio, 'Pendiente');
+
+        SET v_idRequerimiento = LAST_INSERT_ID();
+
+        -- Insertar detalles
+        INSERT INTO t15DetalleRequerimientoCompra (
+            Id_Requerimiento, Id_Producto, Cantidad, PrecioPromedio
+        )
+        SELECT 
+            v_idRequerimiento,
+            Id_Producto,
+            CantidadSolicitar,
+            PrecioPromedio
+        FROM tmp_detalle;
+
+        COMMIT;
+    END IF;
+
+    -- Retornar el ID generado
+    SELECT v_idRequerimiento AS Id_RequerimientoGenerado;
+
+END$$
+
+DELIMITER ;

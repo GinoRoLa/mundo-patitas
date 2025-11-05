@@ -158,12 +158,7 @@ CREATE TABLE t17CatalogoProveedor (
   Telefono VARCHAR(15) NOT NULL,
   Correo VARCHAR(100) NOT NULL,
   estado VARCHAR(15) NOT NULL,
-  t18CatalogoProducto_Id_Producto INT NOT NULL,
-  PRIMARY KEY (Id_NumRuc),
-  KEY fk_t17_prod (t18CatalogoProducto_Id_Producto),
-  CONSTRAINT fk_t17_prod FOREIGN KEY (t18CatalogoProducto_Id_Producto)
-    REFERENCES t18CatalogoProducto (Id_Producto)
-    ON UPDATE RESTRICT ON DELETE RESTRICT
+  PRIMARY KEY (Id_NumRuc)
 ) ENGINE=InnoDB;
 
 CREATE TABLE t13Stock (
@@ -239,18 +234,19 @@ CREATE TABLE t406PartidaPeriodo (
   CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0 AND MontoConsumido >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=1000;
 
-CREATE TABLE t407EvaluacionRequerimiento (
-  Id_Evaluacion INT NOT NULL AUTO_INCREMENT,
+CREATE TABLE t407RequerimientoEvaluado (
+  Id_ReqEvaluacion INT NOT NULL AUTO_INCREMENT,
   Id_Requerimiento INT NOT NULL,
   Id_PartidaPeriodo INT NOT NULL,
+  FechaEvaluacion DATETIME NOT NULL,
   CriterioEvaluacion VARCHAR(50) NOT NULL,
   MontoSolicitado DECIMAL(12,2) NOT NULL,
   MontoAprobado DECIMAL(12,2) NOT NULL,
+  /* Total DECIMAL(12,2) NOT NULL, */  -- Comentado con sintaxis correcta
   SaldoRestantePeriodo DECIMAL(12,2) NOT NULL,
-  ResultadoEvaluacion VARCHAR(20) NOT NULL,
-  FechaEvaluacion DATETIME NOT NULL,
   Observaciones TEXT,
-  PRIMARY KEY (Id_Evaluacion),
+  Estado VARCHAR(30) NOT NULL DEFAULT 'Aprobado',
+  PRIMARY KEY (Id_ReqEvaluacion),
   KEY fk_t407_t14 (Id_Requerimiento),
   KEY fk_t407_t406 (Id_PartidaPeriodo),
   CONSTRAINT fk_t407_t14 FOREIGN KEY (Id_Requerimiento)
@@ -262,57 +258,52 @@ CREATE TABLE t407EvaluacionRequerimiento (
   CONSTRAINT chk_montos_eval CHECK (MontoSolicitado >= 0 AND MontoAprobado >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=2000;
 
-
-CREATE TABLE t408DetalleEvaluacion (
+CREATE TABLE t408DetalleReqEvaluado (
   Id_DetalleEvaluacion INT NOT NULL AUTO_INCREMENT,
-  Id_Evaluacion INT NOT NULL,
-  Id_DetalleRequerimiento INT NOT NULL,
-  PrecioAprobado DECIMAL(12,2) NOT NULL,
-  CantidadAprobada INT NOT NULL,
-  MontoAsignado DECIMAL(12,2) NOT NULL,
-  EstadoProducto VARCHAR(20) NOT NULL,
-  Motivo VARCHAR(150),
+  Id_ReqEvaluacion INT NOT NULL,
+  Id_Producto INT NOT NULL,
+  Cantidad INT NOT NULL,
+  Precio DECIMAL(12,2) NOT NULL,
   PRIMARY KEY (Id_DetalleEvaluacion),
-  KEY fk_t408_eval (Id_Evaluacion),
-  KEY fk_t408_detreq (Id_DetalleRequerimiento),
-  CONSTRAINT fk_t408_eval FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+  KEY fk_t408_eval (Id_ReqEvaluacion),
+  KEY fk_t408_prod (Id_Producto),
+  CONSTRAINT fk_t408_eval FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
     ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t408_detreq FOREIGN KEY (Id_DetalleRequerimiento)
-    REFERENCES t15DetalleRequerimientoCompra (Id_Detalle)
-    ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT chk_cant_aprobada CHECK (CantidadAprobada >= 0),
-  CONSTRAINT chk_monto_asignado CHECK (MontoAsignado >= 0)
+  CONSTRAINT fk_t408_prod FOREIGN KEY (Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,  
+  CONSTRAINT chk_cantidad CHECK (Cantidad > 0),
+  CONSTRAINT chk_precio CHECK (Precio >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=3000;
-
 
 CREATE TABLE t409HistorialEvaluacion (
   Id_Historial INT NOT NULL AUTO_INCREMENT,
-  Id_Evaluacion INT NOT NULL,
+  Id_ReqEvaluacion INT NOT NULL,
   FechaCambio DATETIME NOT NULL,
   DetalleCambio TEXT NOT NULL,
   PRIMARY KEY (Id_Historial),
-  KEY fk_t409_eval (Id_Evaluacion),
-  CONSTRAINT fk_t409_eval FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+  KEY fk_t409_eval (Id_ReqEvaluacion),
+  CONSTRAINT fk_t409_eval FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
     ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=5000;
 
 CREATE TABLE t410ConsumoPartida (
   Id_Consumo INT NOT NULL AUTO_INCREMENT,
   Id_PartidaPeriodo INT NOT NULL,
-  Id_Evaluacion INT NOT NULL,
+  Id_ReqEvaluacion INT NOT NULL,
   MontoConsumido DECIMAL(12,2) NOT NULL,
   FechaRegistro DATETIME NOT NULL,
   SaldoDespues DECIMAL(12,2) DEFAULT 0,
   PRIMARY KEY (Id_Consumo),
   KEY fk_t410_t406 (Id_PartidaPeriodo),
-  KEY fk_t410_t407 (Id_Evaluacion),
+  KEY fk_t410_t407 (Id_ReqEvaluacion),
   CONSTRAINT fk_t410_t406 FOREIGN KEY (Id_PartidaPeriodo)
     REFERENCES t406PartidaPeriodo (Id_PartidaPeriodo)
     ON DELETE RESTRICT ON UPDATE RESTRICT,
-  CONSTRAINT fk_t410_t407 FOREIGN KEY (Id_Evaluacion)
-    REFERENCES t407EvaluacionRequerimiento (Id_Evaluacion)
+  CONSTRAINT fk_t410_t407 FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
     ON DELETE RESTRICT ON UPDATE RESTRICT,
   CONSTRAINT chk_consumo CHECK (MontoConsumido >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=8000;
@@ -680,7 +671,7 @@ CREATE TABLE t75GuiaOrden (
 DROP TABLE IF EXISTS t86Cotizacion;
 CREATE TABLE t86Cotizacion (
   Id_Cotizacion     INT AUTO_INCREMENT PRIMARY KEY,
-  Id_Requerimiento  INT  NOT NULL,
+  Id_ReqEvaluacion  INT  NOT NULL,       -- 👈 ya no Id_Requerimiento
   RUC_Proveedor     VARCHAR(11) NOT NULL,
   FechaEmision      DATE        NOT NULL,
   FechaRecepcion    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -689,15 +680,16 @@ CREATE TABLE t86Cotizacion (
   IGV               DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   Total             DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   Estado            VARCHAR(11)   NOT NULL DEFAULT 'Recibida',
-  CONSTRAINT fk_t86_req  FOREIGN KEY (Id_Requerimiento)
-    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
+  CONSTRAINT fk_t86_eval FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
       ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t86_prov FOREIGN KEY (RUC_Proveedor)
     REFERENCES t17CatalogoProveedor (Id_NumRuc)
       ON UPDATE RESTRICT ON DELETE RESTRICT,
-  INDEX ix_t86_req_estado (Id_Requerimiento, Estado),
-  INDEX ix_t86_prov       (RUC_Proveedor)
+  INDEX ix_t86_eval_estado (Id_ReqEvaluacion, Estado),
+  INDEX ix_t86_prov        (RUC_Proveedor)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 /* === Detalle de Cotización (mínima) ===================================== */
 DROP TABLE IF EXISTS t87DetalleCotizacion;
@@ -707,34 +699,39 @@ CREATE TABLE t87DetalleCotizacion (
   Id_Producto        INT NOT NULL,
   Descripcion        VARCHAR(100) NOT NULL,
   CantidadOfertada   INT NOT NULL CHECK (CantidadOfertada >= 0),
-  PrecioUnitario     DECIMAL(12,4) NOT NULL CHECK (PrecioUnitario  >= 0),
+  PrecioUnitario     DECIMAL(12,4) NOT NULL CHECK (PrecioUnitario >= 0),
   TotalLinea         DECIMAL(12,2) GENERATED ALWAYS AS (CantidadOfertada * PrecioUnitario) STORED,
-  CONSTRAINT fk_t87_cot  FOREIGN KEY (Id_Cotizacion)
+  CONSTRAINT fk_t87_cot FOREIGN KEY (Id_Cotizacion)
     REFERENCES t86Cotizacion (Id_Cotizacion)
       ON UPDATE RESTRICT ON DELETE CASCADE,
   CONSTRAINT fk_t87_prod FOREIGN KEY (Id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
       ON UPDATE RESTRICT ON DELETE RESTRICT,
-  INDEX ix_t87_prod      (Id_Producto),
-  INDEX ix_t87_cot_prod  (Id_Cotizacion, Id_Producto)
+  INDEX ix_t87_prod     (Id_Producto),
+  INDEX ix_t87_cot_prod (Id_Cotizacion, Id_Producto)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE IF NOT EXISTS t88ArchivoCotizacion (
+
+DROP TABLE IF EXISTS t88ArchivoCotizacion;
+CREATE TABLE t88ArchivoCotizacion (
   Id_Archivo       INT AUTO_INCREMENT PRIMARY KEY,
-  Id_Requerimiento INT NOT NULL,
+  Id_ReqEvaluacion INT NOT NULL,          -- 👈 aquí también
   RUC_Proveedor    VARCHAR(11) NULL,
   FileName         VARCHAR(255) NOT NULL,
   FileSize         BIGINT NOT NULL,
-  FileHash         VARCHAR(64) NOT NULL,  -- sha256
+  FileHash         VARCHAR(64) NOT NULL,
   LastModified     DATETIME NOT NULL,
   ImportStatus     ENUM('pending','imported','error','ignored') NOT NULL DEFAULT 'imported',
   Id_Cotizacion    INT NULL,
   ErrorMsg         VARCHAR(255) NULL,
   FechaRegistro    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   UNIQUE KEY uq_filehash (FileHash),
-  KEY ix_t88_req (Id_Requerimiento),
-  KEY ix_t88_prov (RUC_Proveedor),
-  KEY ix_t88_status (ImportStatus)
+  KEY ix_t88_eval   (Id_ReqEvaluacion),
+  KEY ix_t88_prov   (RUC_Proveedor),
+  KEY ix_t88_status (ImportStatus),
+  CONSTRAINT fk_t88_eval FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
+      ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 
@@ -743,23 +740,23 @@ DROP TABLE IF EXISTS t06OrdenCompra;
 CREATE TABLE t06OrdenCompra (
   Id_OrdenCompra    INT NOT NULL AUTO_INCREMENT,
   Fec_Emision       DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  RUC_Proveedor     VARCHAR(11) NOT NULL,          -- 1 OC por proveedor
-  RazonSocial      VARCHAR(150) NULL,
-  Id_Requerimiento  INT  NULL,              -- referencia al requerimiento origen
+  RUC_Proveedor     VARCHAR(11) NOT NULL,
+  RazonSocial       VARCHAR(150) NULL,
+  Id_ReqEvaluacion  INT  NULL,          -- 👈 referencia principal
   Moneda            CHAR(3)     NOT NULL DEFAULT 'PEN',
-  PorcentajeIGV     DECIMAL(5,2) NOT NULL DEFAULT 18.00,  -- 18%
+  PorcentajeIGV     DECIMAL(5,2) NOT NULL DEFAULT 18.00,
   SubTotal          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   Impuesto          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   MontoTotal        DECIMAL(12,2) NOT NULL DEFAULT 0.00,
   Estado            VARCHAR(20)  NOT NULL DEFAULT 'Emitida',
   PRIMARY KEY (Id_OrdenCompra),
   KEY ix_t06_prov (RUC_Proveedor),
-  KEY ix_t06_req  (Id_Requerimiento),
+  KEY ix_t06_eval (Id_ReqEvaluacion),
   CONSTRAINT fk_t06_prov FOREIGN KEY (RUC_Proveedor)
     REFERENCES t17CatalogoProveedor (Id_NumRuc)
       ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT fk_t06_req  FOREIGN KEY (Id_Requerimiento)
-    REFERENCES t14RequerimientoCompra (Id_Requerimiento)
+  CONSTRAINT fk_t06_eval FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
       ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -772,7 +769,7 @@ CREATE TABLE t07DetalleOrdenCompra (
   Descripcion  VARCHAR(200) NOT NULL,
   Unidad       VARCHAR(15)  NULL,
   Cantidad        INT NOT NULL CHECK (Cantidad > 0),
-  PrecioUnitario  DECIMAL(12,4) NOT NULL CHECK (PrecioUnitario >= 0),
+  PrecioUnitario  DECIMAL(12,2) NOT NULL CHECK (PrecioUnitario >= 0),
   SubTotal        DECIMAL(12,2) GENERATED ALWAYS AS (Cantidad * PrecioUnitario) STORED,
   PRIMARY KEY (Id_Detalle),
   KEY ix_t07_oc   (Id_OrdenCompra),

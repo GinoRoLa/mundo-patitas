@@ -33,7 +33,9 @@
 
   const Utils = window.Utils15 || {
     showToast: (m, t = "info") => {
-      try { window.Utils24?.showToast?.(m, t); } catch {}
+      try {
+        window.Utils24?.showToast?.(m, t);
+      } catch {}
       console.log("[TOAST]", t, m);
     },
     showMsg: (el, type, txt) => {
@@ -60,7 +62,8 @@
     for (const r of list) {
       const listas = Number(r?.cotizaciones?.listas || 0);
       const detect = Number(r?.cotizaciones?.detectadas || 0);
-      const cotTxt = listas > 0 ? `🟢 ${listas}` : detect > 0 ? `🟡 ${detect}` : "⚪ —";
+      const cotTxt =
+        listas > 0 ? `🟢 ${listas}` : detect > 0 ? `🟡 ${detect}` : "⚪ —";
 
       const tr = document.createElement("tr");
       tr.dataset.id = r.id;
@@ -69,10 +72,14 @@
         <td class="mono">${r.id ?? "—"}</td>
         <td>${r.fecha ?? "—"}</td>
         <td style="text-align:right;">${Number(r.items || 0)}</td>
-        <td><span class="status-badge ${statusClass(r.estado)}">${r.estado ?? "—"}</span></td>
+        <td><span class="status-badge ${statusClass(r.estado)}">${
+        r.estado ?? "—"
+      }</span></td>
         <td class="col-cots" style="text-align:center;">${cotTxt}</td>
         <td style="text-align:center;">
-          <input type="checkbox" class="chk-evaluar" aria-label="Evaluar ${r.id ?? ""}">
+          <input type="checkbox" class="chk-evaluar" aria-label="Evaluar ${
+            r.id ?? ""
+          }">
         </td>
       `;
       tb.appendChild(tr);
@@ -136,14 +143,15 @@
   /** Escaneo concurrente limitado */
   async function lazyScanAll(list, maxConcurrent = 3) {
     if (!Array.isArray(list) || list.length === 0) return;
-    const queue = list.map(r => String(r.id)).filter(Boolean);
+    const queue = list.map((r) => String(r.id)).filter(Boolean);
     let running = 0;
     async function runNext() {
       if (queue.length === 0) return;
       const id = queue.shift();
       running++;
-      try { await scanYBadge(id); }
-      finally {
+      try {
+        await scanYBadge(id);
+      } finally {
         running--;
         if (queue.length > 0) runNext();
       }
@@ -161,7 +169,10 @@
       if (!chk) return;
       const row = ev.target.closest("tr.row-req");
       if (!row) return;
-      if (State.loading) { ev.preventDefault(); return; }
+      if (State.loading) {
+        ev.preventDefault();
+        return;
+      }
 
       setTimeout(async () => {
         const isChecked = chk.checked;
@@ -176,10 +187,14 @@
 
   function marcarFilaSeleccionada(rowEl) {
     if (!DOM.tbodyReq) return;
-    DOM.tbodyReq.querySelectorAll("tr").forEach((tr) => tr.classList.remove("selected"));
+    DOM.tbodyReq
+      .querySelectorAll("tr")
+      .forEach((tr) => tr.classList.remove("selected"));
     if (rowEl) rowEl.classList.add("selected");
     const chkActual = rowEl?.querySelector(".chk-evaluar");
-    DOM.tbodyReq.querySelectorAll(".chk-evaluar").forEach((c) => c.checked = (c === chkActual));
+    DOM.tbodyReq
+      .querySelectorAll(".chk-evaluar")
+      .forEach((c) => (c.checked = c === chkActual));
   }
 
   function limpiarSeleccion() {
@@ -187,8 +202,12 @@
     State.evalByProd.clear();
     State.evalResumen = null;
 
-    DOM.tbodyReq?.querySelectorAll("tr").forEach((tr) => tr.classList.remove("selected"));
-    DOM.tbodyReq?.querySelectorAll(".chk-evaluar").forEach((c) => (c.checked = false));
+    DOM.tbodyReq
+      ?.querySelectorAll("tr")
+      .forEach((tr) => tr.classList.remove("selected"));
+    DOM.tbodyReq
+      ?.querySelectorAll(".chk-evaluar")
+      .forEach((c) => (c.checked = false));
 
     if (DOM.tbodyDetalle) DOM.tbodyDetalle.innerHTML = "";
     if (DOM.tbodyGen) DOM.tbodyGen.innerHTML = "";
@@ -196,7 +215,8 @@
     if (DOM.tbodyEval) DOM.tbodyEval.innerHTML = "";
     if (DOM.resumenEvalBox) DOM.resumenEvalBox.textContent = "";
 
-    Utils.showMsg(DOM.msgDetalle, "", "Seleccione un requerimiento para ver los detalles");
+    Utils.showMsg(DOM.msgDetalle, "info", "Seleccione un requerimiento para ver los detalles");
+
     if (DOM.btnGenOC) DOM.btnGenOC.disabled = true;
   }
 
@@ -214,7 +234,10 @@
     try {
       State.loading = true;
       const { fetchJSON, url } = window.API15 || {};
-      if (!fetchJSON || !url) { Utils.showToast("API no disponible (API15)", "error"); return; }
+      if (!fetchJSON || !url) {
+        Utils.showToast("API no disponible (API15)", "error");
+        return;
+      }
 
       // 1) Básicos
       const [rDet, rGen, rRec] = await Promise.all([
@@ -236,10 +259,8 @@
         if (cel) cel.textContent = `🟢 ${cotsEnBD}`;
       }
 
-      // 3) Evaluar siempre
+      // 3) Evaluar siempre Y validar para habilitar botón
       await evaluarYMostrar(id);
-
-      if (DOM.btnGenOC) DOM.btnGenOC.disabled = false;
     } catch (err) {
       console.error(err);
       Utils.showToast("Error cargando información del requerimiento", "error");
@@ -259,8 +280,16 @@
       const row = DOM.tbodyReq?.querySelector(`tr[data-id="${idReq}"]`);
       const cel = row?.querySelector(".col-cots");
       if (cel) {
-        const g = cotsEnBD, y = nuevos.length;
-        cel.textContent = g > 0 ? (y > 0 ? `🟢 ${g} · 🟡 ${y}` : `🟢 ${g}`) : (y > 0 ? `🟡 ${y}` : "⚪ —");
+        const g = cotsEnBD,
+          y = nuevos.length;
+        cel.textContent =
+          g > 0
+            ? y > 0
+              ? `🟢 ${g} · 🟡 ${y}`
+              : `🟢 ${g}`
+            : y > 0
+            ? `🟡 ${y}`
+            : "⚪ —";
       }
 
       if (nuevos.length > 0) {
@@ -268,12 +297,18 @@
           [
             `🟡 Se detectaron ${nuevos.length} archivo(s) Excel nuevo(s):`,
             "",
-            ...nuevos.map((n, i) => `${i + 1}. ${n.file} (${(n.size/1024).toFixed(1)} KB)`),
+            ...nuevos.map(
+              (n, i) => `${i + 1}. ${n.file} (${(n.size / 1024).toFixed(1)} KB)`
+            ),
             "",
-            "¿Deseas importarlos ahora?"
+            "¿Deseas importarlos ahora?",
           ].join("\n")
         );
-        if (ok) await ejecutarImportacionSoloNuevos(idReq, nuevos.map(n => n.hash));
+        if (ok)
+          await ejecutarImportacionSoloNuevos(
+            idReq,
+            nuevos.map((n) => n.hash)
+          );
       }
     } catch (e) {
       console.error(e);
@@ -283,7 +318,11 @@
 
   async function ejecutarImportacionSoloNuevos(idReq, hashesNuevos = []) {
     const { fetchJSON, url } = window.API15 || {};
-    if (!url?.importExcelReq) return Utils.showToast("No está configurado API15.url.importExcelReq", "error");
+    if (!url?.importExcelReq)
+      return Utils.showToast(
+        "No está configurado API15.url.importExcelReq",
+        "error"
+      );
 
     const r = await fetchJSON(url.importExcelReq, {
       method: "POST",
@@ -293,7 +332,11 @@
 
     if (r?.ok) {
       const tipo = (r.errores?.length || 0) > 0 ? "warning" : "success";
-      const msg = r.message ?? `Importados: ${r.importados?.length || 0} · Omitidos: ${r.omitidos?.length || 0} · Errores: ${r.errores?.length || 0}`;
+      const msg =
+        r.message ??
+        `Importados: ${r.importados?.length || 0} · Omitidos: ${
+          r.omitidos?.length || 0
+        } · Errores: ${r.errores?.length || 0}`;
       Utils.showToast(msg, tipo);
       await cargarCotsRecibidas(idReq);
       await evaluarYMostrar(idReq);
@@ -317,7 +360,7 @@
   }
 
   // =======================================================
-  // Evaluación (preview) + render
+  // Evaluación (preview) + render + VALIDACIÓN
   // =======================================================
   async function evaluarYMostrar(idReq) {
     const { fetchJSON, url } = window.API15 || {};
@@ -333,19 +376,40 @@
       if (!r?.ok) {
         Utils.showToast(r?.error || "No fue posible evaluar", "error");
         renderEvaluacion([], null);
+        if (DOM.btnGenOC) DOM.btnGenOC.disabled = true;
         return;
       }
+
       renderEvaluacion(r.productos || [], r.resumen || null);
+
+      // 🔥 NUEVO: Validar y habilitar botón si window.OC15 está disponible
+      if (window.OC15?.validarEvaluacion) {
+        const esValido = window.OC15.validarEvaluacion(r);
+        if (DOM.btnGenOC) {
+          DOM.btnGenOC.disabled = !esValido;
+        }
+        console.log("[CUS15] Auto-evaluación:", {
+          productos: r.productos?.length || 0,
+          esValido,
+          botonHabilitado: !DOM.btnGenOC?.disabled,
+        });
+      } else {
+        console.warn("[CUS15] window.OC15.validarEvaluacion no disponible");
+      }
     } catch (e) {
       console.error("[CUS15] Error en evaluarYMostrar:", e);
       Utils.showToast("Error al evaluar cotizaciones", "error");
       renderEvaluacion([], null);
+      if (DOM.btnGenOC) DOM.btnGenOC.disabled = true;
     }
   }
 
   function sumaAsignada(producto) {
     if (!producto || !Array.isArray(producto.asignacion)) return 0;
-    return producto.asignacion.reduce((sum, a) => sum + Number(a.cantidad || 0), 0);
+    return producto.asignacion.reduce(
+      (sum, a) => sum + Number(a.cantidad || 0),
+      0
+    );
   }
 
   function renderEvaluacion(productos, resumen) {
@@ -357,7 +421,8 @@
 
     if (!Array.isArray(productos) || productos.length === 0) {
       tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Sin evaluación disponible</td></tr>`;
-      if (DOM.resumenEvalBox) DOM.resumenEvalBox.innerHTML = `<b>Resumen:</b> Sin datos de evaluación`;
+      if (DOM.resumenEvalBox)
+        DOM.resumenEvalBox.innerHTML = `<b>Resumen:</b> Sin datos de evaluación`;
       return;
     }
 
@@ -370,8 +435,12 @@
       const asignText = formatAsignaciones(p.asignacion || []);
 
       let estadoBadge = "";
-      if (falt > 0) estadoBadge = `<span class="status-badge detected">Falta ${fmtCant(falt)}</span>`;
-      else if ((p.asignacion || []).length > 0) estadoBadge = `<span class="status-badge ready">Completo</span>`;
+      if (falt > 0)
+        estadoBadge = `<span class="status-badge detected">Falta ${fmtCant(
+          falt
+        )}</span>`;
+      else if ((p.asignacion || []).length > 0)
+        estadoBadge = `<span class="status-badge ready">Completo</span>`;
       else estadoBadge = `<span class="status-badge none">Sin ofertas</span>`;
 
       const tr = document.createElement("tr");
@@ -384,7 +453,9 @@
         <td style="text-align:right;">S/ ${fmtMoney(p.costoTotal)}</td>
         <td>
           ${estadoBadge}
-          <button class="btn btn-ghost btn-sm btn-detalle" data-id-prod="${p.Id_Producto}" title="Ver comparación detallada">🔍 Detalle</button>
+          <button class="btn btn-ghost btn-sm btn-detalle" data-id-prod="${
+            p.Id_Producto
+          }" title="Ver comparación detallada">🔍 Detalle</button>
         </td>
       `;
       tb.appendChild(tr);
@@ -403,15 +474,23 @@
       const prods = resumen?.productosEvaluados ?? (productos?.length || 0);
       const total = resumen?.costoTotal ?? sumCostoTotal(productos);
       DOM.resumenEvalBox.innerHTML = `
-        <b>Resumen:</b> ${prods} producto${prods !== 1 ? "s" : ""} evaluado${prods !== 1 ? "s" : ""} · 
+        <b>Resumen:</b> ${prods} producto${prods !== 1 ? "s" : ""} evaluado${
+        prods !== 1 ? "s" : ""
+      } · 
         ${provs} proveedor${provs !== 1 ? "es" : ""} · 
         Costo total: <b>S/ ${fmtMoney(total)}</b>
       `;
     }
   }
 
-  function fmtCant(n) { const x = Number(n || 0); return (Math.round(x * 100) / 100).toString().replace(/\.00$/, ""); }
-  function fmtMoney(n) { const x = Number(n || 0); return x.toFixed(2); }
+  function fmtCant(n) {
+    const x = Number(n || 0);
+    return (Math.round(x * 100) / 100).toString().replace(/\.00$/, "");
+  }
+  function fmtMoney(n) {
+    const x = Number(n || 0);
+    return x.toFixed(2);
+  }
 
   function formatAsignaciones(asignacion = []) {
     if (!Array.isArray(asignacion) || asignacion.length === 0) return "—";
@@ -432,13 +511,17 @@
   function countDistinctProviders(productos) {
     const s = new Set();
     for (const p of productos || []) {
-      for (const a of p.asignacion || []) s.add(a.ruc || a.proveedor || JSON.stringify(a));
+      for (const a of p.asignacion || [])
+        s.add(a.ruc || a.proveedor || JSON.stringify(a));
     }
     return s.size;
   }
 
   function sumCostoTotal(productos) {
-    return (productos || []).reduce((acc, p) => acc + (Number(p.costoTotal) || 0), 0);
+    return (productos || []).reduce(
+      (acc, p) => acc + (Number(p.costoTotal) || 0),
+      0
+    );
   }
 
   // =======================================================
@@ -446,18 +529,31 @@
   // =======================================================
   function openComparadorForProduct(idProd) {
     const p = State.evalByProd.get(Number(idProd));
-    if (!p) return Utils.showToast("No hay datos de evaluación para este producto.", "error");
+    if (!p)
+      return Utils.showToast(
+        "No hay datos de evaluación para este producto.",
+        "error"
+      );
 
-    if (DOM.cmpProd) DOM.cmpProd.textContent = `${p.Nombre ?? `Producto ${idProd}`}`;
+    if (DOM.cmpProd)
+      DOM.cmpProd.textContent = `${p.Nombre ?? `Producto ${idProd}`}`;
     if (DOM.cmpCant) {
       const aprob = Number(p.CantidadAprobada || 0);
-      DOM.cmpCant.textContent = `Cantidad aprobada: ${fmtCant(aprob)} ${p.UnidadMedida ?? ""}`;
+      DOM.cmpCant.textContent = `Cantidad aprobada: ${fmtCant(aprob)} ${
+        p.UnidadMedida ?? ""
+      }`;
     }
 
     const provs = normalizeProviders(p);
-    if (provs.length === 0) return Utils.showToast("No hay ofertas para comparar.", "warning");
+    if (provs.length === 0)
+      return Utils.showToast("No hay ofertas para comparar.", "warning");
 
-    provs.sort((a, b) => a.precio - b.precio || b.stock - a.stock || String(a.ruc).localeCompare(String(b.ruc)));
+    provs.sort(
+      (a, b) =>
+        a.precio - b.precio ||
+        b.stock - a.stock ||
+        String(a.ruc).localeCompare(String(b.ruc))
+    );
     buildDynamicComparisonTable(provs, p);
 
     if (DOM.modalCmp?.showModal) DOM.modalCmp.showModal();
@@ -465,16 +561,30 @@
 
     DOM.modalCmp?.querySelector("[data-close]")?.addEventListener(
       "click",
-      () => { if (DOM.modalCmp.close) DOM.modalCmp.close(); else DOM.modalCmp.style.display = "none"; },
+      () => {
+        if (DOM.modalCmp.close) DOM.modalCmp.close();
+        else DOM.modalCmp.style.display = "none";
+      },
       { once: true }
     );
 
     function normalizeProviders(prod) {
       const asignMap = {};
-      for (const a of prod.asignacion || []) asignMap[a.ruc] = { cantidad: Number(a.cantidad ?? 0), costo: Number(a.costo ?? 0) };
+      for (const a of prod.asignacion || [])
+        asignMap[a.ruc] = {
+          cantidad: Number(a.cantidad ?? 0),
+          costo: Number(a.costo ?? 0),
+        };
       return (prod.rankingPrecio || []).map((x) => {
         const a = asignMap[x.ruc] ?? { cantidad: 0, costo: 0 };
-        return { ruc: String(x.ruc), nombre: x.proveedor ?? x.nombre ?? null, precio: Number(x.precio ?? 0), stock: Number(x.stock ?? 0), asignado: Number(a.cantidad ?? 0), costo: Number(a.costo ?? 0) };
+        return {
+          ruc: String(x.ruc),
+          nombre: x.proveedor ?? x.nombre ?? null,
+          precio: Number(x.precio ?? 0),
+          stock: Number(x.stock ?? 0),
+          asignado: Number(a.cantidad ?? 0),
+          costo: Number(a.costo ?? 0),
+        };
       });
     }
 
@@ -482,27 +592,75 @@
       const table = DOM.tblCmp;
       if (!table) return;
       const thead = table.querySelector("thead");
-      const tbody = table.querySelector("tbody#tbodyComparador") || table.querySelector("tbody");
+      const tbody =
+        table.querySelector("tbody#tbodyComparador") ||
+        table.querySelector("tbody");
       if (!thead || !tbody) return;
 
-      const thProvCols = provs.map(pv => `<th>${pv.nombre ? `${pv.nombre} (${pv.ruc})` : pv.ruc}</th>`).join("");
+      const thProvCols = provs
+        .map(
+          (pv) => `<th>${pv.nombre ? `${pv.nombre} (${pv.ruc})` : pv.ruc}</th>`
+        )
+        .join("");
       thead.innerHTML = `<tr><th>Criterio / Proveedor</th>${thProvCols}<th>Mejor</th></tr>`;
 
       const bestPrecio = provs[0];
       const bestStock = provs.slice().sort((a, b) => b.stock - a.stock)[0];
 
       const rows = [];
-      rows.push(renderRow("Precio unitario", provs.map(pv => `S/ ${fmtMoney(pv.precio)}`), (bestPrecio?.nombre ? `${bestPrecio.nombre} (${bestPrecio.ruc})` : bestPrecio?.ruc) || "—"));
-      rows.push(renderRow("Stock disponible", provs.map(pv => fmtCant(pv.stock)), (bestStock?.nombre ? `${bestStock.nombre} (${bestStock.ruc})` : bestStock?.ruc) || "—"));
-      rows.push(renderRow("Orden por precio", provs.map((_, i) => `${i + 1}°`), "—"));
-      rows.push(renderRow("Cantidad asignada", provs.map(pv => fmtCant(pv.asignado)), "—"));
-      rows.push(renderRow("Costo parcial", provs.map(pv => `S/ ${fmtMoney(pv.costo)}`), "—"));
-      rows.push(`<tr><td><b>Costo total del producto</b></td>${provs.map(() => `<td>—</td>`).join("")}<td><b>S/ ${fmtMoney(Number(prod.costoTotal || 0))}</b></td></tr>`);
+      rows.push(
+        renderRow(
+          "Precio unitario",
+          provs.map((pv) => `S/ ${fmtMoney(pv.precio)}`),
+          (bestPrecio?.nombre
+            ? `${bestPrecio.nombre} (${bestPrecio.ruc})`
+            : bestPrecio?.ruc) || "—"
+        )
+      );
+      rows.push(
+        renderRow(
+          "Stock disponible",
+          provs.map((pv) => fmtCant(pv.stock)),
+          (bestStock?.nombre
+            ? `${bestStock.nombre} (${bestStock.ruc})`
+            : bestStock?.ruc) || "—"
+        )
+      );
+      rows.push(
+        renderRow(
+          "Orden por precio",
+          provs.map((_, i) => `${i + 1}°`),
+          "—"
+        )
+      );
+      rows.push(
+        renderRow(
+          "Cantidad asignada",
+          provs.map((pv) => fmtCant(pv.asignado)),
+          "—"
+        )
+      );
+      rows.push(
+        renderRow(
+          "Costo parcial",
+          provs.map((pv) => `S/ ${fmtMoney(pv.costo)}`),
+          "—"
+        )
+      );
+      rows.push(
+        `<tr><td><b>Costo total del producto</b></td>${provs
+          .map(() => `<td>—</td>`)
+          .join("")}<td><b>S/ ${fmtMoney(
+          Number(prod.costoTotal || 0)
+        )}</b></td></tr>`
+      );
       tbody.innerHTML = rows.join("");
 
       function renderRow(label, valuesPerProv, bestLabel) {
-        const tds = valuesPerProv.map(v => `<td>${v ?? "—"}</td>`).join("");
-        return `<tr><td><b>${label}</b></td>${tds}<td>${bestLabel ?? "—"}</td></tr>`;
+        const tds = valuesPerProv.map((v) => `<td>${v ?? "—"}</td>`).join("");
+        return `<tr><td><b>${label}</b></td>${tds}<td>${
+          bestLabel ?? "—"
+        }</td></tr>`;
       }
     }
   }
@@ -511,7 +669,8 @@
   // Renders simples
   // =======================================================
   function renderDetalle(items, reqMeta) {
-    const tb = DOM.tbodyDetalle; if (!tb) return;
+    const tb = DOM.tbodyDetalle;
+    if (!tb) return;
     tb.innerHTML = "";
 
     if (!Array.isArray(items) || items.length === 0) {
@@ -530,12 +689,16 @@
       }
     }
 
-    const id = (reqMeta && (reqMeta.id || reqMeta.Id_Requerimiento)) || State.selectedId || "—";
+    const id =
+      (reqMeta && (reqMeta.id || reqMeta.Id_ReqEvaluacion)) ||
+      State.selectedId ||
+      "—";
     Utils.showMsg(DOM.msgDetalle, "ok", `REQ seleccionado: ${id}`);
   }
 
   function renderCotsGeneradas(rows) {
-    const tb = DOM.tbodyGen; if (!tb) return;
+    const tb = DOM.tbodyGen;
+    if (!tb) return;
     tb.innerHTML = "";
     if (!Array.isArray(rows) || rows.length === 0) {
       tb.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b;">Sin solicitudes de cotización generadas</td></tr>`;
@@ -555,10 +718,11 @@
   }
 
   function renderCotsRecibidas(rows) {
-    const tb = DOM.tbodyRec; if (!tb) return;
+    const tb = DOM.tbodyRec;
+    if (!tb) return;
     tb.innerHTML = "";
     if (!Array.isArray(rows) || rows.length === 0) {
-      tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Sin cotizaciones recibidas</td></tr>`;
+      tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">No existen cotizaciones recibidas para este requerimiento de compra</td></tr>`;
       return;
     }
     for (const r of rows) {
@@ -618,7 +782,10 @@
       State.loading = true;
       const r = await fetchJSON(url.requerimientos, { method: "GET" });
       if (!r || !r.ok) {
-        Utils.showToast(r?.error || "No se pudo obtener requerimientos", "error");
+        Utils.showToast(
+          r?.error || "No se pudo obtener requerimientos",
+          "error"
+        );
         renderRequerimientos([]);
         return;
       }
@@ -632,7 +799,9 @@
     }
   }
 
-  function init() { cargarListaRequerimientos(); }
+  function init() {
+    cargarListaRequerimientos();
+  }
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública del módulo
@@ -640,5 +809,6 @@
     reload: cargarListaRequerimientos,
     seleccionar: seleccionarRequerimiento,
     getSelected: () => State.selectedId,
+    clear: limpiarSeleccion,
   };
 })();

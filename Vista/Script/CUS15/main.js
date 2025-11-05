@@ -23,26 +23,6 @@
     btn.addEventListener("click", () => modal.showModal());
   }
 
-  /* ========= Botón Generar OC ========= */
-  function wireBtnGenerarOC() {
-    const btn = $("#btnGenerarOC");
-    const modal = $("#modalOrdenes");
-    if (!btn || !modal) return;
-    btn.addEventListener("click", () => modal.showModal());
-  }
-
-  /* ========= Botón Confirmar OC ========= */
-  function wireBtnConfirmarOC() {
-    const btn = $("#btnConfirmarOC");
-    const modal = $("#modalOrdenes");
-    if (!btn || !modal) return;
-
-    btn.addEventListener("click", () => {
-      modal.close();
-      window.Utils15?.showToast("✓ Órdenes de compra generadas y enviadas correctamente", "ok");
-    });
-  }
-
   /* ========= Cierre de modales ========= */
   function wireCerrarModales() {
     document.querySelectorAll("[data-close]").forEach((btn) => {
@@ -54,8 +34,8 @@
   function init() {
     wireBtnCancelar();
     wireBtnComparador();
-    wireBtnGenerarOC();
-    wireBtnConfirmarOC();
+    // wireBtnGenerarOC();     // ← COMENTAR O ELIMINAR
+    // wireBtnConfirmarOC();   // ← COMENTAR O ELIMINAR
     wireCerrarModales();
   }
 

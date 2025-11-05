@@ -19,25 +19,49 @@
 
   // --- Mensajes con autocierre ---
   const _msgTimers = new WeakMap();
-  function showMsg(msgEl, type = "info", text = "", { autoclear = 0 } = {}) {
-    if (!msgEl) return;
-    const old = _msgTimers.get(msgEl);
-    if (old) clearTimeout(old);
-    msgEl.textContent = text || "";
-    msgEl.classList.remove("ok", "error", "show");
+function showMsg(msgEl, type = "info", text = "", { autoclear = 0 } = {}) {
+  if (!msgEl) return;
+  
+  // 🐛 DEBUG temporal
+  console.log("[showMsg]", { type, text: text?.substring(0, 30) });
+  
+  const old = _msgTimers.get(msgEl);
+  if (old) clearTimeout(old);
+  
+  msgEl.textContent = text || "";
+  
+  // ✅ Remover solo las clases de estado
+  const classesToRemove = ["ok", "error", "show"].filter(c => c); // filtrar vacíos
+  classesToRemove.forEach(c => msgEl.classList.remove(c));
+  
+  // ✅ Asegurar clase base
+  if (!msgEl.classList.contains("msg")) {
     msgEl.classList.add("msg");
-    if (text) {
-      msgEl.classList.add(type === "error" ? "error" : type === "ok" ? "ok" : "");
-      msgEl.classList.add("show");
-      if (autoclear > 0) {
-        const t = setTimeout(() => {
-          msgEl.classList.remove("show", "ok", "error");
-          msgEl.textContent = "";
-        }, autoclear);
-        _msgTimers.set(msgEl, t);
-      }
+  }
+
+  if (text) {
+    const normalizedType = String(type || "info").trim().toLowerCase();
+    
+    let cls = null;
+    if (normalizedType === "error") cls = "error";
+    else if (normalizedType === "ok") cls = "ok";
+
+    if (cls && cls.length > 0 && !msgEl.classList.contains(cls)) {
+      msgEl.classList.add(cls);
+    }
+    
+    msgEl.classList.add("show");
+
+    if (autoclear > 0) {
+      const t = setTimeout(() => {
+        ["show", "ok", "error"].forEach(c => msgEl.classList.remove(c));
+        msgEl.textContent = "";
+      }, autoclear);
+      _msgTimers.set(msgEl, t);
     }
   }
+}
+
 
   // ===== Modal "Procesando" (simple) =====
 const Processing = (() => {

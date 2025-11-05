@@ -143,7 +143,7 @@ try {
 
       // Cuántas cotizaciones hay en BD (para pintar 🟢)
       $cn = (new Conexion())->conecta();
-      $st = mysqli_prepare($cn, "SELECT COUNT(*) FROM t86Cotizacion WHERE Id_Requerimiento=?");
+      $st = mysqli_prepare($cn, "SELECT COUNT(*) FROM t86Cotizacion WHERE Id_ReqEvaluacion=?");
       $idReqInt = (int)$idReq;
       mysqli_stmt_bind_param($st, "i", $idReqInt);
       mysqli_stmt_execute($st);
@@ -224,15 +224,6 @@ try {
       break;
 
     /* ==========================================================
-   7. Generar Órdenes de Compra (transacción)
-========================================================== */
-    /* ==========================================================
-   7. Generar Órdenes de Compra (transacción)
-========================================================== */
-/* ==========================================================
-   7. Generar Órdenes de Compra (transacción)
-========================================================== */
-/* ==========================================================
    7. Generar Órdenes de Compra (transacción)
 ========================================================== */
 case 'generar-ocs':
@@ -357,7 +348,7 @@ case 'generar-ocs':
   }
 
   // ------------- 4) Actualizar estado del requerimiento -------------
-  (new Requerimiento())->actualizarEstado((string)$idReq, 'OC Generada');
+  (new Requerimiento())->actualizarEstado((string)$idReq, 'Cerrado');
 
   ok(['ok' => true, 'ordenes' => $ocs]);
   break;
@@ -401,7 +392,7 @@ case 'generar-ocs':
       $ocM = new OrdenCompra();
 
       // 1) Traer todas las OCs del requerimiento (con datos del proveedor)
-      $ocs = $ocM->listarPorRequerimientoConContacto($idReq);
+      $ocs = $ocM->listarPorEvaluacionConContacto($idReq);
       if (empty($ocs)) ok(['ok' => true, 'total' => 0, 'enviados' => 0, 'omitidos' => 0, 'errores' => []]);
 
       $result = [

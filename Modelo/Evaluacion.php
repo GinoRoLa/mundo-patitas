@@ -12,7 +12,7 @@ final class Evaluacion
 
   /**
    * Ejecuta evaluación greedy optimizada: menor precio primero, luego completa con stock.
-   * ✅ ACTUALIZADO: usa CantidadAprobada de t408DetalleEvaluacion
+   * ✅ Usa Cantidad aprobada desde t408DetalleReqEvaluado (última evaluación Aprobado/Parcial)
    */
   public function evaluarRequerimientoGreedy($idReq): array
   {
@@ -21,7 +21,7 @@ final class Evaluacion
       return ['ok' => false, 'error' => 'Id de requerimiento inválido'];
     }
 
-    // 1) Traer detalle del requerimiento APROBADO (desde última evaluación)
+    // 1) Traer detalle del requerimiento APROBADO (desde última evaluación t407/t408)
     $detReq = $this->fetchDetalleRequerimiento($idReq);
     if (empty($detReq)) {
       return ['ok' => false, 'error' => 'El requerimiento no tiene detalle aprobado para evaluar'];
@@ -47,10 +47,10 @@ final class Evaluacion
 
     // 3) Para cada producto aprobado, armar ranking y asignación greedy
     foreach ($detReq as $p) {
-      $idProd   = (int)$p['Id_Producto'];
-      $cantAprobada = (float)$p['CantidadAprobada']; // ← CAMBIO: ahora es CantidadAprobada
-      $nombre   = $p['Nombre'] ?? '';
-      $um       = $p['UnidadMedida'] ?? 'UND';
+      $idProd        = (int)$p['Id_Producto'];
+      $cantAprobada  = (float)$p['CantidadAprobada'];
+      $nombre        = $p['Nombre'] ?? '';
+      $um            = $p['UnidadMedida'] ?? 'UND';
 
       $ofers = $offersByProd[$idProd] ?? [];
 
@@ -102,7 +102,7 @@ final class Evaluacion
         'Id_Producto'      => $idProd,
         'Nombre'           => $nombre,
         'UnidadMedida'     => $um,
-        'CantidadAprobada' => $cantAprobada, // ← CAMBIO: nombre coherente con BD
+        'CantidadAprobada' => $cantAprobada,
         'rankingPrecio'    => $rankingPrecio,
         'asignacion'       => $asignacion,
         'costoTotal'       => round($costoTotal, 2),
@@ -127,7 +127,7 @@ final class Evaluacion
   }
 
   /**
-   * Crea estructura de adjudicación para OrdenCompra
+   * Crea estructura de adjudicación por proveedor (compatible con lo que ya usas)
    */
   public function prepararAdjudicacion(array $evaluacion): array
   {
@@ -137,7 +137,9 @@ final class Evaluacion
       $idProd = (int)$p['Id_Producto'];
       foreach ($p['asignacion'] as $a) {
         $ruc = $a['ruc'];
-        if (!isset($adjud[$ruc])) $adjud[$ruc] = [];
+        if (!isset($adjud[$ruc])) {
+          $adjud[$ruc] = [];
+        }
         $adjud[$ruc][] = [
           'idProducto'     => $idProd,
           'cantidad'       => (float)$a['cantidad'],
@@ -153,64 +155,53 @@ final class Evaluacion
   /* ==================== Helpers privados ==================== */
 
   /**
-   * ✅ ACTUALIZADO: Obtiene productos APROBADOS desde la última evaluación (t408)
+   * ✅ Usa t407RequerimientoEvaluado + t408DetalleReqEvaluado
+   *    Trae SOLO los productos de la ÚLTIMA evaluación Aprobado/Parcial del requerimiento.
+   *    Devuelve: [ { Id_Producto, Nombre, UnidadMedida, CantidadAprobada }, ... ]
    */
-  private function fetchDetalleRequerimiento(int $idReq): array
-  {
-    $sql = "
-      SELECT 
-        d.Id_Detalle,
-        d.Id_Producto,
-        p.NombreProducto AS Nombre,
-        u.Descripcion AS UnidadMedida,
-        ev.CantidadAprobada
-      FROM t15DetalleRequerimientoCompra d
-      JOIN t18CatalogoProducto p 
-        ON p.Id_Producto = d.Id_Producto
-      LEFT JOIN t34UnidadMedida u 
-        ON u.Id_UnidadMedida = p.t34UnidadMedida_Id_UnidadMedida
-      /* === JOIN con la ÚLTIMA evaluación === */
-      INNER JOIN t408DetalleEvaluacion ev
-        ON ev.Id_DetalleRequerimiento = d.Id_Detalle
-       AND ev.Id_Evaluacion = (
-             SELECT e2.Id_Evaluacion
-             FROM t407EvaluacionRequerimiento e2
-             WHERE e2.Id_Requerimiento = ?
-               AND e2.ResultadoEvaluacion IN ('Aprobado','Parcialmente Aprobado')
-             ORDER BY e2.FechaEvaluacion DESC, e2.Id_Evaluacion DESC
-             LIMIT 1
-           )
-      WHERE d.Id_Requerimiento = ?
-      ORDER BY p.NombreProducto
-    ";
+  private function fetchDetalleRequerimiento(int $idEval): array
+{
+  $sql = "
+    SELECT 
+      de.Id_DetalleEvaluacion AS Id_Detalle,
+      de.Id_Producto,
+      p.NombreProducto        AS Nombre,
+      u.Descripcion           AS UnidadMedida,
+      de.Cantidad             AS CantidadAprobada
+    FROM t408DetalleReqEvaluado de
+    INNER JOIN t407RequerimientoEvaluado ev
+      ON ev.Id_ReqEvaluacion = de.Id_ReqEvaluacion
+    INNER JOIN t18CatalogoProducto p 
+      ON p.Id_Producto = de.Id_Producto
+    LEFT JOIN t34UnidadMedida u 
+      ON u.Id_UnidadMedida = p.t34UnidadMedida_Id_UnidadMedida
+    WHERE de.Id_ReqEvaluacion = ?
+    ORDER BY p.NombreProducto
+  ";
 
-    $st = mysqli_prepare($this->cn, $sql);
-    if (!$st) {
-      error_log("[Evaluacion] Error preparando fetchDetalleRequerimiento: " . mysqli_error($this->cn));
-      return [];
-    }
+  $st = mysqli_prepare($this->cn, $sql);
+  mysqli_stmt_bind_param($st, "i", $idEval);
+  mysqli_stmt_execute($st);
+  $rs = mysqli_stmt_get_result($st);
 
-    mysqli_stmt_bind_param($st, "ii", $idReq, $idReq);
-    mysqli_stmt_execute($st);
-    $rs = mysqli_stmt_get_result($st);
-
-    $out = [];
-    while ($r = mysqli_fetch_assoc($rs)) {
-      $out[] = [
-        'Id_Detalle'       => (int)$r['Id_Detalle'],
-        'Id_Producto'      => (int)$r['Id_Producto'],
-        'Nombre'           => $r['Nombre'],
-        'UnidadMedida'     => $r['UnidadMedida'] ?? 'UND',
-        'CantidadAprobada' => (float)$r['CantidadAprobada'],
-      ];
-    }
-
-    mysqli_stmt_close($st);
-    return $out;
+  $out = [];
+  while ($r = mysqli_fetch_assoc($rs)) {
+    $out[] = [
+      'Id_Detalle'       => (int)$r['Id_Detalle'],
+      'Id_Producto'      => (int)$r['Id_Producto'],
+      'Nombre'           => $r['Nombre'],
+      'UnidadMedida'     => $r['UnidadMedida'] ?? 'UND',
+      'CantidadAprobada' => (float)$r['CantidadAprobada'],
+    ];
   }
+  mysqli_stmt_close($st);
+  return $out;
+}
+
 
   /**
    * Devuelve TODAS las ofertas en t86/t87 con estado 'Recibida'
+   *  - Compatible con lo que ya consumías
    */
   private function fetchOfertasRecibidas(int $idReq): array
   {
@@ -224,7 +215,7 @@ final class Evaluacion
             FROM t86Cotizacion c
             JOIN t87DetalleCotizacion d ON d.Id_Cotizacion = c.Id_Cotizacion
             LEFT JOIN t17CatalogoProveedor pr ON pr.Id_NumRuc = c.RUC_Proveedor
-            WHERE c.Id_Requerimiento = ?
+            WHERE c.Id_ReqEvaluacion = ?
               AND c.Estado = 'Recibida'";
 
     $st = mysqli_prepare($this->cn, $sql);
@@ -238,11 +229,13 @@ final class Evaluacion
     $rs = mysqli_stmt_get_result($st);
 
     $out = [];
-    while ($r = mysqli_fetch_assoc($rs)) {
-      $out[] = $r;
+    if ($rs) {
+      while ($r = mysqli_fetch_assoc($rs)) {
+        $out[] = $r;
+      }
+      mysqli_stmt_close($st);
     }
 
-    mysqli_stmt_close($st);
     return $out;
   }
 }

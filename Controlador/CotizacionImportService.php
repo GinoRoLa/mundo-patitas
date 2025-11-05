@@ -87,7 +87,7 @@ public function scanArchivos(string $idReq, bool $withDebug = false): array
 private function getImportadosByReq(int $idReq): array
 {
   $q = "SELECT FileHash AS hash, FileName AS name FROM t88ArchivoCotizacion
-        WHERE Id_Requerimiento = ? AND ImportStatus IN ('imported','ignored')";
+        WHERE Id_ReqEvaluacion = ? AND ImportStatus IN ('imported','ignored')";
   $st = mysqli_prepare($this->cn, $q);
   mysqli_stmt_bind_param($st, "i", $idReq);
   mysqli_stmt_execute($st);
@@ -257,7 +257,7 @@ private function getImportadosByReq(int $idReq): array
 
     // Cabecera
     $sqlCab = "INSERT INTO t86Cotizacion
-              (Id_Requerimiento, RUC_Proveedor, FechaEmision, FechaRecepcion, Observaciones, SubTotal, IGV, Total, Estado)
+              (Id_ReqEvaluacion, RUC_Proveedor, FechaEmision, FechaRecepcion, Observaciones, SubTotal, IGV, Total, Estado)
                VALUES (?, ?, ?, ?, ?, 0, 0, 0, 'Recibida')";
     $sc = mysqli_prepare($this->cn, $sqlCab);
     mysqli_stmt_bind_param($sc, "issss", $idReqInt, $ruc, $fecEmision, $fecRecepcion, $obs);
@@ -306,7 +306,7 @@ private function getImportadosByReq(int $idReq): array
 
       if (!$row) {
         $q88 = "INSERT INTO t88ArchivoCotizacion
-                (Id_Requerimiento,RUC_Proveedor,FileName,FileSize,FileHash,LastModified,ImportStatus,Id_Cotizacion)
+                (Id_ReqEvaluacion,RUC_Proveedor,FileName,FileSize,FileHash,LastModified,ImportStatus,Id_Cotizacion)
                 VALUES (?,?,?,?,? ,?,'imported',?)";
         $s88 = mysqli_prepare($this->cn, $q88);
         mysqli_stmt_bind_param($s88, "isssssi",
@@ -347,7 +347,7 @@ private function getImportadosByReq(int $idReq): array
     if ($hasT88 && $hash) {
       try {
         $q88e = "INSERT INTO t88ArchivoCotizacion
-                 (Id_Requerimiento,RUC_Proveedor,FileName,FileSize,FileHash,LastModified,ImportStatus,ErrorMsg)
+                 (Id_ReqEvaluacion,RUC_Proveedor,FileName,FileSize,FileHash,LastModified,ImportStatus,ErrorMsg)
                  VALUES (?,?,?,?,? ,?,'error',?)";
         $s88e = mysqli_prepare($this->cn, $q88e);
         mysqli_stmt_bind_param($s88e, "issssss",
@@ -364,15 +364,15 @@ private function getImportadosByReq(int $idReq): array
 
   // ===== BD helpers =====
 
-  /** Asegura que la FK Id_Requerimiento sea de tipo INT o VARCHAR (flexible en tu evolución de esquema) */
+  /** Asegura que la FK Id_ReqEvaluacion sea de tipo INT o VARCHAR (flexible en tu evolución de esquema) */
   private function verificarCompatibilidadFK(): void
   {
-    $rs = mysqli_query($this->cn, "SHOW COLUMNS FROM t86Cotizacion LIKE 'Id_Requerimiento'");
+    $rs = mysqli_query($this->cn, "SHOW COLUMNS FROM t86Cotizacion LIKE 'Id_ReqEvaluacion'");
     $row = $rs ? mysqli_fetch_assoc($rs) : null;
-    if (!$row) throw new Exception("Columna Id_Requerimiento no existe en t86Cotizacion");
+    if (!$row) throw new Exception("Columna Id_ReqEvaluacion no existe en t86Cotizacion");
     $type = strtolower($row['Type'] ?? '');
     if (stripos($type, 'int') === false && stripos($type, 'varchar') === false) {
-      throw new Exception("t86Cotizacion.Id_Requerimiento debe ser INT o VARCHAR. Tipo actual: {$type}");
+      throw new Exception("t86Cotizacion.Id_ReqEvaluacion debe ser INT o VARCHAR. Tipo actual: {$type}");
     }
   }
 
@@ -380,7 +380,7 @@ private function getImportadosByReq(int $idReq): array
   private function buscarCotizacion(int $idReq, string $ruc, string $fecEmision): ?int
   {
     $sql = "SELECT Id_Cotizacion FROM t86Cotizacion
-            WHERE Id_Requerimiento=? AND RUC_Proveedor=? AND FechaEmision=?";
+            WHERE Id_ReqEvaluacion=? AND RUC_Proveedor=? AND FechaEmision=?";
     $st = mysqli_prepare($this->cn, $sql);
     mysqli_stmt_bind_param($st, "iss", $idReq, $ruc, $fecEmision);
     mysqli_stmt_execute($st);
@@ -419,10 +419,10 @@ private function getImportadosByReq(int $idReq): array
     return $ok;
   }
 
-  /** Devuelve true si ya existe cualquier cotización para (Id_Requerimiento, RUC_Proveedor) */
+  /** Devuelve true si ya existe cualquier cotización para (Id_ReqEvaluacion, RUC_Proveedor) */
   private function existeCotizacionReqRuc(int $idReq, string $ruc): bool
   {
-    $st = mysqli_prepare($this->cn, "SELECT 1 FROM t86Cotizacion WHERE Id_Requerimiento=? AND RUC_Proveedor=? LIMIT 1");
+    $st = mysqli_prepare($this->cn, "SELECT 1 FROM t86Cotizacion WHERE Id_ReqEvaluacion=? AND RUC_Proveedor=? LIMIT 1");
     mysqli_stmt_bind_param($st, "is", $idReq, $ruc);
     mysqli_stmt_execute($st);
     $rs = mysqli_stmt_get_result($st);

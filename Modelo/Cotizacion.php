@@ -15,7 +15,7 @@ final class Cotizacion
   {
     $sql = "SELECT 
               c.Id_Cotizacion,
-              c.Id_Requerimiento,
+              c.Id_ReqEvaluacion,
               c.RUC_Proveedor,
               c.FechaEmision,
               c.FechaRecepcion,
@@ -28,7 +28,7 @@ final class Cotizacion
               p.DireccionProv  AS Direccion
             FROM t86Cotizacion c
             JOIN t17CatalogoProveedor p ON p.Id_NumRuc = c.RUC_Proveedor
-            WHERE c.Id_Requerimiento = ? AND c.Estado = ?
+            WHERE c.Id_ReqEvaluacion = ? AND c.Estado = ?
             ORDER BY c.FechaRecepcion ASC, c.Id_Cotizacion ASC";
 
     $st = mysqli_prepare($this->cn, $sql);
@@ -40,7 +40,7 @@ final class Cotizacion
     while ($r = mysqli_fetch_assoc($rs)) {
       $rows[] = [
         'Id_Cotizacion'   => (int)$r['Id_Cotizacion'],
-        'Id_Requerimiento'=> $r['Id_Requerimiento'],
+        'Id_ReqEvaluacion'=> $r['Id_ReqEvaluacion'],
         'RUC_Proveedor'   => $r['RUC_Proveedor'],
         'RazonSocial'     => $r['RazonSocial'],
         'Direccion'       => $r['Direccion'],
@@ -133,7 +133,7 @@ final class Cotizacion
               d.PrecioUnitario   AS precio
             FROM t86Cotizacion c
             JOIN t87DetalleCotizacion d ON d.Id_Cotizacion = c.Id_Cotizacion
-            WHERE c.Id_Requerimiento = ? 
+            WHERE c.Id_ReqEvaluacion = ? 
               AND c.Estado = 'Recibida'";
 
     $st = mysqli_prepare($this->cn, $sql);

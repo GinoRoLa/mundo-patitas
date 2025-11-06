@@ -75,6 +75,20 @@
                         </div>
                     </div>
 
+                    <!-- Card CUS14 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS14</h5>
+                                <p class="card-text flex-grow-1"> Generar Solicitud de Cotizaciones al Proveedor</p>
+                                <a href="Vista/Page/CUS14_IU014.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Card CUS15 -->
                     <div class="col">
                         <div class="card shadow-sm h-100">

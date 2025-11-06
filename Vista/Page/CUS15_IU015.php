@@ -103,7 +103,7 @@ $fecha = date('Y-m-d');
                   <th>Código</th>
                   <th>RUC</th>
                   <th>Razón Social</th>
-                  <th>Dirección</th>
+                  <th>Correo</th>
                   <th>Fecha Emisión</th>
                   <th>Estado</th>
                 </tr>

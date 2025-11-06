@@ -46,7 +46,9 @@
       importExcelReq: `${BASE}?accion=importar-excel-req`,
 
       // 🔹 cotizaciones generadas por requerimiento
-      cotsGeneradas: (id) =>`${BASE}?accion=cots-generadas&id=${encodeURIComponent(id)}`,
+      //cotsGeneradas: (id) =>`${BASE}?accion=sols-generadas&id=${encodeURIComponent(id)}`,
+      // En window.API15.url, agrega:
+      solsGeneradas: (id) => `${BASE}?accion=sols-generadas&id=${encodeURIComponent(id)}`,
 
       // 🔹 cotizaciones recibidas por requerimiento
       cotsRecibidas: (id) =>`${BASE}?accion=cots-recibidas&id=${encodeURIComponent(id)}`,

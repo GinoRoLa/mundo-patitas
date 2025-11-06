@@ -667,6 +667,41 @@ CREATE TABLE t75GuiaOrden (
 -- ==========================================================
 -- 8) Compras / Movimientos de inventario
 -- ==========================================================
+CREATE TABLE t100Solicitud_Cotizacion_Proveedor (
+  IDsolicitud INT NOT NULL AUTO_INCREMENT,
+  Id_ReqEvaluacion INT NOT NULL,
+  RUC VARCHAR(11) NOT NULL,
+  Empresa VARCHAR(50) NOT NULL,
+  Correo VARCHAR(100) NOT NULL,
+  FechaEmision DATETIME NOT NULL DEFAULT NOW(),
+  FechaCierre DATETIME NOT NULL DEFAULT (NOW() + INTERVAL 10 DAY),
+  Estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+  PRIMARY KEY (IDsolicitud),
+  KEY fk_t100_req (Id_ReqEvaluacion),
+  CONSTRAINT fk_t100_req FOREIGN KEY (Id_ReqEvaluacion)
+    REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
+    ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=1000 
+DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE t101Detalle_Solicitud_Cotizacion_Proveedor (
+  IDdetalle_solicitud INT NOT NULL AUTO_INCREMENT,
+  IDsolicitud INT NOT NULL,
+  Id_Producto INT NOT NULL,
+  Cantidad INT NOT NULL,
+  PRIMARY KEY (IDdetalle_solicitud),
+  KEY fk_t101_solicitud (IDsolicitud),
+  KEY fk_t101_producto (Id_Producto),
+  CONSTRAINT fk_t101_solicitud FOREIGN KEY (IDsolicitud)
+    REFERENCES t100Solicitud_Cotizacion_Proveedor (IDsolicitud)
+    ON DELETE CASCADE ON UPDATE CASCADE,
+  CONSTRAINT fk_t101_producto FOREIGN KEY (Id_Producto)
+    REFERENCES t18CatalogoProducto (Id_Producto)
+    ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT chk_cantidad_detalle CHECK (Cantidad > 0)
+) ENGINE=InnoDB AUTO_INCREMENT=1000 
+DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 /* === Cabecera de Cotización (mínima) ==================================== */
 DROP TABLE IF EXISTS t86Cotizacion;
 CREATE TABLE t86Cotizacion (

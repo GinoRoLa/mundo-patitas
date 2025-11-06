@@ -182,4 +182,15 @@ final class Cotizacion
     mysqli_stmt_execute($up);
     mysqli_stmt_close($up);
   }
+
+  public function actualizarEstadoCotizacion(int $idReq, string $estado): void
+  {
+    $sql = "UPDATE t86Cotizacion
+            SET Estado = ?
+            WHERE Id_ReqEvaluacion = ?";
+    $st = mysqli_prepare($this->cn, $sql);
+    mysqli_stmt_bind_param($st, "si", $estado, $idReq);
+    mysqli_stmt_execute($st);
+    mysqli_stmt_close($st);
+  }
 }

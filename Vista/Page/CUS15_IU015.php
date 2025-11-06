@@ -105,6 +105,7 @@ $fecha = date('Y-m-d');
                   <th>Razón Social</th>
                   <th>Dirección</th>
                   <th>Fecha Emisión</th>
+                  <th>Estado</th>
                 </tr>
               </thead>
               <tbody id="tbodyCotsGeneradas">
@@ -249,6 +250,7 @@ $fecha = date('Y-m-d');
   <script src="../Script/CUS15/apiCUS15.js"></script>
   <script src="../Script/CUS15/utils.js"></script>
   <script src="../Script/CUS15/actor.js"></script>
+  <script src="../Script/CUS15/solicitudCotizacion.js"></script>
   <script src="../Script/CUS15/requerimiento.js"></script>
   <script src="../Script/CUS15/ordenCompra.js"></script>
   <script src="../Script/CUS15/main.js"></script>

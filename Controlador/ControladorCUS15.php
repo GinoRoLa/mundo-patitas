@@ -7,6 +7,7 @@ require_once '../Modelo/OrdenCompra.php';
 require_once '../Modelo/Requerimiento.php'; // <- lo usaremos para estado / detalle
 require_once '../Modelo/Trabajador.php';
 require_once '../Modelo/Evaluacion.php';
+require_once '../Modelo/SolicitudCotizacion.php';
 //require_once '../Modelo/Proveedor.php';
 
 /* ===== Helpers de respuesta ===== */
@@ -176,11 +177,29 @@ try {
     /* ==========================================================
        4. Cotizaciones generadas (opcional)
     ========================================================== */
-    case 'cots-generadas':
+    /* case 'cots-generadas':
       $idReq = $_GET['id'] ?? '';
       $cotM = new Cotizacion();
       $rows = $cotM->listarPorRequerimiento($idReq, 'Generada');
       ok(['generadas' => $rows]);
+      break; */
+
+    /* ==========================================================
+   Solicitudes de Cotización Generadas
+========================================================== */
+    case 'sols-generadas':
+      if ($_SERVER['REQUEST_METHOD'] !== 'GET') err('Method Not Allowed', 405);
+      $idReq = $_GET['id'] ?? '';
+      if ($idReq === '') err('Id de requerimiento inválido', 422);
+
+      $solM = new SolicitudCotizacion();
+      $rows = $solM->listarPorRequerimiento($idReq);
+      $conteo = $solM->contarPorEstado($idReq);
+
+      ok([
+        'solicitudes' => $rows,
+        'conteo' => $conteo
+      ]);
       break;
 
     /* ==========================================================
@@ -226,132 +245,145 @@ try {
     /* ==========================================================
    7. Generar Órdenes de Compra (transacción)
 ========================================================== */
-case 'generar-ocs':
-  if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
+    case 'generar-ocs':
+      if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
 
-  $in    = json_decode(file_get_contents('php://input'), true) ?? [];
-  $idReq = $in['idRequerimiento'] ?? $in['idReq'] ?? '';
-  if ($idReq === '' || (int)$idReq <= 0) err('Id de requerimiento requerido', 422);
+      $in    = json_decode(file_get_contents('php://input'), true) ?? [];
+      $idReq = $in['idRequerimiento'] ?? $in['idReq'] ?? '';
+      if ($idReq === '' || (int)$idReq <= 0) err('Id de requerimiento requerido', 422);
 
-  // ------------- Helper: construir adjudicación robusta -------------
-  $construirAdjudicacionDesdePreview = function(array $resEval) {
-    // formato A (por proveedor): [{ruc, razon, items:[{Id_Producto,Descripcion,Unidad,Cantidad,Precio}, ...]}]
-    $porProv = [];
+      // ------------- Helper: construir adjudicación robusta -------------
+      $construirAdjudicacionDesdePreview = function (array $resEval) {
+        // formato A (por proveedor): [{ruc, razon, items:[{Id_Producto,Descripcion,Unidad,Cantidad,Precio}, ...]}]
+        $porProv = [];
 
-    $productos = $resEval['productos'] ?? [];
-    foreach ((array)$productos as $p) {
-      // Producto base
-      $idp   = (int)($p['Id_Producto'] ?? $p['idProducto'] ?? $p['ProductoId'] ?? 0);
-      $desc  = (string)($p['Nombre'] ?? $p['NombreProducto'] ?? $p['Descripcion'] ?? '');
-      $um    = (string)($p['UnidadMedida'] ?? $p['Unidad'] ?? $p['UM'] ?? 'UND');
+        $productos = $resEval['productos'] ?? [];
+        foreach ((array)$productos as $p) {
+          // Producto base
+          $idp   = (int)($p['Id_Producto'] ?? $p['idProducto'] ?? $p['ProductoId'] ?? 0);
+          $desc  = (string)($p['Nombre'] ?? $p['NombreProducto'] ?? $p['Descripcion'] ?? '');
+          $um    = (string)($p['UnidadMedida'] ?? $p['Unidad'] ?? $p['UM'] ?? 'UND');
 
-      // Lista de asignaciones por proveedor en el preview
-      $asigs = $p['Asignacion'] ?? $p['asignacion'] ?? $p['proveedores'] ?? [];
-      foreach ((array)$asigs as $a) {
-        $ruc   = (string)($a['ruc'] ?? $a['RUC'] ?? $a['RUC_Proveedor'] ?? $a['provRUC'] ?? '');
-        $razon = (string)($a['proveedor'] ?? $a['RazonSocial'] ?? $a['nombre'] ?? '');
+          // Lista de asignaciones por proveedor en el preview
+          $asigs = $p['Asignacion'] ?? $p['asignacion'] ?? $p['proveedores'] ?? [];
+          foreach ((array)$asigs as $a) {
+            $ruc   = (string)($a['ruc'] ?? $a['RUC'] ?? $a['RUC_Proveedor'] ?? $a['provRUC'] ?? '');
+            $razon = (string)($a['proveedor'] ?? $a['RazonSocial'] ?? $a['nombre'] ?? '');
 
-        // Cantidad: aceptar varios alias
-        $cant = null;
-        foreach (['Cantidad','cantidad','CantidadAprobada','qty','qtyAprob'] as $k) {
-          if (isset($a[$k]) && is_numeric($a[$k])) { $cant = (float)$a[$k]; break; }
-        }
-        if ($cant === null && isset($p['CantidadAprobada']) && is_numeric($p['CantidadAprobada'])) {
-          $cant = (float)$p['CantidadAprobada']; // fallback por producto
-        }
-        if (!is_finite($cant ?? null)) $cant = 0;
+            // Cantidad: aceptar varios alias
+            $cant = null;
+            foreach (['Cantidad', 'cantidad', 'CantidadAprobada', 'qty', 'qtyAprob'] as $k) {
+              if (isset($a[$k]) && is_numeric($a[$k])) {
+                $cant = (float)$a[$k];
+                break;
+              }
+            }
+            if ($cant === null && isset($p['CantidadAprobada']) && is_numeric($p['CantidadAprobada'])) {
+              $cant = (float)$p['CantidadAprobada']; // fallback por producto
+            }
+            if (!is_finite($cant ?? null)) $cant = 0;
 
-        // Precio: aceptar varios alias; si no hay, intentar costo/cantidad
-        $prec = null;
-        foreach (['Precio','precio','PrecioUnitario','PrecioAprobado','price'] as $k) {
-          if (isset($a[$k]) && is_numeric($a[$k])) { $prec = (float)$a[$k]; break; }
-        }
-        if ($prec === null) {
-          $costo = null;
-          foreach (['costo','Costo','CostoUnitario'] as $k) {
-            if (isset($a[$k]) && is_numeric($a[$k])) { $costo = (float)$a[$k]; break; }
+            // Precio: aceptar varios alias; si no hay, intentar costo/cantidad
+            $prec = null;
+            foreach (['Precio', 'precio', 'PrecioUnitario', 'PrecioAprobado', 'price'] as $k) {
+              if (isset($a[$k]) && is_numeric($a[$k])) {
+                $prec = (float)$a[$k];
+                break;
+              }
+            }
+            if ($prec === null) {
+              $costo = null;
+              foreach (['costo', 'Costo', 'CostoUnitario'] as $k) {
+                if (isset($a[$k]) && is_numeric($a[$k])) {
+                  $costo = (float)$a[$k];
+                  break;
+                }
+              }
+              if ($costo !== null && ($cant ?? 0) > 0) $prec = $costo / (float)$cant;
+            }
+            if (!is_finite($prec ?? null)) $prec = 0;
+
+            // Filtrar inválidos
+            if ($ruc === '' || $cant <= 0 || $prec <= 0) continue;
+
+            if (!isset($porProv[$ruc])) {
+              $porProv[$ruc] = ['ruc' => $ruc, 'razon' => $razon, 'items' => []];
+            }
+            $porProv[$ruc]['items'][] = [
+              'Id_Producto' => $idp,
+              'Descripcion' => $desc,
+              'Unidad'      => $um,
+              'Cantidad'    => (float)$cant,
+              'Precio'      => (float)round($prec, 4),
+            ];
           }
-          if ($costo !== null && ($cant ?? 0) > 0) $prec = $costo / (float)$cant;
         }
-        if (!is_finite($prec ?? null)) $prec = 0;
+        return array_values($porProv);
+      };
 
-        // Filtrar inválidos
-        if ($ruc === '' || $cant <= 0 || $prec <= 0) continue;
-
-        if (!isset($porProv[$ruc])) {
-          $porProv[$ruc] = ['ruc' => $ruc, 'razon' => $razon, 'items' => []];
-        }
-        $porProv[$ruc]['items'][] = [
-          'Id_Producto' => $idp,
-          'Descripcion' => $desc,
-          'Unidad'      => $um,
-          'Cantidad'    => (float)$cant,
-          'Precio'      => (float)round($prec, 4),
-        ];
-      }
-    }
-    return array_values($porProv);
-  };
-
-  // ------------- 1) Si mandan adjudicación externa, validarla rápido -------------
-  $adjud = $in['adjudicacion'] ?? null;
-  if (is_array($adjud)) {
-    $validos = 0;
-    foreach ($adjud as $prodOrProv) {
-      $items = $prodOrProv['items']
+      // ------------- 1) Si mandan adjudicación externa, validarla rápido -------------
+      $adjud = $in['adjudicacion'] ?? null;
+      if (is_array($adjud)) {
+        $validos = 0;
+        foreach ($adjud as $prodOrProv) {
+          $items = $prodOrProv['items']
             ?? $prodOrProv['asignacion']
             ?? $prodOrProv['Asignacion']
             ?? [];
-      foreach ((array)$items as $it) {
-        $cant  = (float)($it['cantidad'] ?? $it['Cantidad'] ?? 0);
-        $prec  = (float)($it['precio']   ?? $it['Precio']   ?? $it['PrecioUnitario'] ?? 0);
-        $costo = (float)($it['costo']    ?? $it['Costo']    ?? 0);
-        if ($cant > 0 && ($prec > 0 || $costo > 0)) { $validos++; break; }
+          foreach ((array)$items as $it) {
+            $cant  = (float)($it['cantidad'] ?? $it['Cantidad'] ?? 0);
+            $prec  = (float)($it['precio']   ?? $it['Precio']   ?? $it['PrecioUnitario'] ?? 0);
+            $costo = (float)($it['costo']    ?? $it['Costo']    ?? 0);
+            if ($cant > 0 && ($prec > 0 || $costo > 0)) {
+              $validos++;
+              break;
+            }
+          }
+        }
+        if ($validos === 0) {
+          // adjudicación enviada pero no utilizable
+          $adjud = null; // forzar construir desde evaluación
+        }
       }
-    }
-    if ($validos === 0) {
-      // adjudicación enviada pero no utilizable
-      $adjud = null; // forzar construir desde evaluación
-    }
-  }
 
-  // ------------- 2) Si no hay adjudicación, construir desde Evaluación -------------
-  if (empty($adjud)) {
-    $ev  = new Evaluacion();
-    $res = $ev->evaluarRequerimientoGreedy($idReq);
-    if (empty($res['ok'])) err($res['error'] ?? 'No se pudo evaluar', 400);
+      // ------------- 2) Si no hay adjudicación, construir desde Evaluación -------------
+      if (empty($adjud)) {
+        $ev  = new Evaluacion();
+        $res = $ev->evaluarRequerimientoGreedy($idReq);
+        if (empty($res['ok'])) err($res['error'] ?? 'No se pudo evaluar', 400);
 
-    // construir formato A robusto
-    $adjud = $construirAdjudicacionDesdePreview($res);
-    if (empty($adjud)) {
-      err('No se pudo construir la adjudicación desde la evaluación (sin cantidades/precios válidos).', 409, [
-        'idReq' => $idReq
-      ]);
-    }
-  }
+        // construir formato A robusto
+        $adjud = $construirAdjudicacionDesdePreview($res);
+        if (empty($adjud)) {
+          err('No se pudo construir la adjudicación desde la evaluación (sin cantidades/precios válidos).', 409, [
+            'idReq' => $idReq
+          ]);
+        }
+      }
 
-  // ------------- 3) Generar OCs con captura controlada -------------
-  try {
-    $ocM = new OrdenCompra();
-    $ocs = $ocM->crearOCsDesdeAdjudicacion($idReq, $adjud);
-  } catch (Throwable $e) {
-    // Si el modelo vuelve a decir "Adjudicación vacía", devolvemos diagnóstico útil
-    err('No se pudo generar las órdenes de compra', 500, [
-      'detail' => $e->getMessage(),
-      'idReq'  => $idReq,
-      'nota'   => 'Verifica que en la evaluación cada proveedor tenga CantidadAprobada>0 y PrecioAprobado>0 (o costo>0).'
-    ]);
-  }
+      // ------------- 3) Generar OCs con captura controlada -------------
+      try {
+        $ocM = new OrdenCompra();
+        $ocs = $ocM->crearOCsDesdeAdjudicacion($idReq, $adjud);
+      } catch (Throwable $e) {
+        // Si el modelo vuelve a decir "Adjudicación vacía", devolvemos diagnóstico útil
+        err('No se pudo generar las órdenes de compra', 500, [
+          'detail' => $e->getMessage(),
+          'idReq'  => $idReq,
+          'nota'   => 'Verifica que en la evaluación cada proveedor tenga CantidadAprobada>0 y PrecioAprobado>0 (o costo>0).'
+        ]);
+      }
 
-  if (empty($ocs)) {
-    err('No se generó ninguna orden de compra.', 409, ['idReq' => $idReq]);
-  }
+      if (empty($ocs)) {
+        err('No se generó ninguna orden de compra.', 409, ['idReq' => $idReq]);
+      }
 
-  // ------------- 4) Actualizar estado del requerimiento -------------
-  (new Requerimiento())->actualizarEstado((string)$idReq, 'Cerrado');
+      // ------------- 4) Actualizar estado del requerimiento y cotizacion -------------
+      (new Requerimiento())->actualizarEstado((string)$idReq, 'Atendido');
+      (new Cotizacion())->actualizarEstadoCotizacion((int)$idReq, 'Evaluado');
 
-  ok(['ok' => true, 'ordenes' => $ocs]);
-  break;
+      ok(['ok' => true, 'ordenes' => $ocs]);
+      break;
 
 
 

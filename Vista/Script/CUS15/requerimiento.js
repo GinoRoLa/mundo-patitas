@@ -20,7 +20,6 @@
     tbodyReq: $("#tbodyRequerimientos"),
     msgDetalle: $("#msgDetalle"),
     tbodyDetalle: $("#tbodyDetalleReq"),
-    tbodyGen: $("#tbodyCotsGeneradas"),
     tbodyRec: $("#tbodyCotsRecibidas"),
     tbodyEval: $("#tbodyEvaluacion"),
     resumenEvalBox: $("#resumenEvaluacion"),
@@ -210,12 +209,18 @@
       .forEach((c) => (c.checked = false));
 
     if (DOM.tbodyDetalle) DOM.tbodyDetalle.innerHTML = "";
-    if (DOM.tbodyGen) DOM.tbodyGen.innerHTML = "";
+    if (window.SolicitudCotizacion?.limpiar) {
+      window.SolicitudCotizacion.limpiar();
+    }
     if (DOM.tbodyRec) DOM.tbodyRec.innerHTML = "";
     if (DOM.tbodyEval) DOM.tbodyEval.innerHTML = "";
     if (DOM.resumenEvalBox) DOM.resumenEvalBox.textContent = "";
 
-    Utils.showMsg(DOM.msgDetalle, "info", "Seleccione un requerimiento para ver los detalles");
+    Utils.showMsg(
+      DOM.msgDetalle,
+      "info",
+      "Seleccione un requerimiento para ver los detalles"
+    );
 
     if (DOM.btnGenOC) DOM.btnGenOC.disabled = true;
   }
@@ -239,30 +244,60 @@
         return;
       }
 
-      // 1) Básicos
-      const [rDet, rGen, rRec] = await Promise.all([
-        fetchJSON(url.detalleReq(id), { method: "GET" }),
-        fetchJSON(url.cotsGeneradas(id), { method: "GET" }),
-        fetchJSON(url.cotsRecibidas(id), { method: "GET" }),
+      console.log("[CUS15] 📥 Cargando datos para REQ:", id);
+
+      // 1) Cargar detalle y cotizaciones recibidas en paralelo
+      const [rDet, rRec] = await Promise.all([
+        fetchJSON(url.detalleReq(id), { method: "GET" }).catch((e) => {
+          console.error("[CUS15] ❌ Error en detalleReq:", e);
+          return { ok: false, error: e.message };
+        }),
+        fetchJSON(url.cotsRecibidas(id), { method: "GET" }).catch((e) => {
+          console.error("[CUS15] ❌ Error en cotsRecibidas:", e);
+          return { ok: false, error: e.message };
+        }),
       ]);
 
+      console.log("[CUS15] ✅ Detalle:", rDet);
+      console.log("[CUS15] ✅ Cotizaciones recibidas:", rRec);
+
+      // Renderizar siempre, incluso si hay errores parciales
       renderDetalle(rDet?.detalle || [], rDet?.req || null);
-      renderCotsGeneradas(rGen?.generadas || []);
       renderCotsRecibidas(rRec?.recibidas || []);
 
-      // 2) Import inteligente si BD vacía
+      // 2) 🔥 DELEGAR a SolicitudCotizacion para cargar solicitudes generadas
+      if (window.SolicitudCotizacion?.cargar) {
+        console.log(
+          "[CUS15] 📋 Delegando carga de solicitudes a SolicitudCotizacion"
+        );
+        await window.SolicitudCotizacion.cargar(id).catch((e) => {
+          console.error("[CUS15] ❌ Error en SolicitudCotizacion:", e);
+        });
+      } else {
+        console.warn("⚠️ SolicitudCotizacion no está disponible");
+      }
+
+      // 3) Import inteligente si BD vacía
       const cotsEnBD = (rRec?.recibidas || []).length;
-      if (cotsEnBD === 0) await scanAndMaybeImport(id);
-      else {
+      if (cotsEnBD === 0) {
+        console.log("[CUS15] 📦 No hay cotizaciones en BD, iniciando scan...");
+        await scanAndMaybeImport(id);
+      } else {
         const row = DOM.tbodyReq?.querySelector(`tr[data-id="${id}"]`);
         const cel = row?.querySelector(".col-cots");
         if (cel) cel.textContent = `🟢 ${cotsEnBD}`;
       }
 
-      // 3) Evaluar siempre Y validar para habilitar botón
+      // 4) Evaluar siempre Y validar para habilitar botón
+      console.log("[CUS15] 🧮 Evaluando cotizaciones...");
       await evaluarYMostrar(id);
+
+      console.log("[CUS15] ✅ Carga completada para REQ:", id);
     } catch (err) {
-      console.error(err);
+      console.error(
+        "[CUS15] ❌ Error crítico en seleccionarRequerimiento:",
+        err
+      );
       Utils.showToast("Error cargando información del requerimiento", "error");
     } finally {
       State.loading = false;
@@ -311,7 +346,7 @@
           );
       }
     } catch (e) {
-      console.error(e);
+      console.error("[CUS15] Error en scanAndMaybeImport:", e);
       Utils.showToast("Error al escanear/importar Excel", "error");
     }
   }
@@ -696,26 +731,35 @@
     Utils.showMsg(DOM.msgDetalle, "ok", `REQ seleccionado: ${id}`);
   }
 
-  function renderCotsGeneradas(rows) {
-    const tb = DOM.tbodyGen;
-    if (!tb) return;
-    tb.innerHTML = "";
-    if (!Array.isArray(rows) || rows.length === 0) {
-      tb.innerHTML = `<tr><td colspan="5" style="text-align:center; color:#64748b;">Sin solicitudes de cotización generadas</td></tr>`;
-      return;
-    }
-    for (const r of rows) {
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td class="mono">${r.codigo ?? "—"}</td>
-        <td>${r.ruc ?? "—"}</td>
-        <td>${r.razon ?? "—"}</td>
-        <td>${r.direccion ?? "—"}</td>
-        <td>${fmtFecha(r.fecEmision)}</td>
-      `;
-      tb.appendChild(tr);
-    }
+  // En requerimiento.js, reemplaza esta función:
+  /* function renderCotsGeneradas(rows) {
+  // 🔥 DELEGAMOS A SolicitudCotizacion si está disponible
+  if (window.SolicitudCotizacion?.renderizar) {
+    window.SolicitudCotizacion.renderizar(rows);
+    return;
   }
+
+  // Fallback si el módulo no está cargado
+  const tb = DOM.tbodyGen;
+  if (!tb) return;
+  tb.innerHTML = "";
+  if (!Array.isArray(rows) || rows.length === 0) {
+    tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Sin solicitudes de cotización generadas</td></tr>`;
+    return;
+  }
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td class="mono">${r.codigo ?? "—"}</td>
+      <td>${r.ruc ?? "—"}</td>
+      <td>${r.razon ?? "—"}</td>
+      <td>${r.direccion ?? "—"}</td>
+      <td>${fmtFecha(r.fecEmision)}</td>
+      <td>—</td>
+    `;
+    tb.appendChild(tr);
+  }
+} */
 
   function renderCotsRecibidas(rows) {
     const tb = DOM.tbodyRec;

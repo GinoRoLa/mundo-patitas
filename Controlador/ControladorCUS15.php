@@ -379,8 +379,8 @@ try {
       }
 
       // ------------- 4) Actualizar estado del requerimiento y cotizacion -------------
-      (new Requerimiento())->actualizarEstado((string)$idReq, 'Cerrado');
-      (new Cotizacion())->actualizarEstadoCotizacion((int)$idReq, 'Procesada');
+      (new Requerimiento())->actualizarEstado((string)$idReq, 'Atendido');
+      (new Cotizacion())->actualizarEstadoCotizacion((int)$idReq, 'Evaluado');
 
       ok(['ok' => true, 'ordenes' => $ocs]);
       break;

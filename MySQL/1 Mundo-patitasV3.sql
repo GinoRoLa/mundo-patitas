@@ -684,10 +684,12 @@ CREATE TABLE t100Solicitud_Cotizacion_Proveedor (
 ) ENGINE=InnoDB AUTO_INCREMENT=1000 
 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+
 CREATE TABLE t101Detalle_Solicitud_Cotizacion_Proveedor (
   IDdetalle_solicitud INT NOT NULL AUTO_INCREMENT,
   IDsolicitud INT NOT NULL,
   Id_Producto INT NOT NULL,
+  Producto VARCHAR(100) NOT NULL,
   Cantidad INT NOT NULL,
   PRIMARY KEY (IDdetalle_solicitud),
   KEY fk_t101_solicitud (IDsolicitud),

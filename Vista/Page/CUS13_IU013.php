@@ -116,9 +116,17 @@ $hora = date('H:i:s');
                             </tfoot>
                         </table>
                     </div>
+
+                    <div class="criterio-box">
+                        <label><strong>Seleccionar criterio de evaluación:</strong></label><br>
+                        <label><input type="radio" name="criterio" value="Precio" checked> 💰 Precio (menor a mayor)</label><br>
+                        <label><input type="radio" name="criterio" value="Rotacion"> 📦 Rotación (mayor cantidad)</label><br>
+                        <label><input type="radio" name="criterio" value="Proporcionalidad"> ⚖️ Proporcionalidad (distribución equitativa)</label>
+                    </div>
+
                     <div class="actions">
                         <button id="btnEvaluar" class="btn btn-primary">
-                            <span class="btn-text">✓ Evaluar y Aprobar (3 criterios)</span>
+                            <span class="btn-text">Evaluar</span>
                             <span class="btn-loading" style="display:none;">⏳ Evaluando...</span>
                         </button>
                     </div>
@@ -151,6 +159,10 @@ $hora = date('H:i:s');
                             </thead>
                             <tbody></tbody>
                         </table>
+                        <div id="accionesEvaluacion" style="display:none; text-align:right; margin-top:10px;">
+                            <button id="btnRegistrar" class="btn-primary">Registrar Evaluación</button>
+                        </div>
+
                     </div>
                 </div>
             </div>

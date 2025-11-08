@@ -187,97 +187,58 @@ class RequerimientoModel {
      * - ordena por Precio asc (primario) y Cantidad desc (secundario)
      * - luego asigna aprobaciones por proporcionalidad hasta cubrir monto disponible
      */
-    public function evaluarYRegistrar($idReq, $idPartida, $criterioLabel = 'Precio+Rotacion+Proporcionalidad') {
-        $estadoPartida = $this->obtenerEstadoPartida($idPartida);
-        if ($estadoPartida === 'Cerrado') {
-            throw new Exception("La partida ya está cerrada y no puede evaluarse nuevamente.");
+    public function evaluarSimulacion($idReq, $idPartida, $criterioLabel = 'precio') {
+        // 1) Obtener detalle
+        $detalle = $this->obtenerDetalleSolicitud($idReq);
+        if (empty($detalle)) throw new Exception("No hay detalle para la solicitud.");
+
+        // 2) Calcular monto total solicitado
+        $montoSolicitado = 0.0;
+        foreach ($detalle as $r) {
+            $linea = (float)$r['Cantidad'] * (float)$r['PrecioPromedio'];
+            $montoSolicitado += $linea;
         }
 
-        
-        $this->conn->autocommit(false);
-        try {
-            // 1) Obtener detalle de la solicitud
-            $detalle = $this->obtenerDetalleSolicitud($idReq);
-            if (empty($detalle)) throw new Exception("No hay detalle para la solicitud.");
+        // 3) Obtener saldo disponible
+        $saldoInfo = $this->obtenerSaldoDisponible($idPartida);
+        if(!$saldoInfo) throw new Exception("Partida no encontrada.");
+        $montoPeriodo = (float)$saldoInfo['MontoPeriodo'];
 
-            // 2) Calcular monto total solicitado
-            $montoSolicitado = 0.0;
-            foreach ($detalle as $r) {
-                $linea = (float)$r['Cantidad'] * (float)$r['PrecioPromedio'];
-                $montoSolicitado += $linea;
-            }
-
-            // 3) Obtener saldo disponible actual
-            $saldoInfo = $this->obtenerSaldoDisponible($idPartida);
-            if(!$saldoInfo) throw new Exception("Partida no encontrada.");
-            $montoPeriodo = (float)$saldoInfo['MontoPeriodo'];
-
-            // 4) Aplicar los 3 criterios: Precio asc, Cantidad desc, Proporcionalidad
-            // (Proporcionalidad: se asigna de forma equitativa mientras haya saldo)
-            usort($detalle, function ($a, $b) {
-                if ($a['PrecioPromedio'] == $b['PrecioPromedio']) {
-                    return $b['Cantidad'] <=> $a['Cantidad']; // cantidad desc
-                }
-                return $a['PrecioPromedio'] <=> $b['PrecioPromedio']; // precio asc
+        // 4) Aplicar criterio
+        $crit = strtolower(trim($criterioLabel));
+        if ($crit === 'precio') {
+            usort($detalle, function($a, $b){
+                $totalA = $a['Cantidad'] * $a['PrecioPromedio'];
+                $totalB = $b['Cantidad'] * $b['PrecioPromedio'];
+                return $totalA <=> $totalB;
             });
+        } elseif ($crit === 'rotacion') {
+            usort($detalle, fn($a, $b) => $b['Cantidad'] <=> $a['Cantidad']);
+        }
 
-            // 5) Evaluar productos según saldo (ajustado con saldo anterior y mejor cálculo)
-            $consumido = 0.0;
-            $detalleEvaluado = [];
+        // 5) Evaluar según criterio
+        $saldoAnterior = $this->obtenerSaldoAnteriorPorPartida($idPartida);
+        $totalDisponible = $montoPeriodo + $saldoAnterior;
+        $saldoDisponible = $totalDisponible;
+        $detalleEvaluado = [];
+        $consumido = 0.0;
 
-            // Obtener financiamiento total = monto del mes + saldo anterior
-            $saldoAnterior = $this->obtenerSaldoAnteriorPorPartida($idPartida);
-            $totalDisponible = $montoPeriodo + $saldoAnterior;
-            $saldoDisponible = $totalDisponible;
-
-
-            // Calcular peso proporcional inicial (para criterio 3)
-            $totalCant = array_sum(array_column($detalle, 'Cantidad'));
-
+        if ($crit === 'precio' || $crit === 'rotacion') {
             foreach ($detalle as $it) {
                 $precio = (float)$it['PrecioPromedio'];
                 $cant = (int)$it['Cantidad'];
-                $totalLinea = $precio * $cant;
+                $totalLinea = round($precio * $cant, 2);
 
-                if ($saldoDisponible <= 0) {
-                    $aprobadoQty = 0;
-                    $montoAsignado = 0.0;
-                    $estadoProd = 'Rechazado';
-                } elseif ($totalLinea <= $saldoDisponible) {
-                    // puede cubrir toda la cantidad
+                if ($totalLinea <= $saldoDisponible) {
                     $aprobadoQty = $cant;
                     $montoAsignado = $totalLinea;
                     $estadoProd = 'Aprobado';
                     $saldoDisponible -= $montoAsignado;
                     $consumido += $montoAsignado;
                 } else {
-                    // aplicar proporcionalidad (criterio 3)
-                    $proporcion = ($totalCant > 0) ? ($cant / $totalCant) : 0;
-                    $montoAsignado = $saldoDisponible * $proporcion;
-
-                    // calcular cantidad aprobada
-                    $aprobadoQty = (int) floor($montoAsignado / $precio);
-                    if ($aprobadoQty > $cant) $aprobadoQty = $cant;
-
-                    // Si aún hay saldo y se redondeó hacia abajo, ajustar ligeramente
-                    if ($aprobadoQty == 0 && $saldoDisponible > $precio) {
-                        $aprobadoQty = 1;
-                    }
-
-                    $montoAsignado = $aprobadoQty * $precio;
-
-                    // Evitar pasarse del saldo disponible
-                    if ($montoAsignado > $saldoDisponible) {
-                        $montoAsignado = $saldoDisponible;
-                        $aprobadoQty = (int) floor($montoAsignado / $precio);
-                    }
-
-                    $saldoDisponible -= $montoAsignado;
-                    $consumido += $montoAsignado;
-
-                    $estadoProd = ($aprobadoQty == 0)
-                        ? 'Rechazado'
-                        : (($aprobadoQty < $cant) ? 'Parcial' : 'Aprobado');
+                    $aprobadoQty = 0;
+                    $montoAsignado = 0.0;
+                    $estadoProd = 'Rechazado';
                 }
 
                 $detalleEvaluado[] = [
@@ -285,55 +246,73 @@ class RequerimientoModel {
                     'CantidadSolicitada' => $cant,
                     'CantidadAprobada' => $aprobadoQty,
                     'Precio' => $precio,
-                    'MontoAsignado' => round($montoAsignado, 2),
+                    'MontoAsignado' => $montoAsignado,
                     'EstadoProducto' => $estadoProd
                 ];
             }
+        } else {
+            // proporcionalidad
+            $totalSolicitado = array_sum(array_map(fn($i) => $i['Cantidad'] * $i['PrecioPromedio'], $detalle));
+            foreach ($detalle as $it) {
+                $precio = (float)$it['PrecioPromedio'];
+                $cant = (int)$it['Cantidad'];
+                $totalLinea = $precio * $cant;
+                $proporcion = ($totalSolicitado > 0) ? ($totalLinea / $totalSolicitado) : 0;
+                $montoTeorico = $totalDisponible * $proporcion;
+                $aprobadoQty = (int) floor($montoTeorico / $precio);
+                if ($aprobadoQty > $cant) $aprobadoQty = $cant;
+                $montoAsignado = $aprobadoQty * $precio;
 
-            // saldo después del consumo
-            $saldoDespues = max(0,round($totalDisponible - $consumido, 2));
-            $montoAprobadoTotal = round($consumido, 2);
+                $detalleEvaluado[] = [
+                    'Id_Producto' => $it['Id_Producto'],
+                    'CantidadSolicitada' => $cant,
+                    'CantidadAprobada' => $aprobadoQty,
+                    'Precio' => $precio,
+                    'MontoAsignado' => $montoAsignado,
+                    'EstadoProducto' => ($aprobadoQty == 0 ? 'Rechazado' : ($aprobadoQty < $cant ? 'Parcial' : 'Aprobado'))
+                ];
+                $consumido += $montoAsignado;
+            }
+        }
 
+        $saldoDespues = max(0, round($totalDisponible - $consumido, 2));
+        $estadoCab = ($consumido == 0) ? 'Rechazado' : (($consumido < $montoSolicitado) ? 'Parcialmente Aprobado' : 'Aprobado');
 
-            // 6) Insertar cabecera t407RequerimientoEvaluado
-            $montoAprobadoTotal = $consumido;
-            $fechaEval = date('Y-m-d H:i:s');
-            $estadoCab = ($montoAprobadoTotal == 0)
-                ? 'Rechazado'
-                : (($montoAprobadoTotal < $montoSolicitado) ? 'Parcialmente Aprobado' : 'Aprobado');
+        return [
+            'success' => true,
+            'simulacion' => true,
+            'MontoSolicitado' => $montoSolicitado,
+            'MontoAprobado' => $consumido,
+            'SaldoDespues' => $saldoDespues,
+            'Estado' => $estadoCab,
+            'detalle' => $detalleEvaluado
+        ];
+    }
 
+    public function registrarEvaluacion($idReq, $idPartida, $resultadoSimulado, $criterioLabel = 'precio') {
+        $this->conn->autocommit(false);
+        try {
+            $detalleEvaluado = $resultadoSimulado['detalle'];
+            $montoSolicitado = $resultadoSimulado['MontoSolicitado'];
+            $montoAprobado = $resultadoSimulado['MontoAprobado'];
+            $saldoDespues = $resultadoSimulado['SaldoDespues'];
+            $estadoCab = $resultadoSimulado['Estado'];
+
+            // Insertar cabecera
             $sqlC = "INSERT INTO t407RequerimientoEvaluado
                     (Id_Requerimiento, Id_PartidaPeriodo, FechaEvaluacion, CriterioEvaluacion, 
                     MontoSolicitado, MontoAprobado, SaldoRestantePeriodo, Observaciones, Estado)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                    VALUES (?, ?, NOW(), ?, ?, ?, ?, 'Evaluación manual confirmada', ?)";
             $stmt = $this->conn->prepare($sqlC);
-            if (!$stmt) throw new Exception("Error preparar INSERT t407: " . $this->conn->error);
-
-            
-            $obs = "Evaluación automática con 3 criterios";
-
-            $stmt->bind_param(
-                "iissdddss",
-                $idReq,
-                $idPartida,
-                $fechaEval,
-                $criterioLabel,
-                $montoSolicitado,
-                $montoAprobadoTotal,
-                $saldoDespues,
-                $obs,
-                $estadoCab
-            );
+            $stmt->bind_param("iissdds", $idReq, $idPartida, $criterioLabel, $montoSolicitado, $montoAprobado, $saldoDespues, $estadoCab);
             $stmt->execute();
             $idEval = $stmt->insert_id;
             $stmt->close();
 
-            // 7) Insertar detalle en t408DetalleReqEvaluado (solo columnas reales)
+            // Insertar detalle
             $sqlD = "INSERT INTO t408DetalleReqEvaluado (Id_ReqEvaluacion, Id_Producto, Cantidad, Precio)
                     VALUES (?, ?, ?, ?)";
             $stmtD = $this->conn->prepare($sqlD);
-            if (!$stmtD) throw new Exception("Error preparar INSERT t408: " . $this->conn->error);
-
             foreach ($detalleEvaluado as $de) {
                 if ($de['CantidadAprobada'] > 0) {
                     $stmtD->bind_param("iiid", $idEval, $de['Id_Producto'], $de['CantidadAprobada'], $de['Precio']);
@@ -342,58 +321,24 @@ class RequerimientoModel {
             }
             $stmtD->close();
 
-            // 8) Registrar consumo en t410ConsumoPartida
-            if ($montoAprobadoTotal > 0) {
-                $sqlCons = "INSERT INTO t410ConsumoPartida (Id_PartidaPeriodo, Id_ReqEvaluacion, MontoConsumido, FechaRegistro, SaldoDespues)
-                            VALUES (?, ?, ?, NOW(), ?)";
-                $stmtCons = $this->conn->prepare($sqlCons);
-                if (!$stmtCons) throw new Exception("Error preparar INSERT t410: " . $this->conn->error);
-                $stmtCons->bind_param("iidd", $idPartida, $idEval, $montoAprobadoTotal, $saldoDespues);
-                $stmtCons->execute();
-                $stmtCons->close();
+            // Registrar consumo
+            $sqlCons = "INSERT INTO t410ConsumoPartida (Id_PartidaPeriodo, Id_ReqEvaluacion, MontoConsumido, FechaRegistro, SaldoDespues)
+                        VALUES (?, ?, ?, NOW(), ?)";
+            $stmtCons = $this->conn->prepare($sqlCons);
+            $stmtCons->bind_param("iidd", $idPartida, $idEval, $montoAprobado, $saldoDespues);
+            $stmtCons->execute();
+            $stmtCons->close();
 
-                // 9) Actualizar MontoConsumido en t406PartidaPeriodo
-                //$sqlUpd = "UPDATE t406PartidaPeriodo 
-                  //          SET MontoPeriodo = MontoPeriodo - ?
-                  //          WHERE Id_PartidaPeriodo = ?";
-                //$stmtUpd = $this->conn->prepare($sqlUpd);
-                //if (!$stmtUpd) throw new Exception("Error preparar UPDATE t406: " . $this->conn->error);
-                //$stmtUpd->bind_param("di", $montoAprobadoTotal, $idPartida);
-                //$stmtUpd->execute();
-              //  $stmtUpd->close();
-            }
-
-            // 10) Actualizar estado del requerimiento
-            $sqlUpReq = "UPDATE t14RequerimientoCompra SET Estado = ? WHERE Id_Requerimiento = ?";
-            $stmtUp = $this->conn->prepare($sqlUpReq);
-            if (!$stmtUp) throw new Exception("Error preparar UPDATE t14: " . $this->conn->error);
+            // Actualizar requerimiento
+            $sqlUp = "UPDATE t14RequerimientoCompra SET Estado = ? WHERE Id_Requerimiento = ?";
+            $stmtUp = $this->conn->prepare($sqlUp);
             $stmtUp->bind_param("si", $estadoCab, $idReq);
             $stmtUp->execute();
             $stmtUp->close();
 
-            // 11) Registrar en historial
-            $sqlHist = "INSERT INTO t409HistorialEvaluacion (Id_ReqEvaluacion, FechaCambio, DetalleCambio)
-                        VALUES (?, NOW(), ?)";
-            $stmtHist = $this->conn->prepare($sqlHist);
-            if ($stmtHist) {
-                $detalleCambio = "Evaluación completada. Criterio: $criterioLabel. Estado: $estadoCab. Monto aprobado: S/. $montoAprobadoTotal";
-                $stmtHist->bind_param("is", $idEval, $detalleCambio);
-                $stmtHist->execute();
-                $stmtHist->close();
-            }
-
             $this->conn->commit();
 
-            // 12) Devolver respuesta para el front
-            return [
-                'success' => true,
-                'idEvaluacion' => $idEval,
-                'MontoSolicitado' => $montoSolicitado,
-                'MontoAprobado' => $montoAprobadoTotal,
-                'SaldoDespues' => $saldoDespues,
-                'Estado' => $estadoCab,
-                'detalle' => $detalleEvaluado
-            ];
+            return ['success' => true, 'idEvaluacion' => $idEval];
         } catch (Exception $e) {
             $this->conn->rollback();
             return ['success' => false, 'error' => $e->getMessage()];
@@ -401,6 +346,7 @@ class RequerimientoModel {
             $this->conn->autocommit(true);
         }
     }
+
 
     public function obtenerConsumoTotal($idPartida) {
         $sql = "SELECT IFNULL(SUM(MontoConsumido), 0) AS TotalConsumido

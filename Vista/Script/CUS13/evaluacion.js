@@ -166,6 +166,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Evaluar solicitud
+    // === BOTÓN EVALUAR ===
     btnEvaluar.addEventListener('click', async () => {
         if (!seleccionRequerimiento) {
             alert('Seleccione primero una solicitud.');
@@ -177,8 +178,9 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        // Mostrar confirmación antes de evaluar
-        if (!confirm(`¿Evaluar la solicitud #${seleccionRequerimiento} con los 3 criterios (Precio, Rotación, Proporcionalidad)?`)) {
+        const criterioSeleccionado = document.querySelector('input[name="criterio"]:checked')?.value || 'Precio';
+
+        if (!confirm(`¿Desea evaluar la solicitud #${seleccionRequerimiento} con el criterio "${criterioSeleccionado}"?`)) {
             return;
         }
 
@@ -186,72 +188,164 @@ document.addEventListener('DOMContentLoaded', () => {
         btnEvaluar.textContent = 'Evaluando...';
 
         try {
-            const res = await fetch('../../Vista/Ajax/CUS13/aplicarEvaluacion.php', {
+            const res = await fetch('../../Vista/Ajax/CUS13/evaluarSimulacion.php', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     idRequerimiento: seleccionRequerimiento,
-                    idPartida: financiamientoActual.Id_PartidaPeriodo
+                    idPartida: financiamientoActual?.Id_PartidaPeriodo || 1001,
+                    criterio: criterioSeleccionado
                 })
             });
 
             const json = await res.json();
-            console.log("📊 Resultado de evaluación:", json);
+            console.log("📊 Resultado de simulación:", json);
 
-            if (json.success) {
-                mostrarResultado(json);
-                await cargarFinanciamiento();
-                await cargarSolicitudes();
-                seleccionRequerimiento = null;
-                document.getElementById('detalleVacio').style.display = 'block';
-                document.getElementById('detalleContenido').style.display = 'none';
-            } else {
-                alert('Error: ' + (json.error || 'No se pudo evaluar.'));
-            }
+            if (!json.success) throw new Error(json.error || 'Error en simulación.');
+
+            // ✅ Mostrar tabla simulada
+            mostrarResultado(json);
+
+            // ✅ Guardar temporalmente el resultado en memoria
+            window.resultadoSimulado = json;
+
+            // ✅ Mostrar botón "Registrar Evaluación"
+            document.getElementById('accionesEvaluacion').style.display = 'block';
+
+            alert('✅ Evaluación simulada correctamente.\nRevise los resultados antes de registrar.');
+
         } catch (err) {
-            console.error('Error al evaluar:', err);
-            alert('Error de conexión con el servidor.');
+            console.error('Error durante la simulación:', err);
+            alert('Error: ' + err.message);
         } finally {
             btnEvaluar.disabled = false;
-            btnEvaluar.textContent = 'Evaluar y Aprobar (3 criterios)';
+            btnEvaluar.textContent = 'Evaluar';
         }
     });
 
 
-    function mostrarResultado(json){
+    // === BOTÓN REGISTRAR ===
+    document.getElementById('btnRegistrar').addEventListener('click', async () => {
+        if (!window.resultadoSimulado) {
+            alert('⚠️ Primero debe evaluar la solicitud antes de registrar.');
+            return;
+        }
+
+        const criterioSeleccionado = document.querySelector('input[name="criterio"]:checked')?.value || 'Precio';
+
+        if (!confirm(`La evaluación se completó con el criterio "${criterioSeleccionado}".\n¿Desea aprobar y registrar oficialmente la evaluación?`)) {
+            return;
+        }
+
+        const btnRegistrar = document.getElementById('btnRegistrar');
+        btnRegistrar.disabled = true;
+        btnRegistrar.textContent = 'Registrando...';
+
+        try {
+            // 🔹 Usamos ruta RELATIVA CORRECTA
+            const res2 = await fetch('../../Vista/Ajax/CUS13/registrarEvaluacion.php', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    idRequerimiento: seleccionRequerimiento,
+                    idPartida: financiamientoActual?.Id_PartidaPeriodo || 1001,
+                    criterio: criterioSeleccionado,
+                    resultado: window.resultadoSimulado
+                })
+            });
+
+            // 🧩 Leemos la respuesta en texto para depurar si hay HTML o error PHP
+            const rawText = await res2.text();
+            console.log("📤 Respuesta cruda del servidor registrarEvaluacion.php:\n", rawText);
+
+            let finalJson;
+            try {
+                finalJson = JSON.parse(rawText);
+            } catch (e) {
+                console.error("❌ No es JSON válido. Respuesta literal del servidor:", rawText);
+                alert("⚠️ Error interno del servidor (ver consola para detalles del error PHP).");
+                return;
+            }
+
+            console.log("📋 Resultado final (registro):", finalJson);
+
+            if (finalJson.success) {
+                alert('✅ Evaluación aprobada y registrada correctamente.');
+                mostrarResultado(finalJson);
+                await cargarFinanciamiento();
+                await cargarSolicitudes();
+
+                // Limpiar después de registrar
+                seleccionRequerimiento = null;
+                window.resultadoSimulado = null;
+                document.getElementById('accionesEvaluacion').style.display = 'none';
+                document.getElementById('detalleVacio').style.display = 'block';
+                document.getElementById('detalleContenido').style.display = 'none';
+            } else {
+                alert('❌ Error al registrar evaluación: ' + (finalJson.error || 'Error desconocido.'));
+            }
+
+        } catch (err) {
+            console.error('Error al registrar:', err);
+            alert('Error: ' + err.message);
+        } finally {
+            btnRegistrar.disabled = false;
+            btnRegistrar.textContent = 'Registrar Evaluación';
+        }
+    });
+
+
+
+    // === FUNCIONES GLOBALES ===
+        function mostrarResultado(json) {
         document.getElementById('resultadoVacio').style.display = 'none';
         document.getElementById('resultadoContenido').style.display = 'block';
         
-        let estadoClass = json.Estado === 'Aprobado' ? 'estado-ok' : 
-                        json.Estado === 'Parcialmente Aprobado' ? 'estado-parcial' : 'estado-no';
-        
+        const montoSolicitado = Number(json.MontoSolicitado || 0);
+        const montoAprobado = Number(json.MontoAprobado || 0);
+        const saldoDespues = Number(json.SaldoDespues || 0);
+        const estado = json.Estado || 'Sin estado';
+
+        let estadoClass = estado === 'Aprobado' ? 'estado-ok' : 
+                        estado === 'Parcialmente Aprobado' ? 'estado-parcial' : 'estado-no';
+
         resultadoResumen.innerHTML = `
             <div class="resumen ${estadoClass}">
-                <div class="estado-titulo">${json.Estado}</div>
+                <div class="estado-titulo">
+                    ${json.idEvaluacion && json.idEvaluacion !== '-' 
+                        ? (json.Estado || '') 
+                        : 'En evaluación'}
+                </div>
                 <div class="info-grid">
-                    <div><strong>ID Evaluación:</strong> ${json.idEvaluacion}</div>
-                    <div><strong>Monto Solicitado:</strong> S/ ${json.MontoSolicitado.toFixed(2)}</div>
-                    <div><strong>Monto Aprobado:</strong> S/ ${json.MontoAprobado.toFixed(2)}</div>
-                    <div><strong>Saldo Después:</strong> S/ ${json.SaldoDespues.toFixed(2)}</div>
+                    <div><strong>ID Evaluación:</strong> ${json.idEvaluacion || '-'}</div>
+                    <div><strong>Monto Solicitado:</strong> S/ ${montoSolicitado.toFixed(2)}</div>
+                    <div><strong>Monto Aprobado:</strong> S/ ${montoAprobado.toFixed(2)}</div>
+                    <div><strong>Saldo Después:</strong> S/ ${saldoDespues.toFixed(2)}</div>
                 </div>
             </div>
         `;
         
+        // Si no hay detalle, salimos
+        if (!json.detalle || !Array.isArray(json.detalle)) {
+            console.warn("⚠️ No se recibió detalle en el JSON final:", json);
+            return;
+        }
+
         tablaResultado.innerHTML = '';
         json.detalle.forEach(d => {
-            const prod = detalleActual.find(x => x.Id_Producto == d.Id_Producto) || {};
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${prod.NombreProducto || d.Id_Producto}</td>
-                <td>${d.CantidadSolicitada || ''}</td>
-                <td class="${d.CantidadAprobada > 0 ? 'ok' : 'no'}">${d.CantidadAprobada}</td>
-                <td>S/ ${parseFloat(d.Precio).toFixed(2)}</td>
-                <td>S/ ${parseFloat(d.MontoAsignado).toFixed(2)}</td>
-                <td><span class="badge-${d.EstadoProducto.toLowerCase()}">${d.EstadoProducto}</span></td>
+                <td>${d.Id_Producto || '-'}</td>
+                <td>${d.CantidadSolicitada || 0}</td>
+                <td class="${d.CantidadAprobada > 0 ? 'ok' : 'no'}">${d.CantidadAprobada || 0}</td>
+                <td>S/ ${(d.Precio ?? 0).toFixed(2)}</td>
+                <td>S/ ${(d.MontoAsignado ?? 0).toFixed(2)}</td>
+                <td><span class="badge-${(d.EstadoProducto || 'desconocido').toLowerCase()}">${d.EstadoProducto || '-'}</span></td>
             `;
             tablaResultado.appendChild(tr);
         });
     }
+
 
     // Inicializar
     cargarFinanciamiento();

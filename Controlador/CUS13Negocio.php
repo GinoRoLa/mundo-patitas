@@ -28,12 +28,13 @@ class CUS13Negocio {
         return $this->model->obtenerDetalleSolicitud($idReq);
     }
 //
-    public function evaluarYRegistrar($idReq, $idPartida, $criterioLabel = 'Precio+Rotacion+Proporcionalidad') {
-        require_once __DIR__ . '/../Modelo/RequerimientoModel.php';
-        $model = new RequerimientoModel();
-        return $model->evaluarYRegistrar($idReq, $idPartida, $criterioLabel);
+    public function evaluarSimulacion($idReq, $idPartida, $criterio){
+        return $this->model->evaluarSimulacion($idReq, $idPartida, $criterio);
     }
 
+    public function registrarEvaluacion($idReq, $idPartida, $resultadoSimulado, $criterio){
+        return $this->model->registrarEvaluacion($idReq, $idPartida, $resultadoSimulado, $criterio);
+    }
 
 }
 ?>

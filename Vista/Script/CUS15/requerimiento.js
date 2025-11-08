@@ -95,6 +95,8 @@
   }
 
   function normalizeDetectadosFromScan(scan) {
+    if (Array.isArray(scan?.nuevos)) return scan.nuevos.length;
+    
     const a = scan?.archivos;
     if (Array.isArray(a)) return a.length;
     if (a && typeof a === "object") {
@@ -365,6 +367,8 @@
       body: JSON.stringify({ idReq, onlyNew: true, hashes: hashesNuevos }),
     });
 
+    console.log("[CUS15] Respuesta importar-excel-req:", r);
+
     if (r?.ok) {
       const tipo = (r.errores?.length || 0) > 0 ? "warning" : "success";
       const msg =
@@ -376,6 +380,7 @@
       await cargarCotsRecibidas(idReq);
       await evaluarYMostrar(idReq);
     } else {
+      console.log("[CUS15] Respuesta importar-excel-req:", r);
       Utils.showToast(r?.error || "No se pudo importar", "error");
     }
   }

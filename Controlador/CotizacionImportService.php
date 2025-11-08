@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -26,77 +27,77 @@ final class CotizacionImportService
    * @param string $idReq     Id del requerimiento
    * @param bool   $withDebug Si true, agrega información de diagnóstico
    */
-public function scanArchivos(string $idReq, bool $withDebug = false): array
-{
-  $dirReal = realpath(self::IMPORT_DIR) ?: self::IMPORT_DIR;
-  $pattern = rtrim($dirReal, '/\\') . DIRECTORY_SEPARATOR . "REC{$idReq}_*.xlsx";
+  public function scanArchivos(string $idReq, bool $withDebug = false): array
+  {
+    $dirReal = realpath(self::IMPORT_DIR) ?: self::IMPORT_DIR;
+    $pattern = rtrim($dirReal, '/\\') . DIRECTORY_SEPARATOR . "REC{$idReq}_*.xlsx";
 
-  $list = [];
-  $globRes = glob($pattern);
-  if ($globRes) {
-    foreach ($globRes as $path) {
-      $base = basename($path);
-      $meta = self::parseFilename($base);
-      if (!$meta) continue;
+    $list = [];
+    $globRes = glob($pattern);
+    if ($globRes) {
+      foreach ($globRes as $path) {
+        $base = basename($path);
+        $meta = self::parseFilename($base);
+        if (!$meta) continue;
 
-      $hash = @hash_file('sha256', $path) ?: null;
-      $list[] = [
-        'file'    => $base,
-        'absPath' => $path,
-        'idReq'   => $meta['idReq'],
-        'ruc'     => $meta['ruc'],
-        'size'    => @filesize($path) ?: 0,
-        'mtime'   => @date('Y-m-d H:i:s', @filemtime($path) ?: time()),
-        'hash'    => $hash,
+        $hash = @hash_file('sha256', $path) ?: null;
+        $list[] = [
+          'file'    => $base,
+          'absPath' => $path,
+          'idReq'   => $meta['idReq'],
+          'ruc'     => $meta['ruc'],
+          'size'    => @filesize($path) ?: 0,
+          'mtime'   => @date('Y-m-d H:i:s', @filemtime($path) ?: time()),
+          'hash'    => $hash,
+        ];
+      }
+    }
+
+    // Obtener hashes ya importados
+    $importados = $this->getImportadosByReq((int)$idReq);
+    $hashesImportados = array_column($importados, 'hash'); // ← Extrae solo hashes
+
+    // ✅ NUEVO: Filtrar archivos nuevos (no importados)
+    $nuevos = array_filter($list, function ($archivo) use ($hashesImportados) {
+      return $archivo['hash'] && !in_array($archivo['hash'], $hashesImportados, true);
+    });
+
+    $out = [
+      'archivos'   => $list,           // Todos los archivos encontrados
+      'importados' => $importados,     // Metadata de importados
+      'nuevos'     => array_values($nuevos) // ← Solo archivos pendientes de importar
+    ];
+
+    if ($withDebug) {
+      $out['debug'] = [
+        'IMPORT_DIR'     => self::IMPORT_DIR,
+        'dirReal'        => $dirReal,
+        'dirExists'      => is_dir($dirReal),
+        'isReadable'     => is_readable($dirReal),
+        'pattern'        => $pattern,
+        'globCount'      => $globRes ? count($globRes) : 0,
+        'parsedCount'    => count($list),
+        'importedCount'  => count($importados),
+        'nuevosCount'    => count($nuevos), // ← Debug count
       ];
     }
+    return $out;
   }
 
-  // Obtener hashes ya importados
-  $importados = $this->getImportadosByReq((int)$idReq);
-  $hashesImportados = array_column($importados, 'hash'); // ← Extrae solo hashes
-  
-  // ✅ NUEVO: Filtrar archivos nuevos (no importados)
-  $nuevos = array_filter($list, function($archivo) use ($hashesImportados) {
-    return $archivo['hash'] && !in_array($archivo['hash'], $hashesImportados, true);
-  });
 
-  $out = [ 
-    'archivos'   => $list,           // Todos los archivos encontrados
-    'importados' => $importados,     // Metadata de importados
-    'nuevos'     => array_values($nuevos) // ← Solo archivos pendientes de importar
-  ];
-  
-  if ($withDebug) {
-    $out['debug'] = [
-      'IMPORT_DIR'     => self::IMPORT_DIR,
-      'dirReal'        => $dirReal,
-      'dirExists'      => is_dir($dirReal),
-      'isReadable'     => is_readable($dirReal),
-      'pattern'        => $pattern,
-      'globCount'      => $globRes ? count($globRes) : 0,
-      'parsedCount'    => count($list),
-      'importedCount'  => count($importados),
-      'nuevosCount'    => count($nuevos), // ← Debug count
-    ];
-  }
-  return $out;
-}
-
-
-private function getImportadosByReq(int $idReq): array
-{
-  $q = "SELECT FileHash AS hash, FileName AS name FROM t88ArchivoCotizacion
+  private function getImportadosByReq(int $idReq): array
+  {
+    $q = "SELECT FileHash AS hash, FileName AS name FROM t88ArchivoCotizacion
         WHERE Id_ReqEvaluacion = ? AND ImportStatus IN ('imported','ignored')";
-  $st = mysqli_prepare($this->cn, $q);
-  mysqli_stmt_bind_param($st, "i", $idReq);
-  mysqli_stmt_execute($st);
-  $rs = mysqli_stmt_get_result($st);
-  $out = [];
-  while ($r = mysqli_fetch_assoc($rs)) $out[] = ['hash'=>$r['hash'], 'name'=>$r['name']];
-  mysqli_stmt_close($st);
-  return $out;
-}
+    $st = mysqli_prepare($this->cn, $q);
+    mysqli_stmt_bind_param($st, "i", $idReq);
+    mysqli_stmt_execute($st);
+    $rs = mysqli_stmt_get_result($st);
+    $out = [];
+    while ($r = mysqli_fetch_assoc($rs)) $out[] = ['hash' => $r['hash'], 'name' => $r['name']];
+    mysqli_stmt_close($st);
+    return $out;
+  }
 
 
   /** Importa por nombre de archivo (dentro de IMPORT_DIR) */
@@ -121,246 +122,290 @@ private function getImportadosByReq(int $idReq): array
    * @throws Exception si hay inconsistencias en el Excel
    */
   public function importarDesdePath(string $path, string $idReq, string $ruc, bool $overwrite = false): array
-{
-  // ===== 0) Preparación: detectar si existe la tabla índice t88 y calcular hash =====
-  $hasT88 = false;
-  $chkT88 = @mysqli_query($this->cn, "SHOW TABLES LIKE 't88ArchivoCotizacion'");
-  if ($chkT88 && mysqli_num_rows($chkT88) > 0) $hasT88 = true;
-  @mysqli_free_result($chkT88);
+  {
+    // ===== 0) Preparación: detectar si existe la tabla índice t88 y calcular hash =====
+    $hasT88 = false;
+    $chkT88 = @mysqli_query($this->cn, "SHOW TABLES LIKE 't88ArchivoCotizacion'");
+    if ($chkT88 && mysqli_num_rows($chkT88) > 0) $hasT88 = true;
+    @mysqli_free_result($chkT88);
 
-  $hash  = @hash_file('sha256', $path) ?: null;
-  $size  = @filesize($path) ?: 0;
-  $mtime = @date('Y-m-d H:i:s', @filemtime($path) ?: time());
-  $fileName = basename($path);
+    $hash  = @hash_file('sha256', $path) ?: null;
+    $size  = @filesize($path) ?: 0;
+    $mtime = @date('Y-m-d H:i:s', @filemtime($path) ?: time());
+    $fileName = basename($path);
 
-  // Idempotencia por hash (si hay t88)
-  if ($hasT88 && $hash) {
-    $st = mysqli_prepare($this->cn, "SELECT 1 FROM t88ArchivoCotizacion WHERE FileHash=? LIMIT 1");
-    mysqli_stmt_bind_param($st, "s", $hash);
-    mysqli_stmt_execute($st);
-    $rs = mysqli_stmt_get_result($st);
-    $already = (bool)($rs && mysqli_fetch_row($rs));
-    mysqli_stmt_close($st);
+    $idReqInt = (int)$idReq;
+    
 
-    if ($already && !$overwrite) {
+    $fechaCierre = $this->getFechaCierreSolicitud($idReqInt, $ruc);
+    if ($fechaCierre !== null && strcmp($mtime, $fechaCierre) > 0) {
+      // Llegó DESPUÉS de la fecha de cierre → se ignora
+
+      if ($hasT88 && $hash) {
+        try {
+          $msg = "Archivo recibido fuera de plazo. Llegó {$mtime}, cierre {$fechaCierre}.";
+          $q88 = "INSERT INTO t88ArchivoCotizacion
+                  (Id_ReqEvaluacion, RUC_Proveedor, FileName, FileSize, FileHash, LastModified,
+                   ImportStatus, ErrorMsg)
+                  VALUES (?,?,?,?,?,?,'ignored',?)";
+          $s88 = mysqli_prepare($this->cn, $q88);
+          mysqli_stmt_bind_param(
+            $s88,
+            "issssss",
+            $idReqInt,
+            $ruc,
+            $fileName,
+            $size,
+            $hash,
+            $mtime,
+            $msg
+          );
+          mysqli_stmt_execute($s88);
+          mysqli_stmt_close($s88);
+        } catch (\Throwable $_) {
+          // best-effort: no romper si falla el log
+        }
+      }
+
       return [
         'ok'      => true,
         'skipped' => true,
-        'code'    => 'ALREADY_IMPORTED',
-        'message' => 'Este archivo ya fue importado (hash coincide).',
-        'idReq'   => (int)$idReq,
+        'code'    => 'AFTER_DEADLINE',
+        'message' => "El archivo {$fileName} llegó fuera de plazo y no se considerará en la evaluación.",
+        'idReq'   => $idReqInt,
         'ruc'     => $ruc,
         'file'    => $fileName,
       ];
     }
-  }
 
-  // ===== 1) Leer Excel =====
-  $ss = IOFactory::load($path);
-  /** @var Worksheet $ws */
-  $ws = $ss->getSheetByName('COTIZACION') ?? $ss->getActiveSheet();
+    // ===== 1) Leer Excel =====
+    $ss = IOFactory::load($path);
+    /** @var Worksheet $ws */
+    $ws = $ss->getSheetByName('COTIZACION') ?? $ss->getActiveSheet();
 
-  $meta         = $this->leerMetadatos($ws);
-  $fecEmision   = isset($meta['FechaEmision'])   ? $this->toDateYmd($meta['FechaEmision'])     : date('Y-m-d');
-  $fecRecepcion = isset($meta['FechaRecepcion']) ? $this->toDateYmdHis($meta['FechaRecepcion']) : date('Y-m-d H:i:s');
-  $obs          = $meta['Observaciones'] ?? null;
+    $meta         = $this->leerMetadatos($ws);
+    $fecEmision   = isset($meta['FechaEmision'])   ? $this->toDateYmd($meta['FechaEmision'])     : date('Y-m-d');
+    $fecRecepcion = isset($meta['FechaRecepcion']) ? $this->toDateYmdHis($meta['FechaRecepcion']) : date('Y-m-d H:i:s');
+    $obs          = $meta['Observaciones'] ?? null;
 
-  // Encabezado de detalle
-  [$startRow, $colMap] = $this->buscarHeader($ws, ['Id_Producto','Descripcion','CantidadOfertada','PrecioUnitario']);
-  if ($startRow === null) {
-    throw new Exception("No se encontró el encabezado del detalle en la hoja.");
-  }
-
-  // Lee filas de detalle
-  $detalle = [];
-  $r = $startRow + 1;
-  while (true) {
-    $idProd = trim((string)$this->valBy($ws, $r, $colMap['Id_Producto']));
-    $desc   = trim((string)$this->valBy($ws, $r, $colMap['Descripcion']));
-    $cant   = $this->num($this->valBy($ws, $r, $colMap['CantidadOfertada']));
-    $pu     = $this->num($this->valBy($ws, $r, $colMap['PrecioUnitario']));
-
-    // fin al encontrar fila totalmente vacía
-    if ($idProd === '' && $desc === '' && $cant === null && $pu === null) break;
-
-    if ($idProd === '' || $cant === null || $pu === null) {
-      throw new Exception("Fila $r: faltan Id_Producto, CantidadOfertada o PrecioUnitario.");
+    // Encabezado de detalle
+    [$startRow, $colMap] = $this->buscarHeader($ws, ['Id_Producto', 'Descripcion', 'CantidadOfertada', 'PrecioUnitario']);
+    if ($startRow === null) {
+      throw new Exception("No se encontró el encabezado del detalle en la hoja.");
     }
 
-    $detalle[] = [
-      'Id_Producto'      => (int)$idProd,
-      'Descripcion'      => $desc,
-      'CantidadOfertada' => (int)$cant,
-      'PrecioUnitario'   => (float)$pu,
-    ];
+    // Lee filas de detalle
+    $detalle = [];
+    $r = $startRow + 1;
+    while (true) {
+      $idProd = trim((string)$this->valBy($ws, $r, $colMap['Id_Producto']));
+      $desc   = trim((string)$this->valBy($ws, $r, $colMap['Descripcion']));
+      $cant   = $this->num($this->valBy($ws, $r, $colMap['CantidadOfertada']));
+      $pu     = $this->num($this->valBy($ws, $r, $colMap['PrecioUnitario']));
 
-    $r++;
-    if ($r > 50000) throw new Exception("Demasiadas filas sin fin claro.");
-  }
+      // fin al encontrar fila totalmente vacía
+      if ($idProd === '' && $desc === '' && $cant === null && $pu === null) break;
 
-  if (count($detalle) === 0) {
-    throw new Exception("No hay filas de detalle para importar.");
-  }
-
-  // Validar existencia de productos
-  $ids       = array_map(fn($d)=>(int)$d['Id_Producto'], $detalle);
-  $presentes = $this->existenProductos($ids);
-  foreach ($detalle as $i => $d) {
-    if (empty($presentes[(int)$d['Id_Producto']])) {
-      $filaExcel = $startRow + 1 + $i;
-      throw new Exception("Producto inexistente en BD (Id_Producto={$d['Id_Producto']}) en fila $filaExcel.");
-    }
-  }
-
-  // ===== 2) Persistir =====
-  mysqli_begin_transaction($this->cn);
-  try {
-    $this->verificarCompatibilidadFK();
-
-    // Forzar int
-    $idReqInt = (int)$idReq;
-
-    // Idempotencia por (Req,RUC) cuando no hay t88 o no hay hash
-    if (!$overwrite) {
-      if ($this->existeCotizacionReqRuc($idReqInt, $ruc)) {
-        mysqli_commit($this->cn); // no cambios
-        return [
-          'ok'      => true,
-          'skipped' => true,
-          'code'    => 'ALREADY_EXISTS',
-          'message' => "Ya existe una cotización previa para REQ {$idReqInt} y proveedor {$ruc}. No se importó.",
-          'idReq'   => $idReqInt,
-          'ruc'     => $ruc,
-          'file'    => $fileName,
-        ];
+      if ($idProd === '' || $cant === null || $pu === null) {
+        throw new Exception("Fila $r: faltan Id_Producto, CantidadOfertada o PrecioUnitario.");
       }
 
-      // Opcional: distinguir por FechaEmision
-      $idPrev = $this->buscarCotizacion($idReqInt, $ruc, $fecEmision);
-      if ($idPrev) {
-        mysqli_commit($this->cn);
-        return [
-          'ok'      => true,
-          'skipped' => true,
-          'code'    => 'ALREADY_EXISTS_SAME_DATE',
-          'message' => "Ya existe cotización para REQ {$idReqInt}, RUC {$ruc} y FechaEmision {$fecEmision}. No se importó.",
-          'idReq'   => $idReqInt,
-          'ruc'     => $ruc,
-          'file'    => $fileName,
-        ];
-      }
-    } else {
-      // overwrite=true → si existe por fecha, borrarlo
-      $idPrev = $this->buscarCotizacion($idReqInt, $ruc, $fecEmision);
-      if ($idPrev) { $this->borrarCotizacion($idPrev); }
+      $detalle[] = [
+        'Id_Producto'      => (int)$idProd,
+        'Descripcion'      => $desc,
+        'CantidadOfertada' => (int)$cant,
+        'PrecioUnitario'   => (float)$pu,
+      ];
+
+      $r++;
+      if ($r > 50000) throw new Exception("Demasiadas filas sin fin claro.");
     }
 
-    // Cabecera
-    $sqlCab = "INSERT INTO t86Cotizacion
-              (Id_ReqEvaluacion, RUC_Proveedor, FechaEmision, FechaRecepcion, Observaciones, SubTotal, IGV, Total, Estado)
-               VALUES (?, ?, ?, ?, ?, 0, 0, 0, 'Recibida')";
-    $sc = mysqli_prepare($this->cn, $sqlCab);
-    mysqli_stmt_bind_param($sc, "issss", $idReqInt, $ruc, $fecEmision, $fecRecepcion, $obs);
-    mysqli_stmt_execute($sc);
-    $idCot = (int)mysqli_insert_id($this->cn);
-    mysqli_stmt_close($sc);
+    if (count($detalle) === 0) {
+      throw new Exception("No hay filas de detalle para importar.");
+    }
 
-    // Detalle
-    $sub = 0.0;
-    $sqlDet = "INSERT INTO t87DetalleCotizacion (Id_Cotizacion, Descripcion, Id_Producto, CantidadOfertada, PrecioUnitario)
+    // Validar existencia de productos
+    $ids       = array_map(fn($d) => (int)$d['Id_Producto'], $detalle);
+    $presentes = $this->existenProductos($ids);
+    foreach ($detalle as $i => $d) {
+      if (empty($presentes[(int)$d['Id_Producto']])) {
+        $filaExcel = $startRow + 1 + $i;
+        throw new Exception("Producto inexistente en BD (Id_Producto={$d['Id_Producto']}) en fila $filaExcel.");
+      }
+    }
+
+    // ===== 2) Persistir =====
+    mysqli_begin_transaction($this->cn);
+    try {
+      $this->verificarCompatibilidadFK();
+
+      // Forzar int
+      //$idReqInt = (int)$idReq;
+      $nroCotProv = $meta['NroCotizacion'] ?? null;
+
+      // Idempotencia por (Req,RUC) cuando no hay t88 o no hay hash
+      if (!$overwrite) {
+        if ($this->existeCotizacionReqRuc($idReqInt, $ruc)) {
+          mysqli_commit($this->cn); // no cambios
+          return [
+            'ok'      => true,
+            'skipped' => true,
+            'code'    => 'ALREADY_EXISTS',
+            'message' => "Ya existe una cotización previa para REQ {$idReqInt} y proveedor {$ruc}. No se importó.",
+            'idReq'   => $idReqInt,
+            'ruc'     => $ruc,
+            'file'    => $fileName,
+          ];
+        }
+
+
+
+        // Opcional: distinguir por FechaEmision
+        $idPrev = $this->buscarCotizacion($idReqInt, $ruc, $fecEmision);
+        if ($idPrev) {
+          mysqli_commit($this->cn);
+          return [
+            'ok'      => true,
+            'skipped' => true,
+            'code'    => 'ALREADY_EXISTS_SAME_DATE',
+            'message' => "Ya existe cotización para REQ {$idReqInt}, RUC {$ruc} y FechaEmision {$fecEmision}. No se importó.",
+            'idReq'   => $idReqInt,
+            'ruc'     => $ruc,
+            'file'    => $fileName,
+          ];
+        }
+      } else {
+        // overwrite=true → si existe por fecha, borrarlo
+        $idPrev = $this->buscarCotizacion($idReqInt, $ruc, $fecEmision);
+        if ($idPrev) {
+          $this->borrarCotizacion($idPrev);
+        }
+      }
+
+      // Cabecera
+      $sqlCab = "INSERT INTO t86Cotizacion (Id_ReqEvaluacion, RUC_Proveedor, NroCotizacionProv,
+   FechaEmision, FechaRecepcion, Observaciones,
+   SubTotal, IGV, Total, Estado)
+  VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'Recibida')";
+      $sc = mysqli_prepare($this->cn, $sqlCab);
+      mysqli_stmt_bind_param( $sc, "isssss",$idReqInt,$ruc,$nroCotProv, $fecEmision, $fecRecepcion,$obs);
+      mysqli_stmt_execute($sc);
+      $idCot = (int)mysqli_insert_id($this->cn);
+      mysqli_stmt_close($sc);
+
+      // Detalle
+      $sub = 0.0;
+      $sqlDet = "INSERT INTO t87DetalleCotizacion (Id_Cotizacion, Descripcion, Id_Producto, CantidadOfertada, PrecioUnitario)
                VALUES (?, ?, ?, ?, ?)";
-    $sd = mysqli_prepare($this->cn, $sqlDet);
-    foreach ($detalle as $d) {
-      mysqli_stmt_bind_param(
-        $sd,
-        "isidd",
-        $idCot,
-        $d['Descripcion'],
-        $d['Id_Producto'],
-        $d['CantidadOfertada'],
-        $d['PrecioUnitario']
-      );
-      mysqli_stmt_execute($sd);
-      $sub += round($d['CantidadOfertada'] * $d['PrecioUnitario'], 2);
-    }
-    mysqli_stmt_close($sd);
+      $sd = mysqli_prepare($this->cn, $sqlDet);
+      foreach ($detalle as $d) {
+        mysqli_stmt_bind_param(
+          $sd,
+          "isidd",
+          $idCot,
+          $d['Descripcion'],
+          $d['Id_Producto'],
+          $d['CantidadOfertada'],
+          $d['PrecioUnitario']
+        );
+        mysqli_stmt_execute($sd);
+        $sub += round($d['CantidadOfertada'] * $d['PrecioUnitario'], 2);
+      }
+      mysqli_stmt_close($sd);
 
-    // Totales
-    $igv = round($sub * 0.18, 2);
-    $tot = round($sub + $igv, 2);
-    $up  = mysqli_prepare($this->cn, "UPDATE t86Cotizacion SET SubTotal=?, IGV=?, Total=? WHERE Id_Cotizacion=?");
-    mysqli_stmt_bind_param($up, "dddi", $sub, $igv, $tot, $idCot);
-    mysqli_stmt_execute($up);
-    mysqli_stmt_close($up);
+      // Totales
+      $igv = round($sub * 0.18, 2);
+      $tot = round($sub + $igv, 2);
+      $up  = mysqli_prepare($this->cn, "UPDATE t86Cotizacion SET SubTotal=?, IGV=?, Total=? WHERE Id_Cotizacion=?");
+      mysqli_stmt_bind_param($up, "dddi", $sub, $igv, $tot, $idCot);
+      mysqli_stmt_execute($up);
+      mysqli_stmt_close($up);
 
-    // Registrar en t88 si existe
-    if ($hasT88 && $hash) {
-      // Si ya había una fila por mismo hash y overwrite=true, la dejamos como está (única hash).
-      // Si no existía, se inserta como importado.
-      $st = mysqli_prepare($this->cn, "SELECT Id_Archivo FROM t88ArchivoCotizacion WHERE FileHash=? LIMIT 1");
-      mysqli_stmt_bind_param($st, "s", $hash);
-      mysqli_stmt_execute($st);
-      $rs = mysqli_stmt_get_result($st);
-      $row = $rs ? mysqli_fetch_assoc($rs) : null;
-      mysqli_stmt_close($st);
+      // Registrar en t88 si existe
+      if ($hasT88 && $hash) {
+        // Si ya había una fila por mismo hash y overwrite=true, la dejamos como está (única hash).
+        // Si no existía, se inserta como importado.
+        $st = mysqli_prepare($this->cn, "SELECT Id_Archivo FROM t88ArchivoCotizacion WHERE FileHash=? LIMIT 1");
+        mysqli_stmt_bind_param($st, "s", $hash);
+        mysqli_stmt_execute($st);
+        $rs = mysqli_stmt_get_result($st);
+        $row = $rs ? mysqli_fetch_assoc($rs) : null;
+        mysqli_stmt_close($st);
 
-      if (!$row) {
-        $q88 = "INSERT INTO t88ArchivoCotizacion
+        if (!$row) {
+          $q88 = "INSERT INTO t88ArchivoCotizacion
                 (Id_ReqEvaluacion,RUC_Proveedor,FileName,FileSize,FileHash,LastModified,ImportStatus,Id_Cotizacion)
                 VALUES (?,?,?,?,? ,?,'imported',?)";
-        $s88 = mysqli_prepare($this->cn, $q88);
-        mysqli_stmt_bind_param($s88, "isssssi",
-          $idReqInt, $ruc, $fileName, $size, $hash, $mtime, $idCot
-        );
-        mysqli_stmt_execute($s88);
-        mysqli_stmt_close($s88);
-      } else {
-        // ya existe fila por hash: nos aseguramos de marcar que está importado y linkear a Id_Cotizacion si no lo tiene
-        $q88u = "UPDATE t88ArchivoCotizacion
+          $s88 = mysqli_prepare($this->cn, $q88);
+          mysqli_stmt_bind_param(
+            $s88,
+            "isssssi",
+            $idReqInt,
+            $ruc,
+            $fileName,
+            $size,
+            $hash,
+            $mtime,
+            $idCot
+          );
+          mysqli_stmt_execute($s88);
+          mysqli_stmt_close($s88);
+        } else {
+          // ya existe fila por hash: nos aseguramos de marcar que está importado y linkear a Id_Cotizacion si no lo tiene
+          $q88u = "UPDATE t88ArchivoCotizacion
                  SET ImportStatus='imported', Id_Cotizacion=COALESCE(Id_Cotizacion, ?)
                  WHERE Id_Archivo=?";
-        $s88u = mysqli_prepare($this->cn, $q88u);
-        $idArchivo = (int)$row['Id_Archivo'];
-        mysqli_stmt_bind_param($s88u, "ii", $idCot, $idArchivo);
-        mysqli_stmt_execute($s88u);
-        mysqli_stmt_close($s88u);
+          $s88u = mysqli_prepare($this->cn, $q88u);
+          $idArchivo = (int)$row['Id_Archivo'];
+          mysqli_stmt_bind_param($s88u, "ii", $idCot, $idArchivo);
+          mysqli_stmt_execute($s88u);
+          mysqli_stmt_close($s88u);
+        }
       }
-    }
 
-    mysqli_commit($this->cn);
+      mysqli_commit($this->cn);
 
-    $resp = [
-      'ok'           => true,
-      'idCotizacion' => $idCot,
-      'resumen'      => ['SubTotal'=>$sub,'IGV'=>$igv,'Total'=>$tot],
-      'items'        => count($detalle),
-      'idReq'        => $idReqInt,
-      'ruc'          => $ruc,
-      'file'         => $fileName,
-    ];
-    return $resp;
+      $resp = [
+        'ok'           => true,
+        'idCotizacion' => $idCot,
+        'resumen'      => ['SubTotal' => $sub, 'IGV' => $igv, 'Total' => $tot],
+        'items'        => count($detalle),
+        'idReq'        => $idReqInt,
+        'ruc'          => $ruc,
+        'file'         => $fileName,
+      ];
+      return $resp;
+    } catch (\Throwable $e) {
+      mysqli_rollback($this->cn);
 
-  } catch (\Throwable $e) {
-    mysqli_rollback($this->cn);
-
-    // Si existe t88 y el hash, registra error (best-effort; no interrumpe la excepción)
-    if ($hasT88 && $hash) {
-      try {
-        $q88e = "INSERT INTO t88ArchivoCotizacion
+      // Si existe t88 y el hash, registra error (best-effort; no interrumpe la excepción)
+      if ($hasT88 && $hash) {
+        try {
+          $q88e = "INSERT INTO t88ArchivoCotizacion
                  (Id_ReqEvaluacion,RUC_Proveedor,FileName,FileSize,FileHash,LastModified,ImportStatus,ErrorMsg)
                  VALUES (?,?,?,?,? ,?,'error',?)";
-        $s88e = mysqli_prepare($this->cn, $q88e);
-        mysqli_stmt_bind_param($s88e, "issssss",
-          $idReq, $ruc, $fileName, $size, $hash, $mtime, $e->getMessage()
-        );
-        mysqli_stmt_execute($s88e);
-        mysqli_stmt_close($s88e);
-      } catch (\Throwable $_) {}
-    }
+          $s88e = mysqli_prepare($this->cn, $q88e);
+          mysqli_stmt_bind_param(
+            $s88e,
+            "issssss",
+            $idReq,
+            $ruc,
+            $fileName,
+            $size,
+            $hash,
+            $mtime,
+            $e->getMessage()
+          );
+          mysqli_stmt_execute($s88e);
+          mysqli_stmt_close($s88e);
+        } catch (\Throwable $_) {
+        }
+      }
 
-    throw $e;
+      throw $e;
+    }
   }
-}
 
   // ===== BD helpers =====
 
@@ -440,7 +485,7 @@ private function getImportadosByReq(int $idReq): array
    *  Moneda | <valor>
    *  Observaciones | <valor>
    */
-  private function leerMetadatos(Worksheet $ws): array
+  /* private function leerMetadatos(Worksheet $ws): array
   {
     $pairs = [
       'RUC'            => 'RUC',
@@ -461,6 +506,38 @@ private function getImportadosByReq(int $idReq): array
       }
     }
     return $meta;
+  } */
+  private function leerMetadatos(Worksheet $ws): array
+  {
+    $pairs = [
+      'RUC'            => 'RUC',
+      'FechaEmision'   => 'FechaEmision',
+      'FechaRecepcion' => 'FechaRecepcion',
+      'Moneda'         => 'Moneda',
+      'Observaciones'  => 'Observaciones',
+    ];
+
+    $meta = [];
+
+    // 🔹 Buscar en las primeras 10 filas las claves estándar
+    for ($r = 1; $r <= 80; $r++) {
+      for ($c = 1; $c <= 10; $c++) {
+        $label = trim((string)$this->valBy($ws, $r, $c));
+        if (!$label) continue;
+        if (isset($pairs[$label])) {
+          $val = $this->valBy($ws, $r, $c + 1);
+          $meta[$label] = $val;
+        }
+
+        // 🔹 Detección especial del formato “Cotizacion N°”
+        if (preg_match('/^Cotizaci[oó]n\s*N/i', $label)) {
+          $val = $this->valBy($ws, $r, $c + 1);
+          $meta['NroCotizacion'] = trim((string)$val);
+        }
+      }
+    }
+
+    return $meta;
   }
 
   /**
@@ -470,21 +547,44 @@ private function getImportadosByReq(int $idReq): array
   private function buscarHeader(Worksheet $ws, array $expected): array
   {
     $expectedLower = array_map('mb_strtolower', $expected);
-    for ($r=1; $r<=200; $r++) {
+    for ($r = 1; $r <= 200; $r++) {
       $labels = [];
-      for ($c=1; $c<=30; $c++) {
+      for ($c = 1; $c <= 30; $c++) {
         $labels[$c] = mb_strtolower(trim((string)$this->valBy($ws, $r, $c)));
       }
       $map = [];
       foreach ($expectedLower as $idx => $name) {
         $colIdx = array_search($name, $labels, true);
-        if ($colIdx === false) { $map = []; break; }
+        if ($colIdx === false) {
+          $map = [];
+          break;
+        }
         $map[$expected[$idx]] = $colIdx;
       }
       if (!empty($map)) return [$r, $map];
     }
     return [null, []];
   }
+
+    /**
+   * Devuelve la última FechaCierre para (Id_ReqEvaluacion, RUC) o null si no hay solicitud.
+   */
+  private function getFechaCierreSolicitud(int $idReq, string $ruc): ?string
+  {
+    $sql = "SELECT MAX(FechaCierre) AS fc
+            FROM t100Solicitud_Cotizacion_Proveedor
+            WHERE Id_ReqEvaluacion = ? AND RUC = ?";
+    $st = mysqli_prepare($this->cn, $sql);
+    mysqli_stmt_bind_param($st, "is", $idReq, $ruc);
+    mysqli_stmt_execute($st);
+    $rs  = mysqli_stmt_get_result($st);
+    $row = $rs ? mysqli_fetch_assoc($rs) : null;
+    mysqli_stmt_close($st);
+
+    $fc = $row['fc'] ?? null;
+    return $fc ? substr((string)$fc, 0, 19) : null; // 'YYYY-mm-dd HH:ii:ss'
+  }
+
 
   /** Lee una celda usando columna numérica (A=1, B=2, …) */
   private function valBy(Worksheet $ws, int $row, int $col)
@@ -498,7 +598,7 @@ private function getImportadosByReq(int $idReq): array
   {
     if ($v === null || $v === '') return null;
     if (is_numeric($v)) return (float)$v;
-    $s = str_replace([',',' '], ['', ''], (string)$v);
+    $s = str_replace([',', ' '], ['', ''], (string)$v);
     $s = preg_replace('/[^\d\.\-]/', '', $s);
     return is_numeric($s) ? (float)$s : null;
   }

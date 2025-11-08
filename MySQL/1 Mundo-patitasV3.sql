@@ -710,6 +710,7 @@ CREATE TABLE t86Cotizacion (
   Id_Cotizacion     INT AUTO_INCREMENT PRIMARY KEY,
   Id_ReqEvaluacion  INT  NOT NULL,       -- 👈 ya no Id_Requerimiento
   RUC_Proveedor     VARCHAR(11) NOT NULL,
+  NroCotizacionProv VARCHAR(50) NULL,
   FechaEmision      DATE        NOT NULL,
   FechaRecepcion    DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP,
   Observaciones     VARCHAR(400) NULL,
@@ -780,6 +781,8 @@ CREATE TABLE t06OrdenCompra (
   RUC_Proveedor     VARCHAR(11) NOT NULL,
   RazonSocial       VARCHAR(150) NULL,
   Id_ReqEvaluacion  INT  NULL,          -- 👈 referencia principal
+  Id_Cotizacion INT NOT NULL,
+  TiempoEntregaDias INT NOT NULL DEFAULT 15,
   Moneda            CHAR(3)     NOT NULL DEFAULT 'PEN',
   PorcentajeIGV     DECIMAL(5,2) NOT NULL DEFAULT 18.00,
   SubTotal          DECIMAL(12,2) NOT NULL DEFAULT 0.00,
@@ -792,10 +795,14 @@ CREATE TABLE t06OrdenCompra (
   CONSTRAINT fk_t06_prov FOREIGN KEY (RUC_Proveedor)
     REFERENCES t17CatalogoProveedor (Id_NumRuc)
       ON UPDATE RESTRICT ON DELETE RESTRICT,
+  CONSTRAINT fk_t06_t86 FOREIGN KEY (Id_Cotizacion)
+    REFERENCES t86Cotizacion (Id_Cotizacion)
+      ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t06_eval FOREIGN KEY (Id_ReqEvaluacion)
     REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
       ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 
 /* === Orden de Compra - Detalle (mínimo necesario) ======================= */
 DROP TABLE IF EXISTS t07DetalleOrdenCompra;
@@ -1260,6 +1267,17 @@ CREATE TABLE t405IncidenciaEntrega (
     ON UPDATE RESTRICT ON DELETE SET NULL
 ) ENGINE=InnoDB AUTO_INCREMENT=85001;
 
+CREATE TABLE t99_proveedores_productos (
+    Id_ProvProd INT AUTO_INCREMENT PRIMARY KEY,
+    Id_NumRuc VARCHAR(11) NOT NULL,
+    Id_Producto INT NOT NULL,
+    CONSTRAINT fk_99_prov FOREIGN KEY (Id_NumRuc)
+        REFERENCES t17catalogoproveedor(Id_NumRuc)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_99_prod FOREIGN KEY (Id_Producto)
+        REFERENCES t18catalogoproducto(Id_Producto)
+        ON UPDATE CASCADE ON DELETE CASCADE
+);
 
 -- ==========================================================
 -- 13) Índices adicionales

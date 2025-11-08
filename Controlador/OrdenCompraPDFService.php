@@ -24,6 +24,7 @@ final class OrdenCompraPDFService
     $subtotal = number_format((float)$e['SubTotal'], 2, '.', ',');
     $igv      = number_format((float)$e['Impuesto'], 2, '.', ',');
     $total    = number_format((float)$e['MontoTotal'], 2, '.', ',');
+    $nroCotProv = trim((string)($e['NroCotizacionProv'] ?? ''));
 
     // Logo opcional
     $logoPath = __DIR__ . '/../src/Imagen/Logo-MP.png';
@@ -38,75 +39,185 @@ final class OrdenCompraPDFService
 <title>Orden de Compra #<?= htmlspecialchars($numOC) ?></title>
 <style>
   @page { size: A4; margin: 18mm 15mm; }
-  body { font-family: Arial, Helvetica, sans-serif; color:#111; font-size:12px; }
-  h1 { font-size:26px; margin:0 0 6px 0; }
-  .muted{ color:#666; }
-  .header { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:12px; }
-  .header-right { text-align:right; }
-  .kva { margin:2px 0; }
-  .two-col{ display:flex; gap:16px; margin:16px 0 12px 0; }
-  .card { flex:1; border:1px solid #bbb; border-radius:6px; padding:10px 12px; }
-  .card h3 { margin:0 0 8px 0; font-size:14px; }
-  .row { display:flex; gap:8px; margin:2px 0; }
-  .row .lbl{ width:130px; font-weight:bold; }
-  table{ width:100%; border-collapse:collapse; }
-  th, td{ border:1px solid #333; padding:6px 5px; }
-  th{ background:#efefef; font-size:11px; }
-  td{ font-size:11px; }
-  .right{ text-align:right; }
-  .no-border td{ border:0; }
-  .totals { width:55%; margin-left:auto; border-collapse:collapse; margin-top:8px; }
-  .totals td{ padding:6px 5px; border:1px solid #333; }
-  .totals tr td:first-child{ background:#fafafa; font-weight:bold; }
-  .section { margin-top:14px; }
-  .sign { margin-top:36px; text-align:center; }
-  .sign .line { margin:40px auto 4px; height:1px; background:#444; width:320px; }
-  .logo { width:70px; height:70px; object-fit:contain; }
+  body {
+    font-family: 'Helvetica', Arial, sans-serif;
+    color:#111;
+    font-size:12px;
+    line-height:1.4;
+  }
+
+  /* === HEADER === */
+  .header {
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    border-bottom:2px solid #444;
+    padding-bottom:8px;
+    margin-bottom:14px;
+  }
+  .header-left {
+    display:flex;
+    gap:12px;
+    align-items:center;
+  }
+  .logo {
+    width:70px;
+    height:70px;
+    object-fit:contain;
+  }
+  .title-block h1 {
+    font-size:24px;
+    margin:0;
+  }
+  .header-right {
+    text-align:right;
+    font-size:12px;
+  }
+  .kva { margin:3px 0; }
+
+  /* === CARDS === */
+  .two-col {
+    display:flex;
+    gap:18px;
+    margin:16px 0 10px;
+  }
+  .card {
+    flex:1;
+    border:1px solid #ccc;
+    border-radius:8px;
+    padding:10px 14px;
+    background:#fafafa;
+  }
+  .card h3 {
+    margin:0 0 6px 0;
+    font-size:13px;
+    border-bottom:1px solid #ddd;
+    padding-bottom:4px;
+    color:#333;
+  }
+
+  .row {
+    display:flex;
+    margin:2px 0;
+  }
+  .lbl {
+    width:120px;
+    font-weight:bold;
+    color:#333;
+  }
+  .val {
+    flex:1;
+    color:#111;
+  }
+
+  /* === TABLE === */
+  table {
+    width:100%;
+    border-collapse:collapse;
+    margin-top:10px;
+  }
+  th, td {
+    border:1px solid #666;
+    padding:6px 5px;
+    font-size:11px;
+  }
+  th {
+    background:#f1f1f1;
+    text-align:center;
+    font-weight:bold;
+  }
+  td.right { text-align:right; }
+
+  /* === TOTALS === */
+  .totals {
+    width:45%;
+    margin-left:auto;
+    border-collapse:collapse;
+    margin-top:12px;
+  }
+  .totals td {
+    padding:6px 5px;
+    border:1px solid #666;
+    font-size:11.5px;
+  }
+  .totals tr td:first-child {
+    background:#f7f7f7;
+    font-weight:bold;
+    width:60%;
+  }
+  .totals tr:last-child td {
+    font-size:12.5px;
+    font-weight:bold;
+    background:#e8e8e8;
+  }
+
+  /* === FOOTER === */
+  .section {
+    margin-top:16px;
+    border-top:1px solid #ccc;
+    padding-top:8px;
+  }
+  .section .row { margin:4px 0; }
+  .sign {
+    margin-top:50px;
+    text-align:center;
+  }
+  .sign .line {
+    margin:40px auto 6px;
+    height:1px;
+    background:#444;
+    width:250px;
+  }
 </style>
 </head>
 <body>
 
   <div class="header">
-    <div>
-      <h1>Orden de Compra</h1>
+    <div class="header-left">
       <?php if ($logoData): ?>
         <img class="logo" src="<?= $logoData ?>" alt="Logo">
       <?php endif; ?>
+      <div class="title-block">
+        <h1>Orden de Compra</h1>
+      </div>
     </div>
     <div class="header-right">
       <div class="kva"><b>Fecha:</b> <?= htmlspecialchars($fecha) ?></div>
-      <div class="kva"><b>N° de orden:</b> <b><?= htmlspecialchars($numOC) ?></b></div>
+      <div class="kva"><b>N° de orden:</b> <?= htmlspecialchars($numOC) ?></div>
+      <?php if ($nroCotProv !== ''): ?>
+        <div class="kva"><b>Ref. cotización proveedor:</b> <?= htmlspecialchars($nroCotProv) ?></div>
+      <?php endif; ?>
     </div>
   </div>
 
   <div class="two-col">
     <div class="card">
       <h3>Datos del proveedor</h3>
-      <div class="row"><div class="lbl">Nombre o razón social:</div><div><?= htmlspecialchars($p['RazonSocial']) ?></div></div>
-      <div class="row"><div class="lbl">RUC:</div><div><?= htmlspecialchars($p['RUC']) ?></div></div>
-      <div class="row"><div class="lbl">Dirección:</div><div><?= htmlspecialchars($p['Direccion']) ?></div></div>
-      <div class="row"><div class="lbl">Teléfono:</div><div><?= htmlspecialchars($p['Telefono']) ?></div></div>
-      <div class="row"><div class="lbl">Correo electrónico:</div><div><?= htmlspecialchars($p['Correo']) ?></div></div>
+      <div class="row"><div class="lbl">Razón social:</div><div class="val"><?= htmlspecialchars($p['RazonSocial']) ?></div></div>
+      <div class="row"><div class="lbl">RUC:</div><div class="val"><?= htmlspecialchars($p['RUC']) ?></div></div>
+      <div class="row"><div class="lbl">Dirección:</div><div class="val"><?= htmlspecialchars($p['Direccion']) ?></div></div>
+      <div class="row"><div class="lbl">Teléfono:</div><div class="val"><?= htmlspecialchars($p['Telefono']) ?></div></div>
+      <div class="row"><div class="lbl">Correo:</div><div class="val"><?= htmlspecialchars($p['Correo']) ?></div></div>
     </div>
 
     <div class="card">
       <h3>Datos del cliente</h3>
-      <div class="row"><div class="lbl">Nombre o razón social:</div><div><?= htmlspecialchars($c['RazonSocial']) ?></div></div>
-      <div class="row"><div class="lbl">RUC:</div><div><?= htmlspecialchars($c['RUC']) ?></div></div>
-      <div class="row"><div class="lbl">Dirección:</div><div><?= htmlspecialchars($c['Direccion']) ?></div></div>
-      <div class="row"><div class="lbl">Teléfono:</div><div><?= htmlspecialchars($c['Telefono']) ?></div></div>
-      <div class="row"><div class="lbl">Correo electrónico:</div><div><?= htmlspecialchars($c['Correo']) ?></div></div>
+      <div class="row"><div class="lbl">Razón social:</div><div class="val"><?= htmlspecialchars($c['RazonSocial']) ?></div></div>
+      <div class="row"><div class="lbl">RUC:</div><div class="val"><?= htmlspecialchars($c['RUC']) ?></div></div>
+      <div class="row"><div class="lbl">Dirección:</div><div class="val"><?= htmlspecialchars($c['Direccion']) ?></div></div>
+      <div class="row"><div class="lbl">Teléfono:</div><div class="val"><?= htmlspecialchars($c['Telefono']) ?></div></div>
+      <div class="row"><div class="lbl">Correo:</div><div class="val"><?= htmlspecialchars($c['Correo']) ?></div></div>
     </div>
   </div>
 
   <table>
     <thead>
       <tr>
-        <th style="width:12%">Ref.</th>
+        <th style="width:10%">Ref.</th>
         <th>Descripción</th>
         <th style="width:12%">Cantidad</th>
-        <th style="width:16%">Precio unitario</th>
-        <th style="width:16%">Precio total</th>
+        <th style="width:14%">Precio unitario</th>
+        <th style="width:14%">Precio total</th>
       </tr>
     </thead>
     <tbody>
@@ -124,17 +235,14 @@ final class OrdenCompraPDFService
 
   <table class="totals">
     <tr><td>Total pedido</td><td class="right">S/ <?= $subtotal ?></td></tr>
-    <!-- Si no manejas descuentos/costos envío, déjalos en 0 o comenta las filas -->
-    <!-- <tr><td>Descuento</td><td class="right">- S/ 0.00</td></tr> -->
-    <!-- <tr><td>Gastos de envío</td><td class="right">S/ 0.00</td></tr> -->
     <tr><td>IGV (<?= number_format((float)$e['PorcentajeIGV'],2) ?>%)</td><td class="right">S/ <?= $igv ?></td></tr>
-    <tr><td><b>Total a pagar</b></td><td class="right"><b>S/ <?= $total ?></b></td></tr>
+    <tr><td>Total a pagar</td><td class="right">S/ <?= $total ?></td></tr>
   </table>
 
   <div class="section">
-    <div class="row"><div class="lbl">Fecha de entrega:</div><div><?= htmlspecialchars($fecha) ?></div></div>
-    <div class="row"><div class="lbl">Dirección de entrega:</div><div><?= htmlspecialchars($c['Direccion']) ?></div></div>
-    <div class="row"><div class="lbl">Notas:</div><div></div></div>
+    <div class="row"><div class="lbl">Plazo de entrega:</div><div class="val"><?= htmlspecialchars($e['TiempoEntregaDias'] ?? 15) ?> días</div></div>
+    <div class="row"><div class="lbl">Dirección de entrega:</div><div class="val"><?= htmlspecialchars($c['Direccion']) ?></div></div>
+    <div class="row"><div class="lbl">Notas:</div><div class="val">—</div></div>
   </div>
 
   <div class="sign">
@@ -144,6 +252,7 @@ final class OrdenCompraPDFService
 
 </body>
 </html>
+
 <?php
     return ob_get_clean();
   }

@@ -783,6 +783,7 @@ CREATE TABLE t06OrdenCompra (
   Id_ReqEvaluacion  INT  NULL,          -- 👈 referencia principal
   Id_Cotizacion INT NOT NULL,
   TiempoEntregaDias INT NOT NULL DEFAULT 15,
+  Reprogramacion    INT NOT NULL DEFAULT 0,
   Moneda            CHAR(3)     NOT NULL DEFAULT 'PEN',
   PorcentajeIGV     DECIMAL(5,2) NOT NULL DEFAULT 18.00,
   SubTotal          DECIMAL(12,2) NOT NULL DEFAULT 0.00,

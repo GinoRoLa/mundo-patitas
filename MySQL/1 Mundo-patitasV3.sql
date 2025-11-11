@@ -183,6 +183,8 @@ CREATE TABLE t14RequerimientoCompra (
   FechaRequerimiento DATE NOT NULL,
   Total DECIMAL(12,2) NOT NULL,
   PrecioPromedio DECIMAL(12,2) NOT NULL,
+  Periodo VARCHAR(25) NOT NULL,
+  PeriodoClave DATE NOT NULL,
   Estado VARCHAR(15) NOT NULL,
   PRIMARY KEY (Id_Requerimiento)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci AUTO_INCREMENT=4500;

@@ -25,7 +25,8 @@ final class Cotizacion
               c.Total,
               c.Estado,
               p.des_RazonSocial AS RazonSocial,
-              p.DireccionProv  AS Direccion
+              p.DireccionProv  AS Direccion,
+              p.Correo         AS Correo
             FROM t86Cotizacion c
             JOIN t17CatalogoProveedor p ON p.Id_NumRuc = c.RUC_Proveedor
             WHERE c.Id_ReqEvaluacion = ? AND c.Estado = ?
@@ -44,6 +45,7 @@ final class Cotizacion
         'RUC_Proveedor'   => $r['RUC_Proveedor'],
         'RazonSocial'     => $r['RazonSocial'],
         'Direccion'       => $r['Direccion'],
+        'Correo'           => $r['Correo'],
         'FechaEmision'    => $r['FechaEmision'],
         'FechaRecepcion'  => $r['FechaRecepcion'],
         'Observaciones'   => $r['Observaciones'],

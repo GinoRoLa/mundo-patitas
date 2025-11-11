@@ -13,6 +13,7 @@
     loading: false,
     evalByProd: new Map(),
     evalResumen: null,
+    filterMode: "todos",
   };
 
   // --------- DOM refs (ids de tu vista) ---------
@@ -45,6 +46,14 @@
     },
   };
 
+  function actualizarDatasetFila(idReq, { enBD = 0, detectados = 0 }) {
+    const row = DOM.tbodyReq?.querySelector(`tr[data-id="${idReq}"]`);
+    if (!row) return;
+    
+    row.dataset.cotEnBd = String(enBD);
+    row.dataset.cotDetect = String(detectados);
+  }
+
   // =======================================================
   // Render: lista de requerimientos
   // =======================================================
@@ -66,24 +75,55 @@
 
       const tr = document.createElement("tr");
       tr.dataset.id = r.id;
+      tr.dataset.cotEnBd = String(listas);
+      tr.dataset.cotDetect = String(detect);
       tr.className = "row-req";
       tr.innerHTML = `
         <td class="mono">${r.id ?? "—"}</td>
         <td>${r.fecha ?? "—"}</td>
         <td style="text-align:right;">${Number(r.items || 0)}</td>
-        <td><span class="status-badge ${statusClass(r.estado)}">${
-        r.estado ?? "—"
-      }</span></td>
+        <td><span class="status-badge ${statusClass(r.estado)}">${r.estado ?? "—"}</span></td>
         <td class="col-cots" style="text-align:center;">${cotTxt}</td>
         <td style="text-align:center;">
-          <input type="checkbox" class="chk-evaluar" aria-label="Evaluar ${
-            r.id ?? ""
-          }">
+          <input type="checkbox" class="chk-evaluar" aria-label="Evaluar ${r.id ?? ""}">
         </td>
       `;
       tb.appendChild(tr);
     }
     lazyScanAll(list);
+    aplicarFiltroRequerimientos();
+  }
+
+  function aplicarFiltroRequerimientos() {
+    const modo = State.filterMode;
+    const tb = DOM.tbodyReq;
+    if (!tb) return;
+
+    let visibles = 0;
+    let ocultos = 0;
+
+    tb.querySelectorAll("tr.row-req").forEach((tr) => {
+      if (modo === "todos") {
+        tr.style.display = "";
+        visibles++;
+        return;
+      }
+
+      const enBD = Number(tr.dataset.cotEnBd || 0);
+      const detect = Number(tr.dataset.cotDetect || 0);
+      const tieneExcel = enBD > 0 || detect > 0; // 🟢 ó 🟡
+
+      if (tieneExcel) {
+        tr.style.display = "";
+        visibles++;
+      } else {
+        tr.style.display = "none";
+        ocultos++;
+      }
+    });
+
+    console.log(`[FILTRO] Modo: ${modo} | Visibles: ${visibles} | Ocultos: ${ocultos}`);
+    actualizarTextoBotonFiltro();
   }
 
   function statusClass(e) {
@@ -110,6 +150,11 @@
   function pintarSemaforo(idReq, { enBD = 0, detectados = 0 }) {
     const cel = DOM.tbodyReq?.querySelector(`tr[data-id="${idReq}"] .col-cots`);
     if (!cel) return;
+    
+    // 🔥 Actualizar dataset
+    actualizarDatasetFila(idReq, { enBD, detectados });
+    
+    // Actualizar semáforo visual
     if (enBD > 0) {
       cel.textContent = `🟢 ${enBD}`;
       cel.title = `${enBD} cotización(es) en BD`;
@@ -120,7 +165,23 @@
       cel.textContent = "⚪ —";
       cel.title = "Sin cotizaciones";
     }
+    
+    // 🔥 Reaplicar filtro después de actualizar
+    aplicarFiltroRequerimientos();
   }
+
+  function actualizarTextoBotonFiltro() {
+  const btn = document.getElementById("btnFiltroReqConExcel");
+  if (!btn) return;
+
+  if (State.filterMode === "conExcel") {
+    btn.textContent = "Ver todos";
+    btn.classList.add("active");
+  } else {
+    btn.textContent = "Solo con Excel";
+    btn.classList.remove("active");
+  }
+}
 
   /** Pre-scan por fila: cuenta BD y carpeta */
   async function scanYBadge(idReq) {
@@ -736,35 +797,6 @@
     Utils.showMsg(DOM.msgDetalle, "ok", `REQ seleccionado: ${id}`);
   }
 
-  // En requerimiento.js, reemplaza esta función:
-  /* function renderCotsGeneradas(rows) {
-  // 🔥 DELEGAMOS A SolicitudCotizacion si está disponible
-  if (window.SolicitudCotizacion?.renderizar) {
-    window.SolicitudCotizacion.renderizar(rows);
-    return;
-  }
-
-  // Fallback si el módulo no está cargado
-  const tb = DOM.tbodyGen;
-  if (!tb) return;
-  tb.innerHTML = "";
-  if (!Array.isArray(rows) || rows.length === 0) {
-    tb.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#64748b;">Sin solicitudes de cotización generadas</td></tr>`;
-    return;
-  }
-  for (const r of rows) {
-    const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td class="mono">${r.codigo ?? "—"}</td>
-      <td>${r.ruc ?? "—"}</td>
-      <td>${r.razon ?? "—"}</td>
-      <td>${r.direccion ?? "—"}</td>
-      <td>${fmtFecha(r.fecEmision)}</td>
-      <td>—</td>
-    `;
-    tb.appendChild(tr);
-  }
-} */
 
   function renderCotsRecibidas(rows) {
     const tb = DOM.tbodyRec;
@@ -780,6 +812,7 @@
         <td class="mono">${r.codigo ?? r.Id_Cotizacion ?? "—"}</td>
         <td>${r.ruc ?? r.RUC_Proveedor ?? "—"}</td>
         <td>${r.razon ?? r.RazonSocial ?? "—"}</td>
+        <td>${r.correo ?? r.Correo ?? "—"}</td>
         <td>${r.direccion ?? r.Direccion ?? r.DireccionProv ?? "—"}</td>
         <td>${fmtFecha(r.fecEmision ?? r.FechaEmision)}</td>
         <td>${fmtFechaHora(r.fecRecepcion ?? r.FechaRecepcion)}</td>
@@ -849,8 +882,20 @@
   }
 
   function init() {
-    cargarListaRequerimientos();
+    // 🔥 OPCIÓN 1: Botón toggle (más simple)
+    const btnToggle = document.getElementById("btnFiltroReqConExcel");
+    
+    if (btnToggle) {
+    btnToggle.addEventListener("click", () => {
+      // Toggle simple
+      State.filterMode = State.filterMode === "todos" ? "conExcel" : "todos";
+      aplicarFiltroRequerimientos();
+    });
   }
+
+  cargarListaRequerimientos();
+}
+
   document.addEventListener("DOMContentLoaded", init);
 
   // API pública del módulo

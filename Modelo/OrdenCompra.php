@@ -39,155 +39,178 @@ class OrdenCompra
    * @throws Exception
    */
   public function crearOCsDesdeAdjudicacion($idEval, array $adjud): array
-  {
-    $idEval = (int)$idEval;
-    if ($idEval <= 0) {
-      throw new Exception("Id_ReqEvaluacion inválido.");
-    }
-
-    if (!$this->evaluacionEsValida($idEval)) {
-      throw new Exception("Evaluación no está en estado Aprobado/Parcialmente Aprobado.");
-    }
-
-    $porProv = $this->normalizarAdjudicacion($adjud);
-    if (empty($porProv)) {
-      throw new Exception("Adjudicación vacía.");
-    }
-
-    $erroresCobertura = $this->validarCoberturaCompleta($idEval, $porProv);
-    if (!empty($erroresCobertura)) {
-      $msg = "No se puede generar las OCs: las cantidades adjudicadas no cubren totalmente lo aprobado.";
-      throw new Exception($msg . " Detalle: " . json_encode($erroresCobertura));
-    }
-
-    $t06TieneHuella = $this->t06TieneColumnaHuella();
-    mysqli_begin_transaction($this->cn);
-
-    try {
-      $salida = [];
-      $tiempoEntrega = 15; // 🔹 Valor por defecto
-
-      foreach ($porProv as $prov) {
-        $ruc   = trim((string)($prov['ruc'] ?? ''));
-        $razon = trim((string)($prov['razon'] ?? ''));
-        $items = $prov['items'] ?? [];
-        if (!$ruc || empty($items)) continue;
-
-        $idCot = $this->buscarCotizacionPorReqYRuc($idEval, $ruc);
-
-        // 2) Calcular totales
-        $porcIGV = 18.00;
-        $sub = 0.0;
-        foreach ($items as $it) {
-          $cant = (float)($it['Cantidad'] ?? 0);
-          $prec = (float)($it['Precio'] ?? 0);
-          if ($cant <= 0 || $prec <= 0) {
-            throw new Exception("Ítem inválido para RUC $ruc");
-          }
-          $sub += round($cant * $prec, 2);
-        }
-        $igv = round($sub * ($porcIGV / 100.0), 2);
-        $tot = round($sub + $igv, 2);
-
-        // 3) Fingerprint
-        $fpData = [
-          'idEval' => $idEval,
-          'ruc'    => $ruc,
-          'items'  => array_values(array_map(fn($x) => [
-            'Id_Producto' => (int)$x['Id_Producto'],
-            'Cantidad'    => (float)$x['Cantidad'],
-            'Precio'      => (float)$x['Precio'],
-            'Unidad'      => (string)($x['Unidad'] ?? ''),
-            'Descripcion' => (string)($x['Descripcion'] ?? '')
-          ], $items))
-        ];
-        $finger = hash('sha256', json_encode($fpData, JSON_UNESCAPED_UNICODE));
-
-        // 4) Idempotencia
-        if ($t06TieneHuella) {
-          $prev = $this->buscarOcPorHuella($finger);
-          if ($prev) {
-            $salida[] = $prev + ['items' => $items, 'idempotent' => true];
-            continue;
-          }
-        } else {
-          $prev = $this->buscarOcSimilar($idEval, $ruc, $tot);
-          if ($prev) {
-            $salida[] = $prev + ['items' => $items, 'idempotent' => true];
-            continue;
-          }
-        }
-
-        // 5) Insert cabecera t06 (añadido TiempoEntregaDias)
-        if ($t06TieneHuella) {
-          $sqlCab = "INSERT INTO t06OrdenCompra
-          (Fec_Emision, RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
-           TiempoEntregaDias, Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado, Huella)
-          VALUES (NOW(), ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida', ?)";
-          $st = mysqli_prepare($this->cn, $sqlCab);
-          mysqli_stmt_bind_param($st, "ssiiidsds", $ruc, $razon, $idEval, $idCot, $tiempoEntrega, $porcIGV, $finger);
-        } else {
-          $sqlCab = "INSERT INTO t06OrdenCompra
-          (Fec_Emision, RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
-           TiempoEntregaDias, Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado)
-          VALUES (NOW(), ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida')";
-          $st = mysqli_prepare($this->cn, $sqlCab);
-          mysqli_stmt_bind_param($st, "ssiiid", $ruc, $razon, $idEval, $idCot, $tiempoEntrega, $porcIGV);
-        }
-        mysqli_stmt_execute($st);
-        $idOC = (int)mysqli_insert_id($this->cn);
-        mysqli_stmt_close($st);
-
-        // 6) Insert detalle
-        $sqlDet = "INSERT INTO t07DetalleOrdenCompra
-        (Id_OrdenCompra, Id_Producto, Descripcion, Unidad, Cantidad, PrecioUnitario)
-        VALUES (?,?,?,?,?,?)";
-        $sd = mysqli_prepare($this->cn, $sqlDet);
-        foreach ($items as $it) {
-          $idp = (int)$it['Id_Producto'];
-          $des = (string)($it['Descripcion'] ?? '');
-          $uni = (string)($it['Unidad'] ?? null);
-          $c   = max(1, (int)round((float)$it['Cantidad']));
-          $p   = (float)$it['Precio'];
-          mysqli_stmt_bind_param($sd, "iissid", $idOC, $idp, $des, $uni, $c, $p);
-          mysqli_stmt_execute($sd);
-        }
-        mysqli_stmt_close($sd);
-
-        // 7) Totales
-        [$subDB] = $this->sumarSubtotalesDetalle($idOC);
-        $subFin = round($subDB ?? $sub, 2);
-        $igvFin = round($subFin * ($porcIGV / 100.0), 2);
-        $totFin = round($subFin + $igvFin, 2);
-
-        $up = mysqli_prepare(
-          $this->cn,
-          "UPDATE t06OrdenCompra SET SubTotal=?, Impuesto=?, MontoTotal=? WHERE Id_OrdenCompra=?"
-        );
-        mysqli_stmt_bind_param($up, "dddi", $subFin, $igvFin, $totFin, $idOC);
-        mysqli_stmt_execute($up);
-        mysqli_stmt_close($up);
-
-        $salida[] = [
-          'idOC'       => $idOC,
-          'ruc'        => $ruc,
-          'razon'      => $razon,
-          'subtotal'   => $subFin,
-          'igv'        => $igvFin,
-          'total'      => $totFin,
-          'items'      => $items,
-          'idempotent' => false,
-        ];
-      }
-
-      mysqli_commit($this->cn);
-      return $salida;
-    } catch (\Throwable $e) {
-      mysqli_rollback($this->cn);
-      throw $e;
-    }
+{
+  $idEval = (int)$idEval;
+  if ($idEval <= 0) {
+    throw new Exception("Id_ReqEvaluacion inválido.");
   }
 
+  if (!$this->evaluacionEsValida($idEval)) {
+    throw new Exception("Evaluación no está en estado Aprobado/Parcialmente Aprobado.");
+  }
+
+  $porProv = $this->normalizarAdjudicacion($adjud);
+  if (empty($porProv)) {
+    throw new Exception("Adjudicación vacía.");
+  }
+
+  $erroresCobertura = $this->validarCoberturaCompleta($idEval, $porProv);
+  if (!empty($erroresCobertura)) {
+    $msg = "No se puede generar las OCs: las cantidades adjudicadas no cubren totalmente lo aprobado.";
+    throw new Exception($msg . " Detalle: " . json_encode($erroresCobertura));
+  }
+
+  $t06TieneHuella = $this->t06TieneColumnaHuella();
+  mysqli_begin_transaction($this->cn);
+
+  try {
+    $salida = [];
+    $tiempoEntrega = 15; // 🔹 Valor por defecto
+
+    foreach ($porProv as $prov) {
+      $ruc   = trim((string)($prov['ruc'] ?? ''));
+      $razon = trim((string)($prov['razon'] ?? ''));
+      $items = $prov['items'] ?? [];
+      if (!$ruc || empty($items)) continue;
+
+      $idCot = $this->buscarCotizacionPorReqYRuc($idEval, $ruc);
+
+      // 2) Calcular totales
+      $porcIGV = 18.00;
+      $sub = 0.0;
+      foreach ($items as $it) {
+        $cant = (float)($it['Cantidad'] ?? 0);
+        $prec = (float)($it['Precio'] ?? 0);
+        if ($cant <= 0 || $prec <= 0) {
+          throw new Exception("Ítem inválido para RUC $ruc");
+        }
+        $sub += round($cant * $prec, 2);
+      }
+      $igv = round($sub * ($porcIGV / 100.0), 2);
+      $tot = round($sub + $igv, 2);
+
+      // 3) Fingerprint
+      $fpData = [
+        'idEval' => $idEval,
+        'ruc'    => $ruc,
+        'items'  => array_values(array_map(fn($x) => [
+          'Id_Producto' => (int)$x['Id_Producto'],
+          'Cantidad'    => (float)$x['Cantidad'],
+          'Precio'      => (float)$x['Precio'],
+          'Unidad'      => (string)($x['Unidad'] ?? ''),
+          'Descripcion' => (string)($x['Descripcion'] ?? '')
+        ], $items))
+      ];
+      $finger = hash('sha256', json_encode($fpData, JSON_UNESCAPED_UNICODE));
+
+      // 4) Idempotencia
+      if ($t06TieneHuella) {
+        $prev = $this->buscarOcPorHuella($finger);
+        if ($prev) {
+          $salida[] = $prev + ['items' => $items, 'idempotent' => true];
+          continue;
+        }
+      } else {
+        $prev = $this->buscarOcSimilar($idEval, $ruc, $tot);
+        if ($prev) {
+          $salida[] = $prev + ['items' => $items, 'idempotent' => true];
+          continue;
+        }
+      }
+
+      $serie = date('Y');
+      $numeroTmp = '';
+
+      // 5) Insert cabecera t06 (añadido NumeroOrdenCompra en el INSERT)
+      if ($t06TieneHuella) {
+        $sqlCab = "INSERT INTO t06OrdenCompra
+          (Fec_Emision, Serie, NumeroOrdenCompra,
+           RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
+           TiempoEntregaDias, Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado, Huella)
+          VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida', ?)";
+
+        $st = mysqli_prepare($this->cn, $sqlCab);
+        // tipos: Serie(s), NumeroTmp(s), RUC(s), Razon(s), IdEval(i), IdCot(i), TiempoEntrega(i), PorcIGV(d), Huella(s)
+        mysqli_stmt_bind_param(
+          $st,"ssssiiids",$serie,$numeroTmp,$ruc,$razon,$idEval,$idCot,$tiempoEntrega,$porcIGV,$finger);
+      } else {
+        $sqlCab = "INSERT INTO t06OrdenCompra
+          (Fec_Emision, Serie, NumeroOrdenCompra,
+           RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
+           TiempoEntregaDias, Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado)
+          VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida')";
+
+        $st = mysqli_prepare($this->cn, $sqlCab);
+        // tipos: Serie(s), NumeroTmp(s), RUC(s), Razon(s), IdEval(i), IdCot(i), TiempoEntrega(i), PorcIGV(d)
+        mysqli_stmt_bind_param(
+          $st,
+          "ssssiiid",$serie,$numeroTmp,$ruc,$razon,$idEval,$idCot,$tiempoEntrega,$porcIGV);
+      }
+
+      mysqli_stmt_execute($st);
+      $idOC = (int)mysqli_insert_id($this->cn);
+      mysqli_stmt_close($st);
+
+      // 5b) Generar Número real y actualizar
+      $numeroOC = 'OC' . $serie . '-' . str_pad((string)$idOC, 4, '0', STR_PAD_LEFT);
+
+      $up = mysqli_prepare(
+        $this->cn,
+        "UPDATE t06OrdenCompra SET NumeroOrdenCompra=? WHERE Id_OrdenCompra=?"
+      );
+      mysqli_stmt_bind_param($up, "si", $numeroOC, $idOC);
+      mysqli_stmt_execute($up);
+      mysqli_stmt_close($up);
+
+      // 6) Insert detalle
+      $sqlDet = "INSERT INTO t07DetalleOrdenCompra
+        (Id_OrdenCompra, Id_Producto, Descripcion, Unidad, Cantidad, PrecioUnitario)
+        VALUES (?,?,?,?,?,?)";
+      $sd = mysqli_prepare($this->cn, $sqlDet);
+      foreach ($items as $it) {
+        $idp = (int)$it['Id_Producto'];
+        $des = (string)($it['Descripcion'] ?? '');
+        $uni = (string)($it['Unidad'] ?? null);
+        $c   = max(1, (int)round((float)$it['Cantidad']));
+        $p   = (float)$it['Precio'];
+        mysqli_stmt_bind_param($sd, "iissid", $idOC, $idp, $des, $uni, $c, $p);
+        mysqli_stmt_execute($sd);
+      }
+      mysqli_stmt_close($sd);
+
+      // 7) Totales
+      [$subDB] = $this->sumarSubtotalesDetalle($idOC);
+      $subFin = round($subDB ?? $sub, 2);
+      $igvFin = round($subFin * ($porcIGV / 100.0), 2);
+      $totFin = round($subFin + $igvFin, 2);
+
+      $up = mysqli_prepare(
+        $this->cn,
+        "UPDATE t06OrdenCompra SET SubTotal=?, Impuesto=?, MontoTotal=? WHERE Id_OrdenCompra=?"
+      );
+      mysqli_stmt_bind_param($up, "dddi", $subFin, $igvFin, $totFin, $idOC);
+      mysqli_stmt_execute($up);
+      mysqli_stmt_close($up);
+
+      $salida[] = [
+        'idOC'       => $idOC,
+        'ruc'        => $ruc,
+        'razon'      => $razon,
+        'subtotal'   => $subFin,
+        'igv'        => $igvFin,
+        'total'      => $totFin,
+        'items'      => $items,
+        'idempotent' => false,
+      ];
+    }
+
+    mysqli_commit($this->cn);
+    return $salida;
+  } catch (\Throwable $e) {
+    mysqli_rollback($this->cn);
+    throw $e;
+  }
+}
 
   /**
    * Normaliza adjudicación a formato A (por proveedor)
@@ -347,9 +370,9 @@ class OrdenCompra
 
   /** Cabecera + detalle para PDF */
   public function obtenerParaPDF(int $idOC): array
-{
-  // === CABECERA PRINCIPAL ===
-  $qCab = "SELECT 
+  {
+    // === CABECERA PRINCIPAL ===
+    $qCab = "SELECT 
       oc.Id_OrdenCompra,
       oc.Fec_Emision,
       oc.RUC_Proveedor,
@@ -368,6 +391,7 @@ class OrdenCompra
       p.Correo         AS ProvCorreo,
       p.Telefono       AS ProvTelefono,
       c.NroCotizacionProv,
+      oc.NumeroOrdenCompra,
       c.Id_Cotizacion AS IdCotizacionInterna
     FROM t06OrdenCompra oc
     LEFT JOIN t407RequerimientoEvaluado ev
@@ -378,58 +402,58 @@ class OrdenCompra
       ON c.Id_Cotizacion = oc.Id_Cotizacion
     WHERE oc.Id_OrdenCompra = ?";
 
-  $st = mysqli_prepare($this->cn, $qCab);
-  mysqli_stmt_bind_param($st, "i", $idOC);
-  mysqli_stmt_execute($st);
-  $rs  = mysqli_stmt_get_result($st);
-  $cab = $rs ? mysqli_fetch_assoc($rs) : null;
-  mysqli_stmt_close($st);
+    $st = mysqli_prepare($this->cn, $qCab);
+    mysqli_stmt_bind_param($st, "i", $idOC);
+    mysqli_stmt_execute($st);
+    $rs  = mysqli_stmt_get_result($st);
+    $cab = $rs ? mysqli_fetch_assoc($rs) : null;
+    mysqli_stmt_close($st);
 
-  if (!$cab) throw new Exception("OC no encontrada (#$idOC)");
+    if (!$cab) throw new Exception("OC no encontrada (#$idOC)");
 
-  // === DETALLE ===
-  $qDet = "SELECT d.Id_Producto, d.Descripcion, d.Unidad, d.Cantidad, d.PrecioUnitario,
+    // === DETALLE ===
+    $qDet = "SELECT d.Id_Producto, d.Descripcion, d.Unidad, d.Cantidad, d.PrecioUnitario,
                   (d.Cantidad * d.PrecioUnitario) AS Total
            FROM t07DetalleOrdenCompra d
            WHERE d.Id_OrdenCompra=?
            ORDER BY d.Id_Detalle";
-  $sd = mysqli_prepare($this->cn, $qDet);
-  mysqli_stmt_bind_param($sd, "i", $idOC);
-  mysqli_stmt_execute($sd);
-  $rd = mysqli_stmt_get_result($sd);
-  $det = [];
-  while ($r = mysqli_fetch_assoc($rd)) $det[] = $r;
-  mysqli_stmt_close($sd);
+    $sd = mysqli_prepare($this->cn, $qDet);
+    mysqli_stmt_bind_param($sd, "i", $idOC);
+    mysqli_stmt_execute($sd);
+    $rd = mysqli_stmt_get_result($sd);
+    $det = [];
+    while ($r = mysqli_fetch_assoc($rd)) $det[] = $r;
+    mysqli_stmt_close($sd);
 
-  // === DIRECCIÓN DE ALMACÉN (para empresa) ===
-  $qDir = "SELECT DireccionOrigen FROM t73DireccionAlmacen
+    // === DIRECCIÓN DE ALMACÉN (para empresa) ===
+    $qDir = "SELECT DireccionOrigen FROM t73DireccionAlmacen
            WHERE Estado='Activo' ORDER BY Id_DireccionAlmacen ASC LIMIT 1";
-  $resDir = mysqli_query($this->cn, $qDir);
-  $filaDir = $resDir ? mysqli_fetch_assoc($resDir) : null;
-  $dirEmpresa = $filaDir['DireccionOrigen'] ?? 'Av. Siempre Viva 123, Lima'; // fallback
+    $resDir = mysqli_query($this->cn, $qDir);
+    $filaDir = $resDir ? mysqli_fetch_assoc($resDir) : null;
+    $dirEmpresa = $filaDir['DireccionOrigen'] ?? 'Av. Siempre Viva 123, Lima'; // fallback
 
-  // === DATOS DE LA EMPRESA ===
-  $empresa = [
-    'RazonSocial' => 'Mundo Patitas S.A.C.',
-    'RUC'         => '20123456789',
-    'Direccion'   => $dirEmpresa,
-    'Telefono'    => '(01) 555-0000',
-    'Correo'      => 'mundopatitas.venta@gmail.com',
-  ];
+    // === DATOS DE LA EMPRESA ===
+    $empresa = [
+      'RazonSocial' => 'Mundo Patitas S.A.C.',
+      'RUC'         => '20123456789',
+      'Direccion'   => $dirEmpresa,
+      'Telefono'    => '(01) 555-0000',
+      'Correo'      => 'mundopatitas.venta@gmail.com',
+    ];
 
-  return [
-    'encabezado' => $cab,
-    'detalle'    => $det,
-    'empresa'    => $empresa,
-    'proveedor'  => [
-      'RazonSocial' => $cab['ProvRazon'] ?: $cab['RazonSocial'],
-      'RUC'         => $cab['RUC_Proveedor'],
-      'Direccion'   => $cab['ProvDireccion'] ?? '',
-      'Telefono'    => $cab['ProvTelefono'] ?? '',
-      'Correo'      => $cab['ProvCorreo']   ?? '',
-    ],
-  ];
-}
+    return [
+      'encabezado' => $cab,
+      'detalle'    => $det,
+      'empresa'    => $empresa,
+      'proveedor'  => [
+        'RazonSocial' => $cab['ProvRazon'] ?: $cab['RazonSocial'],
+        'RUC'         => $cab['RUC_Proveedor'],
+        'Direccion'   => $cab['ProvDireccion'] ?? '',
+        'Telefono'    => $cab['ProvTelefono'] ?? '',
+        'Correo'      => $cab['ProvCorreo']   ?? '',
+      ],
+    ];
+  }
 
 
   /**
@@ -441,6 +465,9 @@ class OrdenCompra
     $query = "
     SELECT 
       oc.Id_OrdenCompra,
+      oc.Id_ReqEvaluacion,
+      oc.Serie,
+      oc.NumeroOrdenCompra,
       oc.RUC_Proveedor,
       oc.RazonSocial,
       oc.Moneda,

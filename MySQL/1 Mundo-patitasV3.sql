@@ -779,12 +779,15 @@ CREATE TABLE t88ArchivoCotizacion (
 DROP TABLE IF EXISTS t06OrdenCompra;
 CREATE TABLE t06OrdenCompra (
   Id_OrdenCompra    INT NOT NULL AUTO_INCREMENT,
+  Serie CHAR(4) NOT NULL DEFAULT '2025',
+  NumeroOrdenCompra VARCHAR(20) NOT NULL,
   Fec_Emision       DATETIME   NOT NULL DEFAULT CURRENT_TIMESTAMP,
   RUC_Proveedor     VARCHAR(11) NOT NULL,
   RazonSocial       VARCHAR(150) NULL,
-  Id_ReqEvaluacion  INT  NULL,          -- 👈 referencia principal
+  Id_ReqEvaluacion  INT  NULL,
   Id_Cotizacion INT NOT NULL,
   TiempoEntregaDias INT NOT NULL DEFAULT 15,
+  Reprogramacion    INT NOT NULL DEFAULT 0,
   Moneda            CHAR(3)     NOT NULL DEFAULT 'PEN',
   PorcentajeIGV     DECIMAL(5,2) NOT NULL DEFAULT 18.00,
   SubTotal          DECIMAL(12,2) NOT NULL DEFAULT 0.00,

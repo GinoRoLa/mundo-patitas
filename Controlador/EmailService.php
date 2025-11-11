@@ -222,9 +222,10 @@ class EmailService{
 HTML;
     }
 
-    public static function generarHTMLOC(
+public static function generarHTMLOC(
   string $nombreProveedor,
-  int $idOC,
+  string $numeroOC,   // <- NUEVO: número visible (OC2025-0003)
+  int $idOC,          // <- NUEVO: id interno
   string $moneda,
   float $total,
   ?string $empresa = 'Mundo Patitas'
@@ -232,12 +233,18 @@ HTML;
   $totalFmt = number_format($total, 2, '.', ',');
   $nom = htmlspecialchars($nombreProveedor, ENT_QUOTES, 'UTF-8');
   $emp = htmlspecialchars($empresa, ENT_QUOTES, 'UTF-8');
+  $num = htmlspecialchars($numeroOC, ENT_QUOTES, 'UTF-8');
+
   return <<<HTML
 <!DOCTYPE html>
 <html lang="es">
 <meta charset="utf-8">
 <body style="font-family:Arial,Helvetica,sans-serif;color:#243145">
-  <h2 style="margin:0 0 6px">Orden de Compra N° {$idOC}</h2>
+  <h2 style="margin:0 0 6px">Orden de Compra N° {$num}</h2>
+<!--   <p style="margin:0 0 10px;font-size:12px;color:#6b7280">
+    ID interno: <strong>#{$idOC}</strong>
+  </p> -->
+
   <p>Estimado(a) <strong>{$nom}</strong>,</p>
   <p>Adjuntamos la <strong>Orden de Compra</strong> emitida por <strong>{$emp}</strong>.</p>
   <p><b>Total:</b> {$moneda} {$totalFmt}</p>
@@ -247,6 +254,7 @@ HTML;
 </html>
 HTML;
 }
+
 
 
     /**

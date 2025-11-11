@@ -440,6 +440,13 @@ try {
 
       foreach ($ocs as $ocRow) {
         $idOC = (int)$ocRow['Id_OrdenCompra'];
+        $numeroOC = $ocRow['NumeroOrdenCompra'] ?? '';
+        $numeroOC = trim((string)$numeroOC);
+
+        if ($numeroOC === '') {
+          $serie = $ocRow['Serie'] ?? date('Y');
+          $numeroOC = 'OC' . $serie . '-' . str_pad((string)$idOC, 4, '0', STR_PAD_LEFT);
+        }
 
         // 2) Generar datos y PDF
         try {
@@ -460,11 +467,12 @@ try {
           continue;
         }
 
-        // 4) Cuerpo (usa el helper si lo añadiste)
+        // 4) Cuerpo (usa el helper actualizado)
         if (method_exists('EmailService', 'generarHTMLOC')) {
           $body = EmailService::generarHTMLOC(
             $toName,
-            $idOC,
+            $numeroOC,                                   // <- NUEVO
+            $idOC,                                       // <- NUEVO
             $ocRow['Moneda'] ?: 'PEN',
             (float)$ocRow['MontoTotal'],
             $data['empresa']['RazonSocial'] ?? 'Mundo Patitas'
@@ -472,7 +480,7 @@ try {
         } else {
           $totalFmt = number_format((float)$ocRow['MontoTotal'], 2, '.', ',');
           $body = "<p>Estimado(a) <b>" . htmlspecialchars($toName) . "</b>,</p>"
-            . "<p>Adjuntamos la <b>Orden de Compra N° {$idOC}</b>.</p>"
+            . "<p>Adjuntamos la <b>Orden de Compra {$numeroOC}</b>.</p>"
             . "<p>Total: " . ($ocRow['Moneda'] ?: 'PEN') . " {$totalFmt}</p>"
             . "<p>Saludos,<br><b>" . htmlspecialchars($data['empresa']['RazonSocial'] ?? 'Mundo Patitas') . "</b></p>";
         }
@@ -481,19 +489,20 @@ try {
         $send = EmailService::enviarConAdjuntos(
           $toEmail,
           $toName,
-          "Orden de Compra N° {$idOC}",
+          "Orden de Compra N° {$numeroOC}",   // <- asunto con número legible
           $body,
-          ['OC_' . $idOC . '.pdf' => $pdfPath]
+          ['OrdenCompra_' . $idOC . '.pdf' => $pdfPath]
         );
 
         if (!empty($send['success'])) {
           $result['enviados']++;
-          $result['detalles'][] = ['idOC' => $idOC, 'email' => $toEmail, 'status' => 'sent'];
+          $result['detalles'][] = ['idOC' => $idOC, 'numeroOC' => $numeroOC, 'email' => $toEmail, 'status' => 'sent'];
         } else {
           $result['errores'][] = ['idOC' => $idOC, 'error' => 'MAIL: ' . $send['error']];
           $result['omitidos']++;
         }
       }
+
 
       // 6) Limpieza de temporales
       foreach ($tmpPaths as $p) {

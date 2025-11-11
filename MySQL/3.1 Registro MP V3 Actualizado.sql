@@ -31,6 +31,14 @@ VALUES
   (50026, '81234569', 'Valdez',  'Guerra',  'Cristian','999212233', 'Jr. Puno 445',             'cristian.valdez@mp.com','Repartidor','Activo'),
   (50027, '83456789', 'Sánchez', 'Rojas',   'Pedro',   '999222444', 'Jr. Lima 234',             'pedro.sanchez@mp.com','Repartidor', 'Activo');
 
+INSERT INTO t17CatalogoProveedor (Id_NumRuc, des_RazonSocial, DireccionProv, Telefono, Correo, estado)
+VALUES ('20123456789', 'Proveedor S.A.C.', 'Av. Ejemplo 123, Lima', '999888777', 'hugovertiz71@gmail.com', 'ACTIVO'),
+('20987654321', 'Distribuidora Lima S.R.L.', 'Jr. Los Pinos 456, Lima', '014567890', 'ventas@distlima.com.pe', 'ACTIVO'),
+('20456789123', 'Comercial Andina E.I.R.L.', 'Av. Principal 789, Arequipa', '054123456', 'contacto@comandina.com', 'ACTIVO'),
+('20334455667', 'Importadora del Norte S.A.', 'Calle Comercio 234, Trujillo', '044987654', 'info@impnorte.pe', 'INACTIVO'),
+('20778899001', 'Suministros Industriales SAC', 'Av. Industrial 567, Callao', '016543210', 'ventas@sumindus.com.pe', 'ACTIVO');
+ALTER TABLE t14RequerimientoCompra
+MODIFY COLUMN Estado VARCHAR(30) NOT NULL;
 
 -- t37DetalleRequerimiento
 INSERT INTO t37DetalleRequerimiento (Id_DetaRequerimiento, Observacion) VALUES

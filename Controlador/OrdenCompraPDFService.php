@@ -19,7 +19,9 @@ final class OrdenCompraPDFService
     $det = $oc['detalle'] ?? [];
 
     $fecha = substr((string)$e['Fec_Emision'], 0, 10);
-    $numOC = str_pad((string)$e['Id_OrdenCompra'], 5, '0', STR_PAD_LEFT);
+    //$numOC = str_pad((string)$e['Id_OrdenCompra'], 5, '0', STR_PAD_LEFT);
+    $numOC = $e['NumeroOrdenCompra'] ?? ('OC' . ($e['Serie'] ?? date('Y')) . '-' . str_pad((string)$e['Id_OrdenCompra'], 4, '0', STR_PAD_LEFT));
+
 
     $subtotal = number_format((float)$e['SubTotal'], 2, '.', ',');
     $igv      = number_format((float)$e['Impuesto'], 2, '.', ',');

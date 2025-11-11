@@ -46,6 +46,12 @@ $fecha = date('Y-m-d');
         <!-- ========== Sección 1: Requerimientos ========== -->
         <section id="secRequerimientos">
           <h3>Solicitud requerimiento de compra</h3>
+<!-- En tu HTML, reemplaza la toolbar-req por esto: -->
+<div class="toolbar-req">
+  <button type="button" id="btnFiltroReqConExcel" class="btn btn-sm btn-primary">
+    Solo con Excel
+  </button>
+</div>
 
           <div class="table-scroll">
             <table class="table" id="tblRequerimientos">
@@ -74,7 +80,7 @@ $fecha = date('Y-m-d');
         <section id="secDetalle">
           <h3>Detalle Solicitud requerimiento compra</h3>
           <div class="msg" id="msgDetalle">Seleccione un requerimiento para ver los detalles</div>
-
+          
           <div class="table-scroll">
             <table class="table" id="tblDetalleReq">
               <thead>
@@ -126,6 +132,7 @@ $fecha = date('Y-m-d');
                   <th>Código</th>
                   <th>RUC</th>
                   <th>Razón Social</th>
+                  <th>Correo</th>
                   <th>Dirección</th>
                   <th>F. Emisión</th>
                   <th>F. Recepción</th>
@@ -166,7 +173,7 @@ $fecha = date('Y-m-d');
 
           <div class="acciones">
             <button id="btnGenerarOC" class="btn-primary" type="button">Generar Órdenes de Compra</button>
-            <button id="btnCancelar" class="btn btn-ghost" type="button">Cancelar</button>
+            <button id="btnCancelar" class="btn btn-ghost" type="button">Salir</button>
           </div>
         </section>
       </div>

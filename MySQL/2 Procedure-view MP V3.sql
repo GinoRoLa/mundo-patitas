@@ -404,6 +404,7 @@ END$$
 DELIMITER ;
 
 
+DROP PROCEDURE IF EXISTS sp_GenerarRequerimientoCompra;
 DELIMITER $$
 
 CREATE PROCEDURE sp_GenerarRequerimientoCompra(
@@ -414,6 +415,35 @@ CREATE PROCEDURE sp_GenerarRequerimientoCompra(
 BEGIN
     DECLARE v_idRequerimiento INT;
     DECLARE v_count INT DEFAULT 0;
+    DECLARE v_fechaActual DATE DEFAULT CURDATE();
+    DECLARE v_ultimoDiaMes DATE;
+    DECLARE v_periodoInicio DATE;
+    DECLARE v_periodoFin DATE;
+    DECLARE v_periodo VARCHAR(25);
+    DECLARE v_periodoClave DATE;
+
+    -- Calcular fin e inicio del mes actual
+    SET v_ultimoDiaMes = LAST_DAY(v_fechaActual);
+
+    -- Determinar si la fecha actual es el último día del mes
+    IF DAY(v_fechaActual) = DAY(v_ultimoDiaMes) THEN
+        -- Si es el último día, el periodo corresponde al mes siguiente
+        SET v_periodoInicio = DATE_ADD(LAST_DAY(v_fechaActual), INTERVAL 1 DAY);
+        SET v_periodoFin = LAST_DAY(v_periodoInicio);
+        SET v_periodoClave = v_periodoInicio;
+    ELSE
+        -- Si no es último día, el periodo corresponde al mes actual
+        SET v_periodoInicio = DATE_FORMAT(v_fechaActual, '%Y-%m-01');
+        SET v_periodoFin = LAST_DAY(v_fechaActual);
+        SET v_periodoClave = v_periodoInicio;
+    END IF;
+
+    -- Formatear el periodo como texto (Ej: '01/11/2025 - 30/11/2025')
+    SET v_periodo = CONCAT(
+        DATE_FORMAT(v_periodoInicio, '%d/%m/%Y'),
+        ' - ',
+        DATE_FORMAT(v_periodoFin, '%d/%m/%Y')
+    );
 
     -- Iniciar transacción
     START TRANSACTION;
@@ -429,9 +459,9 @@ BEGIN
     -- Cargar datos del JSON
     INSERT INTO tmp_detalle (Id_Producto, PrecioPromedio, CantidadSolicitar)
     SELECT 
-        JSON_EXTRACT(j.value, '$.Id_Producto'),
-        JSON_EXTRACT(j.value, '$.PrecioPromedio'),
-        JSON_EXTRACT(j.value, '$.CantidadSolicitar')
+        JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.Id_Producto')),
+        JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.PrecioPromedio')),
+        JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.CantidadSolicitar'))
     FROM JSON_TABLE(p_json, "$[*]" COLUMNS (value JSON PATH "$")) AS j;
 
     -- Verificar si hay registros válidos
@@ -443,9 +473,9 @@ BEGIN
     ELSE
         -- Insertar encabezado del requerimiento
         INSERT INTO t14RequerimientoCompra (
-            FechaRequerimiento, Total, PrecioPromedio, Estado
+            FechaRequerimiento, Total, PrecioPromedio, Periodo, PeriodoClave, Estado
         )
-        VALUES (CURDATE(), p_total, p_precioPromedio, 'Pendiente');
+        VALUES (v_fechaActual, p_total, p_precioPromedio, v_periodo, v_periodoClave, 'Pendiente');
 
         SET v_idRequerimiento = LAST_INSERT_ID();
 
@@ -463,8 +493,11 @@ BEGIN
         COMMIT;
     END IF;
 
-    -- Retornar el ID generado
-    SELECT v_idRequerimiento AS Id_RequerimientoGenerado;
+    -- Retornar información del requerimiento generado
+    SELECT 
+        v_idRequerimiento AS Id_RequerimientoGenerado,
+        v_periodo AS Periodo,
+        v_periodoClave AS PeriodoClave;
 
 END$$
 

@@ -1,6 +1,6 @@
 // =======================================================
-// CUS15.ordencompras.js - CORREGIDO
-// Solución: Cerrar overlay ANTES de mostrar modal de confirmación
+// CUS15.ordencompras.js - CORREGIDO CON DIAGNÓSTICO
+// Solución: Cerrar overlay ANTES de mostrar modal + Re-evaluar estado
 // =======================================================
 (function () {
   const $ = (sel, ctx = document) => (ctx || document).querySelector(sel);
@@ -30,70 +30,68 @@
     });
   })();
 
-  // ---- AppDialog.confirm helper ----
   // ---- AppDialog.confirm (robusto) ----
-const AppDialog = {
-  async confirm({
-    title = "Confirmación",
-    message = "",
-    okText = "Continuar",
-    cancelText = "Cancelar",
-  } = {}) {
-    const dlg = document.getElementById("appDialog");
-    // Sin nodo => confirm nativo
-    if (!dlg) {
-      console.warn("[AppDialog] #appDialog no existe, usando window.confirm");
-      return window.confirm(`${title}\n\n${message}`);
-    }
-
-    const h3 = dlg.querySelector("#appDialogTitle") || dlg.querySelector("h3");
-    const p  = dlg.querySelector("#appDialogMsg")   || dlg.querySelector("p");
-    const ok = dlg.querySelector("#appDialogOk")    || dlg.querySelector("[data-ok]");
-    const cancel = dlg.querySelector("#appDialogCancel") || dlg.querySelector("[data-cancel]");
-
-    if (h3) h3.textContent = title;
-    if (p)  p.textContent  = message;
-    if (ok) ok.textContent = okText;
-    if (cancel) cancel.textContent = cancelText;
-
-    return await new Promise((resolve) => {
-      const cleanup = () => {
-        ok?.removeEventListener("click", onOk);
-        cancel?.removeEventListener("click", onCancel);
-        try { dlg.close(); } catch {}
-      };
-      const onOk = () => { cleanup(); resolve(true);  };
-      const onCancel = () => { cleanup(); resolve(false); };
-
-      ok?.addEventListener("click", onOk, { once: true });
-      cancel?.addEventListener("click", onCancel, { once: true });
-
-      // Intento 1: showModal real
-      try {
-        // quita overlays que bloqueen el click
-        window.Processing?.hide?.();
-        dlg.showModal();
-        return;
-      } catch (e) {
-        console.warn("[AppDialog] showModal() falló:", e?.message);
+  const AppDialog = {
+    async confirm({
+      title = "Confirmación",
+      message = "",
+      okText = "Continuar",
+      cancelText = "Cancelar",
+    } = {}) {
+      const dlg = document.getElementById("appDialog");
+      // Sin nodo => confirm nativo
+      if (!dlg) {
+        console.warn("[AppDialog] #appDialog no existe, usando window.confirm");
+        return window.confirm(`${title}\n\n${message}`);
       }
 
-      // Intento 2: fallback a atributo [open] + CSS
-      try {
-        dlg.setAttribute("open", "");
-        return;
-      } catch (e2) {
-        console.warn("[AppDialog] setAttribute('open') falló:", e2?.message);
-      }
+      const h3 = dlg.querySelector("#appDialogTitle") || dlg.querySelector("h3");
+      const p  = dlg.querySelector("#appDialogMsg")   || dlg.querySelector("p");
+      const ok = dlg.querySelector("#appDialogOk")    || dlg.querySelector("[data-ok]");
+      const cancel = dlg.querySelector("#appDialogCancel") || dlg.querySelector("[data-cancel]");
 
-      // Último recurso: confirm nativo
-      const ans = window.confirm(`${title}\n\n${message}`);
-      resolve(ans);
-    });
-  },
-};
-window.AppDialog = AppDialog;
+      if (h3) h3.textContent = title;
+      if (p)  p.textContent  = message;
+      if (ok) ok.textContent = okText;
+      if (cancel) cancel.textContent = cancelText;
 
+      return await new Promise((resolve) => {
+        const cleanup = () => {
+          ok?.removeEventListener("click", onOk);
+          cancel?.removeEventListener("click", onCancel);
+          try { dlg.close(); } catch {}
+        };
+        const onOk = () => { cleanup(); resolve(true);  };
+        const onCancel = () => { cleanup(); resolve(false); };
+
+        ok?.addEventListener("click", onOk, { once: true });
+        cancel?.addEventListener("click", onCancel, { once: true });
+
+        // Intento 1: showModal real
+        try {
+          // quita overlays que bloqueen el click
+          window.Processing?.hide?.();
+          dlg.showModal();
+          return;
+        } catch (e) {
+          console.warn("[AppDialog] showModal() falló:", e?.message);
+        }
+
+        // Intento 2: fallback a atributo [open] + CSS
+        try {
+          dlg.setAttribute("open", "");
+          return;
+        } catch (e2) {
+          console.warn("[AppDialog] setAttribute('open') falló:", e2?.message);
+        }
+
+        // Último recurso: confirm nativo
+        const ans = window.confirm(`${title}\n\n${message}`);
+        resolve(ans);
+      });
+    },
+  };
+  window.AppDialog = AppDialog;
 
   // ===== Validación =====
   function evalTieneAdjudicacionValida(resEval) {
@@ -148,7 +146,16 @@ window.AppDialog = AppDialog;
 
       if (falt > 0.0001) hayFaltantes = true;
     }
-    return hayAsignacionValida && hayFaltantes;
+    
+    const resultado = hayAsignacionValida && hayFaltantes;
+    console.log("[evalEsParcial]", {
+      hayAsignacionValida,
+      hayFaltantes,
+      resultado,
+      productos: productos.length
+    });
+    
+    return resultado;
   }
 
   // ===== Modal de resultado =====
@@ -289,41 +296,39 @@ window.AppDialog = AppDialog;
       if (!resEval?.ok)
         throw new Error(resEval?.error || "No se pudo evaluar.");
 
+      // 🔥 GUARDAR EN ESTADO
       StateOC15.lastEval = resEval;
 
-      const hayFaltantes =
-        Array.isArray(resEval?.productos) &&
-        resEval.productos.some((p) => {
-          if ("faltante" in p || "Faltante" in p)
-            return Number(p.faltante ?? p.Faltante ?? 0) > 0.0001;
-          const aprob = Number(p.CantidadAprobada ?? 0);
-          const sumAsig = (p.asignacion || []).reduce(
-            (s, a) => s + Number(a.cantidad ?? 0),
-            0
-          );
-          return aprob > sumAsig + 0.0001;
-        });
-
       const esValido = evalTieneAdjudicacionValida(resEval);
-      StateOC15.esParcial = hayFaltantes && esValido;
+      const esParcial = evalEsParcial(resEval);
+      
+      // 🔥 GUARDAR FLAG PARCIAL
+      StateOC15.esParcial = esParcial;
+
+      console.log("[OC15] Evaluación completada:", {
+        productos: resEval.productos?.length || 0,
+        esValido,
+        esParcial,
+        StateOC15: { ...StateOC15, lastEval: "existe" }
+      });
 
       if (btnGen) btnGen.disabled = !esValido;
 
       // 🔥 CRÍTICO: Cerrar overlay ANTES de mostrar modal
       window.Processing?.hide?.();
 
-      if (esValido && StateOC15.esParcial) {
+      if (esValido && esParcial) {
         toast("⚠️ Evaluación parcial detectada.", "warning");
 
         // Pequeña pausa para asegurar que el overlay se cierre
         await new Promise(r => setTimeout(r, 150));
 
         const ok = await AppDialog.confirm({
-          title: "Evaluación parcial",
+          title: "⚠️ Evaluación parcial",
           message:
             "Se generarán Órdenes de Compra solo para los ítems cubiertos.\n" +
             "Los productos sin cobertura quedarán pendientes.\n\n" +
-            "¿Deseas continuar con la generación parcial ?",
+            "¿Deseas continuar con la generación parcial?",
           okText: "Entendido",
           cancelText: "Cerrar",
         });
@@ -339,13 +344,6 @@ window.AppDialog = AppDialog;
       } else {
         toast("⚠️ No hay asignaciones válidas para generar OCs.", "warning");
       }
-
-      console.log("[OC15] Evaluación:", {
-        productos: resEval.productos?.length || 0,
-        esValido,
-        esParcial: StateOC15.esParcial,
-        resumen: resEval.resumen,
-      });
     } catch (e) {
       console.error("[OC15] Error en evaluación:", e);
       toast(e.message || "Error al evaluar", "error");
@@ -374,23 +372,47 @@ window.AppDialog = AppDialog;
 
       btnGen && (btnGen.disabled = true);
 
-      // 🔥 CRÍTICO: Si es parcial, mostrar confirmación SIN overlay
-      if (StateOC15?.esParcial) {
-        const ok = await AppDialog.confirm({
-          title: "Generación parcial de OC",
-          message:
-            "Se generarán OCs solo con los ítems cubiertos en la evaluación.\n" +
-            "El requerimiento quedará como 'Parcialmente Atendido'.\n\n" +
-            "¿Deseas continuar?",
-          okText: "Sí, continuar",
-          cancelText: "No, revisar",
-        });
-        
-        if (!ok) {
-          toast("Generación cancelada por el usuario.", "info");
-          btnGen.disabled = false;
-          return;
-        }
+      // 🔍 DIAGNÓSTICO: Verificar estado actual
+      console.log("[OC15] Estado antes de generar:", {
+        esParcial: StateOC15.esParcial,
+        lastEval: StateOC15.lastEval ? "existe" : "null",
+      });
+
+      // Re-evaluar si es parcial (por si el estado se perdió)
+      const esParcial = StateOC15.lastEval 
+        ? evalEsParcial(StateOC15.lastEval)
+        : StateOC15.esParcial;
+
+      console.log("[OC15] Es parcial (re-evaluado):", esParcial);
+
+      // 🔥 CRÍTICO: SIEMPRE mostrar confirmación antes de generar
+      let confirmMessage = "";
+      let confirmTitle = "";
+
+      if (esParcial) {
+        confirmTitle = "⚠️ Generación parcial de OC";
+        confirmMessage =
+          "Se generarán OCs solo con los ítems cubiertos en la evaluación.\n" +
+          "El requerimiento quedará como 'Parcialmente Atendido'.\n\n" +
+          "¿Deseas continuar?";
+      } else {
+        confirmTitle = "Confirmar generación de OC";
+        confirmMessage =
+          "Se generarán las Órdenes de Compra y se enviarán automáticamente por correo a cada proveedor.\n\n" +
+          "¿Deseas continuar?";
+      }
+
+      const ok = await AppDialog.confirm({
+        title: confirmTitle,
+        message: confirmMessage,
+        okText: "Sí, continuar",
+        cancelText: "No, revisar",
+      });
+      
+      if (!ok) {
+        toast("Generación cancelada por el usuario.", "info");
+        btnGen.disabled = false;
+        return;
       }
 
       // ✅ AHORA SÍ mostramos el overlay de procesamiento
@@ -479,6 +501,9 @@ window.AppDialog = AppDialog;
       selReq.addEventListener("change", () => {
         const btn = $("#btnGenerarOC");
         if (btn) btn.disabled = true;
+        // 🔥 Limpiar estado al cambiar de requerimiento
+        StateOC15.lastEval = null;
+        StateOC15.esParcial = false;
       });
     }
   }
@@ -492,5 +517,8 @@ window.AppDialog = AppDialog;
     validarEvaluacion: (resEval, opts) =>
       evalTieneAdjudicacionValida(resEval, opts),
     policy: { requireFull: false },
+    // 🔍 Exponer estado para diagnóstico
+    StateOC15: StateOC15,
+    getState: () => ({ ...StateOC15, lastEval: StateOC15.lastEval ? "existe" : null }),
   };
 })();

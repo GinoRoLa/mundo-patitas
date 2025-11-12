@@ -14,6 +14,8 @@
     evalByProd: new Map(),
     evalResumen: null,
     filterMode: "todos",
+    includeIGV: true,
+  igvRate: 0.18
   };
 
   // --------- DOM refs (ids de tu vista) ---------
@@ -53,6 +55,7 @@
     row.dataset.cotEnBd = String(enBD);
     row.dataset.cotDetect = String(detectados);
   }
+  
 
   // =======================================================
   // Render: lista de requerimientos
@@ -481,10 +484,10 @@
         return;
       }
 
-      renderEvaluacion(r.productos || [], r.resumen || null);
+     /* renderEvaluacion(r.productos || [], r.resumen || null);
 
       // 🔥 NUEVO: Validar y habilitar botón si window.OC15 está disponible
-      if (window.OC15?.validarEvaluacion) {
+       if (window.OC15?.validarEvaluacion) {
         const esValido = window.OC15.validarEvaluacion(r);
         if (DOM.btnGenOC) {
           DOM.btnGenOC.disabled = !esValido;
@@ -496,6 +499,33 @@
         });
       } else {
         console.warn("[CUS15] window.OC15.validarEvaluacion no disponible");
+      } */
+     
+     renderEvaluacion(r.productos || [], r.resumen || null);
+
+      // 🔥 CRÍTICO: Actualizar estado global de OC15
+      if (window.OC15 && r) {
+        // Guardar evaluación en OC15
+        if (window.OC15.StateOC15) {
+          window.OC15.StateOC15.lastEval = r;
+          window.OC15.StateOC15.esParcial = evalEsParcialEnReq(r);
+        }
+        
+        // Validar y habilitar botón
+        if (window.OC15.validarEvaluacion) {
+          const esValido = window.OC15.validarEvaluacion(r);
+          if (DOM.btnGenOC) {
+            DOM.btnGenOC.disabled = !esValido;
+          }
+          console.log("[CUS15] Auto-evaluación:", {
+            productos: r.productos?.length || 0,
+            esValido,
+            esParcial: window.OC15.StateOC15?.esParcial,
+            botonHabilitado: !DOM.btnGenOC?.disabled,
+          });
+        }
+      } else {
+        console.warn("[CUS15] window.OC15 no disponible");
       }
     } catch (e) {
       console.error("[CUS15] Error en evaluarYMostrar:", e);
@@ -511,6 +541,53 @@
       (sum, a) => sum + Number(a.cantidad || 0),
       0
     );
+  }
+
+  // 🔥 Función para detectar evaluación parcial (replica lógica de OC15)
+  function evalEsParcialEnReq(resEval) {
+    const productos = Array.isArray(resEval?.productos)
+      ? resEval.productos
+      : [];
+    if (!productos.length) return false;
+
+    let hayAsignacionValida = false;
+    let hayFaltantes = false;
+
+    for (const p of productos) {
+      const aprob = Number(p.CantidadAprobada ?? p.cantidadAprobada ?? 0);
+      const asigs = p.asignacion || p.Asignacion || [];
+      const sumAsig = asigs.reduce(
+        (acc, a) => acc + Number(a.cantidad ?? a.Cantidad ?? 0),
+        0
+      );
+      
+      for (const a of asigs) {
+        const cant = Number(a.cantidad ?? a.Cantidad ?? 0);
+        const prec = Number(a.precio ?? a.Precio ?? a.PrecioUnitario ?? 0);
+        const costo = Number(a.costo ?? a.Costo ?? 0);
+        if (cant > 0 && (prec > 0 || costo > 0)) {
+          hayAsignacionValida = true;
+          break;
+        }
+      }
+      
+      const falt =
+        "faltante" in p || "Faltante" in p
+          ? Number(p.faltante ?? p.Faltante ?? 0)
+          : Math.max(0, aprob - sumAsig);
+
+      if (falt > 0.0001) hayFaltantes = true;
+    }
+    
+    const resultado = hayAsignacionValida && hayFaltantes;
+    console.log("[CUS15] evalEsParcialEnReq:", {
+      hayAsignacionValida,
+      hayFaltantes,
+      resultado,
+      productos: productos.length
+    });
+    
+    return resultado;
   }
 
   function renderEvaluacion(productos, resumen) {
@@ -570,7 +647,7 @@
       });
     });
 
-    if (DOM.resumenEvalBox) {
+    /* if (DOM.resumenEvalBox) {
       const provs = resumen?.proveedores ?? countDistinctProviders(productos);
       const prods = resumen?.productosEvaluados ?? (productos?.length || 0);
       const total = resumen?.costoTotal ?? sumCostoTotal(productos);
@@ -581,7 +658,20 @@
         ${provs} proveedor${provs !== 1 ? "es" : ""} · 
         Costo total: <b>S/ ${fmtMoney(total)}</b>
       `;
-    }
+    } */
+   if (DOM.resumenEvalBox) {
+  const provs = resumen?.proveedores ?? countDistinctProviders(productos);
+  const prods = resumen?.productosEvaluados ?? (productos?.length || 0);
+
+  const { subtotal, total } = calcularTotales(productos, resumen, 0.18);
+
+  DOM.resumenEvalBox.innerHTML = `
+    <b>Resumen:</b> ${prods} producto${prods !== 1 ? "s" : ""} · ${provs} proveedor${provs !== 1 ? "es" : ""}<br>
+    Subtotal: S/ ${fmtMoney(subtotal)} · Total (con IGV 18%): S/ ${fmtMoney(total)}
+  `;
+}
+
+
   }
 
   function fmtCant(n) {
@@ -592,6 +682,16 @@
     const x = Number(n || 0);
     return x.toFixed(2);
   }
+
+  function calcularTotales(productos, resumen, igvRate = 0.18) {
+  const subtotalRaw = Number(resumen?.costoTotal ?? sumCostoTotal(productos) ?? 0);
+  const subtotal = Math.round(subtotalRaw * 100) / 100;
+  const igv      = Math.round(subtotal * igvRate * 100) / 100;
+  const total    = Math.round((subtotal + igv) * 100) / 100;
+  return { subtotal, igv, total };
+}
+
+
 
   function formatAsignaciones(asignacion = []) {
     if (!Array.isArray(asignacion) || asignacion.length === 0) return "—";
@@ -890,6 +990,22 @@
       // Toggle simple
       State.filterMode = State.filterMode === "todos" ? "conExcel" : "todos";
       aplicarFiltroRequerimientos();
+    });
+  }
+  const chkIGV = document.getElementById("chkIGV");
+  if (chkIGV) {
+    chkIGV.checked = true;
+    chkIGV.addEventListener("change", () => {
+      State.includeIGV = chkIGV.checked;
+      // Re-render solo el resumen (si ya hay datos)
+      if (State.evalByProd.size > 0) {
+        // reconstruimos el resumen con lo último que se evaluó
+        const productos = [...State.evalByProd.values()];
+        const resumen = State.evalResumen;
+        // reutiliza el mismo bloque del resumen:
+        const dummyTable = document.createElement("tbody");
+        renderEvaluacion(productos, resumen); // simple: re-llama y rehace resumen
+      }
     });
   }
 

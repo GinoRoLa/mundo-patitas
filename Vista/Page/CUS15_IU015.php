@@ -3,6 +3,7 @@ $fecha = date('Y-m-d');
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <title>CUS015 · Evaluar Cotización de Proveedor</title>
@@ -46,12 +47,12 @@ $fecha = date('Y-m-d');
         <!-- ========== Sección 1: Requerimientos ========== -->
         <section id="secRequerimientos">
           <h3>Solicitud requerimiento de compra</h3>
-<!-- En tu HTML, reemplaza la toolbar-req por esto: -->
-<div class="toolbar-req">
-  <button type="button" id="btnFiltroReqConExcel" class="btn btn-sm btn-primary">
-    Solo con Excel
-  </button>
-</div>
+          <!-- En tu HTML, reemplaza la toolbar-req por esto: -->
+          <div class="toolbar-req">
+            <button type="button" id="btnFiltroReqConExcel" class="btn btn-sm btn-primary">
+              Solo con Excel
+            </button>
+          </div>
 
           <div class="table-scroll">
             <table class="table" id="tblRequerimientos">
@@ -80,7 +81,7 @@ $fecha = date('Y-m-d');
         <section id="secDetalle">
           <h3>Detalle Solicitud requerimiento compra</h3>
           <div class="msg" id="msgDetalle">Seleccione un requerimiento para ver los detalles</div>
-          
+
           <div class="table-scroll">
             <table class="table" id="tblDetalleReq">
               <thead>
@@ -171,6 +172,7 @@ $fecha = date('Y-m-d');
             <b>Resumen:</b> — productos evaluados · — proveedores · Costo total: <b>S/ —</b>
           </div>
 
+
           <div class="acciones">
             <button id="btnGenerarOC" class="btn-primary" type="button">Generar Órdenes de Compra</button>
             <button id="btnCancelar" class="btn btn-ghost" type="button">Salir</button>
@@ -237,26 +239,26 @@ $fecha = date('Y-m-d');
     </dialog>
 
     <!-- Modal PROCESANDO -->
-<dialog id="dlgProcessing" aria-label="Procesando">
-  <div class="proc">
-    <span class="spin" aria-hidden="true"></span>
-    <div>
-      <h3 id="procTitle">Procesando…</h3>
-      <p id="procMsg">Por favor, espera un momento.</p>
-    </div>
-  </div>
-</dialog>
+    <dialog id="dlgProcessing" aria-label="Procesando">
+      <div class="proc">
+        <span class="spin" aria-hidden="true"></span>
+        <div>
+          <h3 id="procTitle">Procesando…</h3>
+          <p id="procMsg">Por favor, espera un momento.</p>
+        </div>
+      </div>
+    </dialog>
 
-<dialog id="appDialog" class="modal">
-  <div class="modal__card">
-    <h3 id="appDialogTitle" class="modal__title">Confirmación</h3>
-    <p id="appDialogMsg" class="modal__msg">¿Deseas continuar?</p>
-    <div class="modal__actions">
-      <button class="btn btn-ghost" id="appDialogCancel" data-cancel>Cancelar</button>
-      <button class="btn-primary" id="appDialogOk" data-ok>Aceptar</button>
-    </div>
-  </div>
-</dialog>
+    <dialog id="appDialog" class="modal">
+      <div class="modal__card">
+        <h3 id="appDialogTitle" class="modal__title">Confirmación</h3>
+        <p id="appDialogMsg" class="modal__msg">¿Deseas continuar?</p>
+        <div class="modal__actions">
+          <button class="btn btn-ghost" id="appDialogCancel" data-cancel>Cancelar</button>
+          <button class="btn-primary" id="appDialogOk" data-ok>Aceptar</button>
+        </div>
+      </div>
+    </dialog>
 
 
 
@@ -274,4 +276,5 @@ $fecha = date('Y-m-d');
   <script src="../Script/CUS15/main.js"></script>
   <script src="../Script/actualizarHora.js"></script>
 </body>
+
 </html>

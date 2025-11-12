@@ -247,6 +247,17 @@ $fecha = date('Y-m-d');
   </div>
 </dialog>
 
+<dialog id="appDialog" class="modal">
+  <div class="modal__card">
+    <h3 id="appDialogTitle" class="modal__title">Confirmación</h3>
+    <p id="appDialogMsg" class="modal__msg">¿Deseas continuar?</p>
+    <div class="modal__actions">
+      <button class="btn btn-ghost" id="appDialogCancel" data-cancel>Cancelar</button>
+      <button class="btn-primary" id="appDialogOk" data-ok>Aceptar</button>
+    </div>
+  </div>
+</dialog>
+
 
 
     <!-- ===== Toasts ===== -->

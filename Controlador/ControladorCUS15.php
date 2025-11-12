@@ -245,7 +245,7 @@ try {
     /* ==========================================================
    7. Generar Órdenes de Compra (transacción)
 ========================================================== */
-    case 'generar-ocs':
+    /* case 'generar-ocs':
       if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
 
       $in    = json_decode(file_get_contents('php://input'), true) ?? [];
@@ -383,8 +383,134 @@ try {
       (new Cotizacion())->actualizarEstadoCotizacion((int)$idReq, 'Evaluado');
 
       ok(['ok' => true, 'ordenes' => $ocs]);
-      break;
+      break; */
 
+    case 'generar-ocs':
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
+
+  $in    = json_decode(file_get_contents('php://input'), true) ?? [];
+  $idReq = $in['idRequerimiento'] ?? $in['idReq'] ?? '';
+  if ($idReq === '' || (int)$idReq <= 0) err('Id de requerimiento requerido', 422);
+
+  // === 1) Constructor: evaluación preview → formato por proveedor ===
+  $construirAdjudicacionDesdePreview = function (array $resEval) {
+    $porProv = [];
+    $productos = $resEval['productos'] ?? [];
+    foreach ((array)$productos as $p) {
+      $idp  = (int)($p['Id_Producto'] ?? $p['idProducto'] ?? $p['ProductoId'] ?? 0);
+      $desc = (string)($p['Nombre'] ?? $p['NombreProducto'] ?? $p['Descripcion'] ?? '');
+      $um   = (string)($p['UnidadMedida'] ?? $p['Unidad'] ?? $p['UM'] ?? 'UND');
+
+      $asigs = $p['Asignacion'] ?? $p['asignacion'] ?? $p['proveedores'] ?? [];
+      if (!is_array($asigs)) $asigs = [];
+
+      foreach ($asigs as $a) {
+        if (!is_array($a)) continue;
+
+        $ruc   = (string)($a['ruc'] ?? $a['RUC'] ?? $a['RUC_Proveedor'] ?? $a['proveedorRuc'] ?? '');
+        $razon = (string)($a['proveedor'] ?? $a['RazonSocial'] ?? $a['nombre'] ?? '');
+
+        // cantidad
+        $cant = null;
+        foreach (['cantidad','Cantidad','qty'] as $k) {
+          if (isset($a[$k]) && is_numeric($a[$k])) { $cant = (float)$a[$k]; break; }
+        }
+        if (!is_finite($cant ?? null)) $cant = 0;
+
+        // precio (o costo/cant)
+        $prec = null;
+        foreach (['precio','Precio','PrecioUnitario'] as $k) {
+          if (isset($a[$k]) && is_numeric($a[$k])) { $prec = (float)$a[$k]; break; }
+        }
+        if ($prec === null) {
+          $costo = null;
+          foreach (['costo','Costo','CostoUnitario'] as $k) {
+            if (isset($a[$k]) && is_numeric($a[$k])) { $costo = (float)$a[$k]; break; }
+          }
+          if ($costo !== null && $cant > 0) $prec = $costo / $cant;
+        }
+        if (!is_finite($prec ?? null)) $prec = 0;
+
+        if ($ruc === '' || $cant <= 0 || $prec <= 0) continue;
+
+        if (!isset($porProv[$ruc])) {
+          $porProv[$ruc] = ['ruc' => $ruc, 'razon' => $razon, 'items' => []];
+        }
+        $porProv[$ruc]['items'][] = [
+          'Id_Producto' => $idp,
+          'Descripcion' => $desc,
+          'Unidad'      => $um,
+          'Cantidad'    => (float)$cant,
+          'Precio'      => (float)round($prec, 4),
+        ];
+      }
+    }
+    return array_values($porProv);
+  };
+
+  // === 2) Adjudicación externa válida? Si no, construir desde evaluación
+  $adjud = $in['adjudicacion'] ?? null;
+  if (is_array($adjud)) {
+    $validos = 0;
+    foreach ($adjud as $bloque) {
+      $items = $bloque['items'] ?? $bloque['asignacion'] ?? $bloque['Asignacion'] ?? [];
+      foreach ((array)$items as $it) {
+        $cant  = (float)($it['cantidad'] ?? $it['Cantidad'] ?? 0);
+        $prec  = (float)($it['precio']   ?? $it['Precio']   ?? $it['PrecioUnitario'] ?? 0);
+        $costo = (float)($it['costo']    ?? $it['Costo']    ?? 0);
+        if ($cant > 0 && ($prec > 0 || $costo > 0)) { $validos++; break; }
+      }
+    }
+    if ($validos === 0) $adjud = null;
+  }
+
+  if (empty($adjud)) {
+    $ev  = new Evaluacion();
+    $res = $ev->evaluarRequerimientoGreedy($idReq); // ← aquí $idReq es Id_Requerimiento
+    if (empty($res['ok'])) err($res['error'] ?? 'No se pudo evaluar', 400);
+
+    $adjud = $construirAdjudicacionDesdePreview($res);
+    if (empty($adjud)) {
+      err('No se pudo construir la adjudicación desde la evaluación (sin cantidades/precios válidos).', 409, ['idReq' => $idReq]);
+    }
+  }
+
+  // === 3) Generar OCs PERMITIENDO PARCIAL ===
+  try {
+    $ocM = new OrdenCompra();
+    // ⚠️ IMPORTANTE: tu método debe aceptar el 3er parámetro $permitirParcial=true
+    // y además ser capaz de resolver Id_ReqEvaluacion si aquí le estamos pasando Id_Requerimiento.
+    $gen = $ocM->crearOCsDesdeAdjudicacion($idReq, $adjud, true);
+  } catch (Throwable $e) {
+    err('No se pudo generar las órdenes de compra', 500, [
+      'detail' => $e->getMessage(),
+      'idReq'  => $idReq,
+    ]);
+  }
+
+  // === 4) Extraer resultados y validar al menos 1 OC ===
+  $ordenes    = $gen['ordenes']    ?? [];
+  $pendientes = $gen['pendientes'] ?? [];
+
+  if (empty($ordenes)) {
+    err('No se generó ninguna orden de compra.', 409, ['idReq' => $idReq]);
+  }
+
+  // === 5) Actualizar estado del Requerimiento (Id_Requerimiento) ===
+  $reqM = new Requerimiento();
+  $nuevoEstado = empty($pendientes) ? 'Atendido' : 'Parcialmente Atendido';
+  $reqM->actualizarEstado((string)$idReq, $nuevoEstado);
+
+  // (opcional) marcar cotizaciones como 'Evaluado'
+  (new Cotizacion())->actualizarEstadoCotizacion((int)$idReq, 'Evaluado');
+
+  ok([
+    'ok'         => true,
+    'ordenes'    => $ordenes,
+    'pendientes' => $pendientes,
+    'estadoReq'  => $nuevoEstado,
+  ]);
+  break;
 
 
     /* ==========================================================

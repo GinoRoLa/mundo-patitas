@@ -812,3 +812,257 @@ button[disabled] { opacity:.6; cursor:not-allowed; }
 .toolbar-req .btn.active::before {
   content: '✓ ';
 }
+
+/* === Fix visibilidad y stacking de <dialog> === */
+dialog.modal:not([open]) { display: none; }                /* oculto solo si no está abierto */
+dialog.modal[open] {
+  display: flex;                                           /* centra contenido */
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;                                          /* por encima del overlay */
+}
+
+dialog.modal {                                             /* base segura para dialog */
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 56rem;
+  width: 92%;
+}
+
+dialog.modal::backdrop {
+  background: rgba(15,23,42,.45);
+  backdrop-filter: blur(2px);
+}
+
+/* el overlay de “Procesando” debajo del modal */
+#dlgProcessing { z-index: 9000; }
+
+/* === CRÍTICO: Forzar z-index del modal de confirmación === */
+#appDialog {
+  z-index: 10000 !important;
+}
+
+#appDialog::backdrop {
+  z-index: 9999 !important;
+  background: rgba(15,23,42,.55) !important;
+  backdrop-filter: blur(3px) !important;
+}
+
+/* Asegurar que Processing esté debajo */
+#dlgProcessing { 
+  z-index: 9000 !important; 
+}
+
+#dlgProcessing::backdrop {
+  z-index: 8999 !important;
+}
+
+/* === Dialog: visibilidad y stacking === */
+dialog.modal:not([open]) { display: none !important; }
+dialog.modal[open]{
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+}
+
+dialog.modal { z-index: 10000; }   /* sobre cualquier overlay */
+#dlgProcessing { z-index: 9000; }  /* debajo del modal */
+
+/* ================== CRÍTICO: Z-INDEX PARA MODALES ================== */
+
+/* Overlay de "Procesando" - Debe estar DEBAJO de modales de confirmación */
+#dlgProcessing {
+  z-index: 5000 !important;
+  border: 0;
+  padding: 18px 20px;
+  border-radius: 12px;
+}
+
+#dlgProcessing::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+  z-index: 4999 !important;
+}
+
+/* Modal de confirmación (appDialog) - MÁXIMA PRIORIDAD */
+#appDialog {
+  z-index: 10000 !important;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 32rem;
+  width: 92%;
+}
+
+#appDialog::backdrop {
+  z-index: 9999 !important;
+  background: rgba(15, 23, 42, 0.65) !important;
+  backdrop-filter: blur(4px) !important;
+}
+
+/* Modales generales (como modalOrdenes, modalComparador) */
+dialog.modal {
+  z-index: 8000 !important;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  max-width: 56rem;
+  width: 92%;
+}
+
+dialog.modal::backdrop {
+  z-index: 7999 !important;
+  background: rgba(15, 23, 42, 0.45);
+  backdrop-filter: blur(2px);
+}
+
+/* Asegurar que los modales se muestren correctamente */
+dialog.modal:not([open]) {
+  display: none;
+}
+
+dialog.modal[open] {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Animación suave para modales */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+dialog[open] .modal__card {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* ================== SPINNER DE PROCESAMIENTO ================== */
+.proc {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 260px;
+}
+
+.proc h3 {
+  margin: 0 0 4px;
+  font-size: 16px;
+}
+
+.proc p {
+  margin: 0;
+  color: #6b7280;
+  font-size: 13px;
+}
+
+.spin {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid #e5e7eb;
+  border-top-color: #2563eb;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ================== CARD DEL MODAL ================== */
+.modal__card {
+  background: #fff;
+  border-radius: 14px;
+  padding: 1.5rem;
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.3);
+  max-width: 100%;
+}
+
+.modal__title {
+  margin: 0 0 1rem 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--text-strong);
+}
+
+.modal__msg {
+  margin: 0 0 1rem 0;
+  color: #334155;
+  line-height: 1.6;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1.5rem;
+}
+
+/* ================== BOTONES EN MODALES ================== */
+.modal__actions .btn-primary {
+  background: var(--primary);
+  border-color: var(--primary-600);
+  color: #111827;
+  font-weight: 600;
+}
+
+.modal__actions .btn-primary:hover:not(:disabled) {
+  background: var(--primary-600);
+  box-shadow: 0 6px 16px var(--hover-shadow);
+}
+
+.modal__actions .btn-ghost {
+  background: #fff;
+  color: var(--text-strong);
+  border-color: var(--border);
+}
+
+.modal__actions .btn-ghost:hover:not(:disabled) {
+  background: var(--surface-muted);
+}
+
+/* ================== RESPONSIVE ================== */
+@media (max-width: 640px) {
+  #appDialog {
+    max-width: 95%;
+  }
+  
+  .modal__card {
+    padding: 1.25rem;
+  }
+  
+  .modal__actions {
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+  }
+  
+  .modal__actions button {
+    width: 100%;
+  }
+}
+
+/* ================== DEBUG (temporal) ================== */
+/* Descomenta esto para ver qué está pasando con los z-index */
+/*
+#dlgProcessing {
+  outline: 3px solid red !important;
+}
+
+#appDialog {
+  outline: 3px solid green !important;
+}
+
+dialog.modal {
+  outline: 3px solid blue !important;
+}
+*/

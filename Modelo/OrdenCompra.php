@@ -38,24 +38,25 @@ class OrdenCompra
    * @return array     [{ idOC, ruc, razon, subtotal, igv, total, items:[…], idempotent }]
    * @throws Exception
    */
-  public function crearOCsDesdeAdjudicacion($idEval, array $adjud): array
+  public function crearOCsDesdeAdjudicacion($idEval, array $adjud, bool $permitirParcial = false): array
+
 {
   $idEval = (int)$idEval;
-  if ($idEval <= 0) {
-    throw new Exception("Id_ReqEvaluacion inválido.");
-  }
-
-  if (!$this->evaluacionEsValida($idEval)) {
+// si el Id no es una evaluación válida, intenta resolverlo como Id_Requerimiento
+if (!$this->evaluacionEsValida($idEval)) {
+  $pos = $this->obtenerUltimaEvaluacionId($idEval); // usa tu método privado
+  if ($pos && $this->evaluacionEsValida($pos)) {
+    $idEval = $pos;
+  } else {
     throw new Exception("Evaluación no está en estado Aprobado/Parcialmente Aprobado.");
   }
+}
 
   $porProv = $this->normalizarAdjudicacion($adjud);
-  if (empty($porProv)) {
-    throw new Exception("Adjudicación vacía.");
-  }
+  if (empty($porProv)) throw new Exception("Adjudicación vacía.");
 
   $erroresCobertura = $this->validarCoberturaCompleta($idEval, $porProv);
-  if (!empty($erroresCobertura)) {
+  if (!empty($erroresCobertura) && !$permitirParcial) {
     $msg = "No se puede generar las OCs: las cantidades adjudicadas no cubren totalmente lo aprobado.";
     throw new Exception($msg . " Detalle: " . json_encode($erroresCobertura));
   }
@@ -65,7 +66,7 @@ class OrdenCompra
 
   try {
     $salida = [];
-    $tiempoEntrega = 15; // 🔹 Valor por defecto
+    $tiempoEntrega = 15;
 
     foreach ($porProv as $prov) {
       $ruc   = trim((string)($prov['ruc'] ?? ''));
@@ -205,6 +206,13 @@ class OrdenCompra
     }
 
     mysqli_commit($this->cn);
+    if ($permitirParcial) {
+      return [
+        'ordenes'    => $salida,
+        'pendientes' => $erroresCobertura ?? []
+      ];
+    }
+    // Si es estricto, se mantiene compatible
     return $salida;
   } catch (\Throwable $e) {
     mysqli_rollback($this->cn);

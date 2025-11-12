@@ -1,8 +1,6 @@
-// Version 2=======================================================
-// CUS15.ordencompras.js
-// - Evalúa requerimiento (greedy), habilita "Generar" si es válido
-// - Genera OCs y (opcional) envía por correo en lote
-// - Muestra resumen (si existe #modalOrdenes)
+// =======================================================
+// CUS15.ordencompras.js - CORREGIDO
+// Solución: Cerrar overlay ANTES de mostrar modal de confirmación
 // =======================================================
 (function () {
   const $ = (sel, ctx = document) => (ctx || document).querySelector(sel);
@@ -12,6 +10,12 @@
     } catch {
       console.log("[TOAST]", t, m);
     }
+  };
+
+  // === Estado local para OC15 ===
+  const StateOC15 = {
+    lastEval: null,
+    esParcial: false,
   };
 
   // ===== Endpoints =====
@@ -26,89 +30,128 @@
     });
   })();
 
-  // ===== Valida que la evaluación sea UTILIZABLE para generar OCs =====
-  // Requisitos:
-  //  1) Debe haber productos.
-  //  2) Para cada producto:
-  //     - Si viene p.faltante: debe ser 0.
-  //     - Si NO viene p.faltante: suma(asignacion.cantidad) >= CantidadAprobada.
-  //  3) Cada producto debe tener al menos una asignación válida
-  //     (cantidad > 0 y precio/costo > 0).
+  // ---- AppDialog.confirm helper ----
+  // ---- AppDialog.confirm (robusto) ----
+const AppDialog = {
+  async confirm({
+    title = "Confirmación",
+    message = "",
+    okText = "Continuar",
+    cancelText = "Cancelar",
+  } = {}) {
+    const dlg = document.getElementById("appDialog");
+    // Sin nodo => confirm nativo
+    if (!dlg) {
+      console.warn("[AppDialog] #appDialog no existe, usando window.confirm");
+      return window.confirm(`${title}\n\n${message}`);
+    }
+
+    const h3 = dlg.querySelector("#appDialogTitle") || dlg.querySelector("h3");
+    const p  = dlg.querySelector("#appDialogMsg")   || dlg.querySelector("p");
+    const ok = dlg.querySelector("#appDialogOk")    || dlg.querySelector("[data-ok]");
+    const cancel = dlg.querySelector("#appDialogCancel") || dlg.querySelector("[data-cancel]");
+
+    if (h3) h3.textContent = title;
+    if (p)  p.textContent  = message;
+    if (ok) ok.textContent = okText;
+    if (cancel) cancel.textContent = cancelText;
+
+    return await new Promise((resolve) => {
+      const cleanup = () => {
+        ok?.removeEventListener("click", onOk);
+        cancel?.removeEventListener("click", onCancel);
+        try { dlg.close(); } catch {}
+      };
+      const onOk = () => { cleanup(); resolve(true);  };
+      const onCancel = () => { cleanup(); resolve(false); };
+
+      ok?.addEventListener("click", onOk, { once: true });
+      cancel?.addEventListener("click", onCancel, { once: true });
+
+      // Intento 1: showModal real
+      try {
+        // quita overlays que bloqueen el click
+        window.Processing?.hide?.();
+        dlg.showModal();
+        return;
+      } catch (e) {
+        console.warn("[AppDialog] showModal() falló:", e?.message);
+      }
+
+      // Intento 2: fallback a atributo [open] + CSS
+      try {
+        dlg.setAttribute("open", "");
+        return;
+      } catch (e2) {
+        console.warn("[AppDialog] setAttribute('open') falló:", e2?.message);
+      }
+
+      // Último recurso: confirm nativo
+      const ans = window.confirm(`${title}\n\n${message}`);
+      resolve(ans);
+    });
+  },
+};
+window.AppDialog = AppDialog;
+
+
+  // ===== Validación =====
   function evalTieneAdjudicacionValida(resEval) {
     const productos = Array.isArray(resEval?.productos)
       ? resEval.productos
       : [];
-
-    if (!productos.length) {
-      console.warn("[OC15] No hay productos en la evaluación");
-      return false;
-    }
-
-    let hayAlMenosUnaAsignacionValidaGlobal = false;
+    if (!productos.length) return false;
 
     for (const p of productos) {
       const asigs = p.asignacion || p.Asignacion || [];
-
-      // 1) Cobertura: primero intentamos usar p.faltante si viene del backend
-      if ("faltante" in p || "Faltante" in p) {
-        const falt = Number(p.faltante ?? p.Faltante ?? 0);
-        if (falt > 0.0001) {
-          console.warn(
-            `[OC15] Producto ${p.Id_Producto} tiene faltante: ${falt}`
-          );
-          return false;
-        }
-      } else {
-        // Si no viene 'faltante', recalculamos cobertura usando CantidadAprobada vs sum(asignacion)
-        const aprob = Number(p.CantidadAprobada ?? p.cantidadAprobada ?? 0);
-        const sumAsig = asigs.reduce(
-          (acc, a) => acc + Number(a.cantidad ?? a.Cantidad ?? 0),
-          0
-        );
-
-        if (aprob > 0 && sumAsig + 0.0001 < aprob) {
-          console.warn(
-            `[OC15] Producto ${p.Id_Producto}: cobertura incompleta. ` +
-              `Aprobada=${aprob}, Asignada=${sumAsig}`
-          );
-          return false;
-        }
-      }
-
-      // 2) Asignaciones válidas por producto
-      let tieneAsignValidaProd = false;
       for (const a of asigs) {
         const cant = Number(a.cantidad ?? a.Cantidad ?? 0);
         const prec = Number(a.precio ?? a.Precio ?? a.PrecioUnitario ?? 0);
         const costo = Number(a.costo ?? a.Costo ?? 0);
-
-        if (cant > 0 && (prec > 0 || costo > 0)) {
-          tieneAsignValidaProd = true;
-          hayAlMenosUnaAsignacionValidaGlobal = true;
-          break; // basta una válida en este producto
-        }
-      }
-
-      if (!tieneAsignValidaProd) {
-        console.warn(
-          `[OC15] Producto ${p.Id_Producto} ` +
-            "no tiene ninguna asignación con cantidad > 0 y precio/costo > 0"
-        );
-        return false;
+        if (cant > 0 && (prec > 0 || costo > 0)) return true;
       }
     }
-
-    if (!hayAlMenosUnaAsignacionValidaGlobal) {
-      console.warn(
-        "[OC15] Evaluación sin asignaciones válidas en ningún producto"
-      );
-      return false;
-    }
-
-    return true;
+    return false;
   }
 
-  // ===== Modal de resultado (simple, opcional si tu vista lo tiene) =====
+  function evalEsParcial(resEval) {
+    const productos = Array.isArray(resEval?.productos)
+      ? resEval.productos
+      : [];
+    if (!productos.length) return false;
+
+    let hayAsignacionValida = false;
+    let hayFaltantes = false;
+
+    for (const p of productos) {
+      const aprob = Number(p.CantidadAprobada ?? p.cantidadAprobada ?? 0);
+      const asigs = p.asignacion || p.Asignacion || [];
+      const sumAsig = asigs.reduce(
+        (acc, a) => acc + Number(a.cantidad ?? a.Cantidad ?? 0),
+        0
+      );
+      
+      for (const a of asigs) {
+        const cant = Number(a.cantidad ?? a.Cantidad ?? 0);
+        const prec = Number(a.precio ?? a.Precio ?? a.PrecioUnitario ?? 0);
+        const costo = Number(a.costo ?? a.Costo ?? 0);
+        if (cant > 0 && (prec > 0 || costo > 0)) {
+          hayAsignacionValida = true;
+          break;
+        }
+      }
+      
+      const falt =
+        "faltante" in p || "Faltante" in p
+          ? Number(p.faltante ?? p.Faltante ?? 0)
+          : Math.max(0, aprob - sumAsig);
+
+      if (falt > 0.0001) hayFaltantes = true;
+    }
+    return hayAsignacionValida && hayFaltantes;
+  }
+
+  // ===== Modal de resultado =====
   function abrirModalResultado({ idReq, genResp, sendResp }) {
     const modal = $("#modalOrdenes");
     if (!modal) return;
@@ -216,7 +259,7 @@
     else modal.style.display = "flex";
   }
 
-  // ===== Acciones =====
+  // ===== EVALUAR =====
   async function evaluar() {
     const { fetchJSON, url } = window.API15 || {};
     const idReq = window.ReqCUS15?.getSelected?.();
@@ -225,12 +268,12 @@
     if (!fetchJSON || !url?.evaluar)
       return toast("API15 incompleta (evaluar).", "error");
 
-    const btnEval = $("#btnEvaluar");
-    const btnGen = $("#btnGenerarOC");
+    const btnEval = document.querySelector("#btnEvaluar");
+    const btnGen = document.querySelector("#btnGenerarOC");
 
     try {
-      btnEval && (btnEval.disabled = true);
-      btnGen && (btnGen.disabled = true); // Deshabilitar mientras evalúa
+      if (btnEval) btnEval.disabled = true;
+      if (btnGen) btnGen.disabled = true;
 
       window.Processing?.show?.(
         "Evaluando requerimiento…",
@@ -243,37 +286,77 @@
         body: JSON.stringify({ idReq }),
       });
 
-      if (!resEval?.ok) {
+      if (!resEval?.ok)
         throw new Error(resEval?.error || "No se pudo evaluar.");
-      }
 
-      // Validar si se puede generar OCs
+      StateOC15.lastEval = resEval;
+
+      const hayFaltantes =
+        Array.isArray(resEval?.productos) &&
+        resEval.productos.some((p) => {
+          if ("faltante" in p || "Faltante" in p)
+            return Number(p.faltante ?? p.Faltante ?? 0) > 0.0001;
+          const aprob = Number(p.CantidadAprobada ?? 0);
+          const sumAsig = (p.asignacion || []).reduce(
+            (s, a) => s + Number(a.cantidad ?? 0),
+            0
+          );
+          return aprob > sumAsig + 0.0001;
+        });
+
       const esValido = evalTieneAdjudicacionValida(resEval);
-
-      console.log("[OC15] Evaluación completa:", {
-        productos: resEval.productos?.length || 0,
-        esValido,
-        resumen: resEval.resumen,
-      });
+      StateOC15.esParcial = hayFaltantes && esValido;
 
       if (btnGen) btnGen.disabled = !esValido;
 
-      toast(
-        esValido
-          ? "✅ Evaluación OK: puedes generar OCs."
-          : "⚠️ Evaluación incompleta: faltan cantidades o hay faltantes.",
-        esValido ? "success" : "warning"
-      );
+      // 🔥 CRÍTICO: Cerrar overlay ANTES de mostrar modal
+      window.Processing?.hide?.();
+
+      if (esValido && StateOC15.esParcial) {
+        toast("⚠️ Evaluación parcial detectada.", "warning");
+
+        // Pequeña pausa para asegurar que el overlay se cierre
+        await new Promise(r => setTimeout(r, 150));
+
+        const ok = await AppDialog.confirm({
+          title: "Evaluación parcial",
+          message:
+            "Se generarán Órdenes de Compra solo para los ítems cubiertos.\n" +
+            "Los productos sin cobertura quedarán pendientes.\n\n" +
+            "¿Deseas continuar con la generación parcial ?",
+          okText: "Entendido",
+          cancelText: "Cerrar",
+        });
+
+        if (!ok) {
+          toast(
+            "Aviso cancelado. Puedes revisar la evaluación antes de generar.",
+            "info"
+          );
+        }
+      } else if (esValido) {
+        toast("✅ Evaluación completa: puedes generar las OCs.", "success");
+      } else {
+        toast("⚠️ No hay asignaciones válidas para generar OCs.", "warning");
+      }
+
+      console.log("[OC15] Evaluación:", {
+        productos: resEval.productos?.length || 0,
+        esValido,
+        esParcial: StateOC15.esParcial,
+        resumen: resEval.resumen,
+      });
     } catch (e) {
       console.error("[OC15] Error en evaluación:", e);
       toast(e.message || "Error al evaluar", "error");
       if (btnGen) btnGen.disabled = true;
     } finally {
       window.Processing?.hide?.();
-      btnEval && (btnEval.disabled = false);
+      if (btnEval) btnEval.disabled = false;
     }
   }
 
+  // ===== GENERAR OCS =====
   async function generar() {
     const { fetchJSON, url } = window.API15 || {};
     const idReq = window.ReqCUS15?.getSelected?.();
@@ -290,6 +373,27 @@
       }
 
       btnGen && (btnGen.disabled = true);
+
+      // 🔥 CRÍTICO: Si es parcial, mostrar confirmación SIN overlay
+      if (StateOC15?.esParcial) {
+        const ok = await AppDialog.confirm({
+          title: "Generación parcial de OC",
+          message:
+            "Se generarán OCs solo con los ítems cubiertos en la evaluación.\n" +
+            "El requerimiento quedará como 'Parcialmente Atendido'.\n\n" +
+            "¿Deseas continuar?",
+          okText: "Sí, continuar",
+          cancelText: "No, revisar",
+        });
+        
+        if (!ok) {
+          toast("Generación cancelada por el usuario.", "info");
+          btnGen.disabled = false;
+          return;
+        }
+      }
+
+      // ✅ AHORA SÍ mostramos el overlay de procesamiento
       window.Processing?.show?.(
         "Generando órdenes de compra…",
         "Creando OCs por proveedor."
@@ -309,7 +413,7 @@
       const n = Array.isArray(genResp.ordenes) ? genResp.ordenes.length : 0;
       toast(`✅ OC(s) generadas: ${n}`, n ? "success" : "info");
 
-      // 2) Enviar lote (opcional, si endpoint existe)
+      // 2) Enviar lote
       let sendResp = null;
       if (url?.ocEnviarLote) {
         window.Processing?.show?.(
@@ -342,20 +446,18 @@
         );
       }
 
-      // 3) Mostrar resumen (si tienes el modal en la vista)
+      // 3) Mostrar resumen
       abrirModalResultado({ idReq, genResp, sendResp });
 
       // 4) Refrescar listado
       window.ReqCUS15?.reload?.();
       window.ReqCUS15?.clear?.();
 
-      // 5) Mantener botón deshabilitado (debe re-evaluar para generar de nuevo)
+      // 5) Deshabilitar botón
       if (btnGen) btnGen.disabled = true;
     } catch (e) {
       console.error("[OC15] Error generando/enviando OCs:", e);
       toast(e.message || "Error generando/enviando OCs", "error");
-
-      // NO re-habilitar el botón si falló, debe re-evaluar
       if (btnGen) btnGen.disabled = true;
     } finally {
       window.Processing?.hide?.();
@@ -364,17 +466,14 @@
 
   // ===== Wire UI =====
   function wire() {
-    // Botón Evaluar
     $("#btnEvaluar")?.addEventListener("click", evaluar);
 
-    // Botón Generar (queda deshabilitado al inicio hasta evaluar OK)
     const btnGen = $("#btnGenerarOC");
     if (btnGen) {
       btnGen.disabled = true;
       btnGen.addEventListener("click", generar);
     }
 
-    // Si cambias de requerimiento, bloquear "Generar" y limpiar
     const selReq = $("#selRequerimiento") || $("#tablaRequerimientos");
     if (selReq) {
       selReq.addEventListener("change", () => {
@@ -386,11 +485,12 @@
 
   document.addEventListener("DOMContentLoaded", wire);
 
-  // Exponer API pública
-  // Exponer API pública
+  // ===== API Pública =====
   window.OC15 = {
     evaluar,
     generar,
-    validarEvaluacion: evalTieneAdjudicacionValida, // ✅ Agregar esto
+    validarEvaluacion: (resEval, opts) =>
+      evalTieneAdjudicacionValida(resEval, opts),
+    policy: { requireFull: false },
   };
 })();

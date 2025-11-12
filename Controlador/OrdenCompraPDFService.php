@@ -187,7 +187,7 @@ final class OrdenCompraPDFService
       <div class="kva"><b>Fecha:</b> <?= htmlspecialchars($fecha) ?></div>
       <div class="kva"><b>N° de orden:</b> <?= htmlspecialchars($numOC) ?></div>
       <?php if ($nroCotProv !== ''): ?>
-        <div class="kva"><b>Ref. cotización proveedor:</b> <?= htmlspecialchars($nroCotProv) ?></div>
+        <div class="kva"><b>Ref. Número cotización:</b> <?= htmlspecialchars($nroCotProv) ?></div>
       <?php endif; ?>
     </div>
   </div>

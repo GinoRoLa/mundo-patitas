@@ -30,7 +30,7 @@ $hora = date('H:i:s');
         <!-- Partida (financiamiento) -->
         <section class="card card-partida">
             <div class="card-header">
-                <h2>📊 Partida periodo</h2>
+                <h2>Partida periodo</h2>
             </div>
             <div class="card-body">
                 
@@ -61,8 +61,7 @@ $hora = date('H:i:s');
         <!-- Solicitudes -->
         <section class="card">
             <div class="card-header">
-                <h2>📋 Solicitudes pendientes</h2>
-                <button id="btnRefrescar" class="btn-icon" title="Refrescar">🔄</button>
+                <h2>Solicitudes pendientes</h2>
             </div>
             <div class="card-body">
                 <div class="table-wrap">
@@ -90,7 +89,7 @@ $hora = date('H:i:s');
         <!-- Detalle de la solicitud -->
         <section class="card">
             <div class="card-header">
-                <h2>📦 Detalle solicitud <span id="idSolicitudActual"></span></h2>
+                <h2>Detalle solicitud <span id="idSolicitudActual"></span></h2>
             </div>
             <div class="card-body">
                 <div id="detalleVacio" class="empty-state">
@@ -137,7 +136,7 @@ $hora = date('H:i:s');
         <!-- Resultado / evaluacion -->
         <section class="card card-resultado">
             <div class="card-header">
-                <h2>✅ Resultado de evaluación</h2>
+                <h2>Resultado de evaluación</h2>
             </div>
             <div class="card-body">
                 <div id="resultadoVacio" class="empty-state">
@@ -159,16 +158,44 @@ $hora = date('H:i:s');
                             </thead>
                             <tbody></tbody>
                         </table>
-                        <div id="accionesEvaluacion" style="display:none; text-align:right; margin-top:10px;">
-                            <button id="btnRegistrar" class="btn-primary">Registrar Evaluación</button>
-                        </div>
-
+                    </div>
+                    <div id="accionesEvaluacion" style="display:none; text-align:right; margin-top:10px;">
+                        <button id="btnRegistrar" class="btn btn-primary">Registrar Evaluación</button>
                     </div>
                 </div>
             </div>
         </section>
     </main>
+    
+    <section class="card card-evaluadas">
+            <div class="card-header">
+                <h2>Solicitudes Evaluadas</h2>
+            </div>
+            <div class="card-body">
+                <div class="table-wrap">
+                    <table id="tablaEvaluadas">
+                        <thead>
+                        <tr>
+                            <th>ID Evaluación</th>
+                            <th>ID Requerimiento</th>
+                            <th>Criterio</th>
+                            <th>Monto Solicitado</th>
+                            <th>Monto Aprobado</th>
+                            <th>Saldo Después</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                            <th>Acción</th>
+                        </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+
+        </section>
 </div>
+
+
 
 <!-- Modal de confirmación -->
 <div id="modalConfirm" class="modal" style="display:none;">
@@ -181,6 +208,15 @@ $hora = date('H:i:s');
         </div>
     </div>
 </div>
+
+<!-- Modal -->
+<div id="modalDetalle" class="modal">
+  <div class="modal-content">
+    <span id="cerrarModal" class="cerrar">&times;</span>
+    <div id="contenidoDetalle"></div>
+  </div>
+</div>
+
 
 <script src="../Script/CUS13/evaluacion.js"></script>
 </body>

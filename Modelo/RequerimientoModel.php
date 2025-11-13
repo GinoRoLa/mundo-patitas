@@ -204,17 +204,48 @@ class RequerimientoModel {
         if(!$saldoInfo) throw new Exception("Partida no encontrada.");
         $montoPeriodo = (float)$saldoInfo['MontoPeriodo'];
 
-        // 4) Aplicar criterio
+        // 4) Aplicar criterio de ordenamiento antes de evaluar
+        // 4) Aplicar criterio de ordenamiento antes de evaluar
         $crit = strtolower(trim($criterioLabel));
-        if ($crit === 'precio') {
-            usort($detalle, function($a, $b){
-                $totalA = $a['Cantidad'] * $a['PrecioPromedio'];
-                $totalB = $b['Cantidad'] * $b['PrecioPromedio'];
-                return $totalA <=> $totalB;
-            });
-        } elseif ($crit === 'rotacion') {
-            usort($detalle, fn($a, $b) => $b['Cantidad'] <=> $a['Cantidad']);
+        error_log("💬 CriterioLabel recibido normalizado: '$crit'");
+
+        switch ($crit) {
+            case 'precio': // criterio 1 — menor precio total
+                usort($detalle, function($a, $b) {
+                    $totalA = (float)$a['Cantidad'] * (float)$a['PrecioPromedio'];
+                    $totalB = (float)$b['Cantidad'] * (float)$b['PrecioPromedio'];
+                    return $totalA <=> $totalB; // menor a mayor
+                });
+                break;
+
+            case 'rotacion': // criterio 2 — mayor cantidad
+                usort($detalle, function($a, $b) {
+                    return (float)$b['Cantidad'] <=> (float)$a['Cantidad']; // mayor a menor
+                });
+                error_log("🔁 Ordenado por rotación (mayor a menor cantidad)");
+                foreach ($detalle as $i => $row) {
+                    error_log("Fila $i → Id_Producto={$row['Id_Producto']} Cantidad={$row['Cantidad']}");
+                }
+                break;
+
+            case 'proporcional': // criterio 3 — proporcionalidad
+                // no ordenar, solo distribuir proporcionalmente más abajo
+                error_log("⚖️ Criterio proporcional, sin ordenamiento");
+                break;
+
+            default:
+                error_log("⚠️ Criterio no reconocido: '$crit'");
+                break;
         }
+
+
+        // después del switch ($crit)
+        error_log("🔎 CRITERIO: $crit");
+        foreach ($detalle as $i => $row) {
+            error_log("Fila $i → Id_Producto={$row['Id_Producto']} Cantidad={$row['Cantidad']}");
+        }
+
+
 
         // 5) Evaluar según criterio
         $saldoAnterior = $this->obtenerSaldoAnteriorPorPartida($idPartida);
@@ -280,7 +311,7 @@ class RequerimientoModel {
 
         return [
             'success' => true,
-            'simulacion' => true,
+            'idEvaluacion' => $idReq,
             'MontoSolicitado' => $montoSolicitado,
             'MontoAprobado' => $consumido,
             'SaldoDespues' => $saldoDespues,
@@ -330,9 +361,10 @@ class RequerimientoModel {
             $stmtCons->close();
 
             // Actualizar requerimiento
+            $estadoFinalReq = 'Cerrado';
             $sqlUp = "UPDATE t14RequerimientoCompra SET Estado = ? WHERE Id_Requerimiento = ?";
             $stmtUp = $this->conn->prepare($sqlUp);
-            $stmtUp->bind_param("si", $estadoCab, $idReq);
+            $stmtUp->bind_param("si", $estadoFinalReq, $idReq);
             $stmtUp->execute();
             $stmtUp->close();
 
@@ -435,6 +467,69 @@ class RequerimientoModel {
         return $res ? $res['Estado'] : null;
     }
 
+    public function obtenerEvaluaciones() {
+        $sql = "SELECT 
+                    Id_ReqEvaluacion, 
+                    Id_Requerimiento, 
+                    CriterioEvaluacion, 
+                    MontoSolicitado, 
+                    MontoAprobado, 
+                    SaldoRestantePeriodo, 
+                    Estado, 
+                    DATE_FORMAT(FechaEvaluacion, '%Y-%m-%d %H:%i') AS FechaEvaluacion
+                FROM t407RequerimientoEvaluado
+                ORDER BY FechaEvaluacion DESC";
+
+        $result = $this->conn->query($sql);
+
+        if (!$result) {
+            // 👇 aquí mostramos el error exacto
+            throw new Exception("Error en consulta SQL: " . $this->conn->error);
+        }
+        $data = [];
+        while ($row = $result->fetch_assoc()) {
+            $data[] = $row;
+        }
+
+        return $data;
+    }
+
+    public function obtenerDetalleEvaluacion($idEval) {
+        $idEval = intval($idEval);
+
+        // Verificamos el ID
+        if ($idEval <= 0) {
+            throw new Exception("ID de evaluación inválido: $idEval");
+        }
+
+        $sql = "SELECT 
+                    Id_DetalleEvaluacion,
+                    Id_Producto,
+                    Cantidad,
+                    Precio
+                FROM t408DetalleReqEvaluado
+                WHERE Id_ReqEvaluacion = ?";
+
+        $stmt = $this->conn->prepare($sql);
+        if (!$stmt) {
+            throw new Exception("Error preparando SQL: " . $this->conn->error);
+        }
+
+        $stmt->bind_param("i", $idEval);
+        $stmt->execute();
+        $res = $stmt->get_result();
+
+        $detalle = [];
+        while ($row = $res->fetch_assoc()) {
+            // Calculamos un estado básico: Aprobado si la cantidad > 0
+            $row['Estado'] = ($row['Cantidad'] > 0) ? 'Aprobado' : 'Rechazado';
+            $detalle[] = $row;
+        }
+
+        $stmt->close();
+
+        return $detalle;
+    }
 
 }
 ?>

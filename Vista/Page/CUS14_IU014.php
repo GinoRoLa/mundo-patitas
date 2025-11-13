@@ -5,6 +5,30 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solicitud de Cotizaciones al Proveedor</title>
     <style>
+
+        :root {
+            /* Primarios */
+            --primary: #93c5fd;
+            --primary-600: #3b82f6;
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-200: #bfdbfe;
+            
+            /* Secundarios */
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            
+            /* Azul oscuro para texto en headers */
+            --blue-900: #1e3a8a;
+            --blue-800: #1e40af;
+        }
+
+
+
         * {
             margin: 0;
             padding: 0;
@@ -27,8 +51,8 @@
         }
 
         .responsable-top {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background-color: var(--primary-50); /* 🎨 Azul muy claro */
+            border: 2px solid var(--primary-200);
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 20px;
@@ -45,14 +69,18 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
+            border-bottom: 3px solid var(--primary-600); /* 🎨 Línea azul */
             padding-bottom: 20px;
+            background: linear-gradient(to bottom, var(--primary-50), white); /* Degradado sutil */
+            border-radius: 8px 8px 0 0;
+            padding: 20px;
         }
 
         .header h1 {
-            color: #333;
+            color: var(--gray-900); /* 🎨 Gris oscuro */
             font-size: 2.5em;
             margin-bottom: 10px;
+            font-weight: 700;
         }
 
         .datetime {
@@ -63,17 +91,20 @@
         .section {
             margin-bottom: 30px;
             padding: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--gray-200);
             border-radius: 6px;
-            background-color: #fafafa;
+            background-color: var(--gray-50); /* 🎨 Gris muy claro */
         }
 
         .section h2 {
-            color: #444;
+            color: var(--gray-900); /* 🎨 Gris muy oscuro */
             margin-bottom: 15px;
             font-size: 1.3em;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
+            border-bottom: 3px solid var(--primary-600); /* 🎨 Línea azul */
+            padding-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .form-group {
@@ -84,7 +115,10 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-            color: #555;
+            color: var(--gray-700); /* 🎨 Gris oscuro */
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .form-group input,
@@ -115,10 +149,18 @@
         .table-container {
             overflow-x: auto;
             margin-top: 10px;
-            max-height: 300px;
-            overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
+            position: relative;
+            height: 285px;
+            overflow-y: auto;
+        }
+
+        .table-container table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            table-layout: auto;
         }
 
         .table-container thead {
@@ -126,28 +168,186 @@
             top: 0;
             background-color: #f8f9fa;
             z-index: 10;
+            box-shadow: 0 2px 2px rgba(0,0,0,0.1);
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            background: white;
-        }
-
-        th, td {
+        /* Estilos generales de th SIN text-align por defecto */
+        .table-container th {
+            height: 45px;
             padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #ddd;
-        }
-
-        th {
-            background-color: #f8f9fa;
+            border-bottom: 2px solid var(--primary-600);
+            background-color: var(--primary-200); /* 🎨 Azul claro */
             font-weight: bold;
-            color: #555;
+            color: var(--blue-900); /* 🎨 Azul oscuro */
+            text-transform: uppercase; /* Opcional: mayúsculas */
+            font-size: 13px;
+            letter-spacing: 0.5px;
         }
 
-        tr:hover {
-            background-color: #f5f5f5;
+        /* Estilos generales de td SIN text-align por defecto */
+        .table-container td {
+            height: 48px;
+            padding: 12px;
+            border-bottom: 1px solid #ddd;
+            vertical-align: middle;
+        }
+
+        .table-container tbody tr:hover {
+            background-color: var(--primary-50); /* 🎨 Azul muy claro al hover */
+            transition: background-color 0.2s ease;
+        }
+
+        .table-container tbody tr.empty-row {
+            height: 48px;
+        }
+
+        .table-container tbody tr.empty-row td {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+        }
+
+        /* ========================================
+        📋 TABLA DE REQUERIMIENTOS - CENTRADA
+        ======================================== */
+        #requerimientosTable {
+            table-layout: fixed;
+        }
+
+        #requerimientosTable th,
+        #requerimientosTable td {
+            text-align: center !important;
+            vertical-align: middle !important;
+        }
+
+        #requerimientosTable th:nth-child(1),
+        #requerimientosTable td:nth-child(1) {
+            width: 70%;
+        }
+
+        #requerimientosTable th:nth-child(2),
+        #requerimientosTable td:nth-child(2) {
+            width: 30%;
+        }
+
+        #requerimientosTable .checkbox {
+            transform: scale(1.3);
+            cursor: pointer;
+        }
+
+        /* ========================================
+        📧 TABLA DE PROVEEDORES - ADAPTATIVA
+        ======================================== */
+        #proveedoresTable th:nth-child(1),
+        #proveedoresTable td:nth-child(1) {
+            width: 120px;
+            min-width: 120px;
+            white-space: nowrap;
+        }
+
+        #proveedoresTable th:nth-child(2),
+        #proveedoresTable td:nth-child(2) {
+            width: 30%;
+            min-width: 150px;
+        }
+
+        #proveedoresTable th:nth-child(3),
+        #proveedoresTable td:nth-child(3) {
+            width: auto;
+            min-width: 250px;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        /* ========================================
+        📦 TABLA DE PRODUCTOS
+        ======================================== */
+        #productosTable th:nth-child(1),
+        #productosTable td:nth-child(1) {
+            width: 100px;
+            min-width: 100px;
+        }
+
+        #productosTable th:nth-child(2),
+        #productosTable td:nth-child(2) {
+            width: auto;
+            min-width: 200px;
+        }
+
+        #productosTable th:nth-child(3),
+        #productosTable td:nth-child(3) {
+            width: 100px;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* ========================================
+        📊 TABLA DE HISTORIAL
+        ======================================== */
+        #solicitudCotizacionTable th:nth-child(1),
+        #solicitudCotizacionTable td:nth-child(1) {
+            width: 100px;
+        }
+
+        #solicitudCotizacionTable th:nth-child(2),
+        #solicitudCotizacionTable td:nth-child(2) {
+            width: 110px;
+        }
+
+        #solicitudCotizacionTable th:nth-child(3),
+        #solicitudCotizacionTable td:nth-child(3) {
+            width: 120px;
+        }
+
+        #solicitudCotizacionTable th:nth-child(4),
+        #solicitudCotizacionTable td:nth-child(4) {
+            width: auto;
+            min-width: 150px;
+        }
+
+        #solicitudCotizacionTable th:nth-child(5),
+        #solicitudCotizacionTable td:nth-child(5) {
+            width: auto;
+            min-width: 200px;
+            white-space: normal;
+            word-break: break-word;
+        }
+
+        #solicitudCotizacionTable th:nth-child(6),
+        #solicitudCotizacionTable td:nth-child(6) {
+            width: 80px;
+            text-align: center;
+        }
+
+        /* ========================================
+        OTRAS TABLAS - ALINEACIÓN IZQUIERDA
+        ======================================== */
+        #productosTable th,
+        #productosTable td,
+        #proveedoresTable th,
+        #proveedoresTable td,
+        #solicitudCotizacionTable th,
+        #solicitudCotizacionTable td {
+            text-align: left;
+        }
+
+        /* Excepciones: columnas específicas centradas */
+        #productosTable th:nth-child(3),
+        #productosTable td:nth-child(3),
+        #solicitudCotizacionTable th:nth-child(6),
+        #solicitudCotizacionTable td:nth-child(6) {
+            text-align: center;
+        }
+
+        /* Filas seleccionadas */
+        .fila-seleccionada {
+            background-color: var(--primary-100) !important; /* 🎨 Azul claro */
+            border-left: 4px solid var(--primary-600); /* 🎨 Borde azul */
+            font-weight: bold;
+        }
+
+        .fila-seleccionada:hover {
+            background-color: var(--primary-200) !important; /* 🎨 Azul más intenso */
         }
 
         .checkbox {
@@ -170,7 +370,7 @@
             flex: 1;
             margin-bottom: 0;
         }
-
+        
         .btn {
             padding: 10px 20px;
             border: none;
@@ -181,12 +381,16 @@
         }
 
         .btn-primary {
-            background-color: #007bff;
+            background-color: var(--primary-600); /* 🎨 Azul principal */
             color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary:hover {
-            background-color: #0056b3;
+            background-color: #2563eb; /* Azul más oscuro */
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
         }
 
         .btn-primary:disabled {
@@ -221,6 +425,41 @@
             margin-left: 10px;
         }
 
+        /* 🔍 Ícono de lupa para ver PDF */
+        .btn-ver-pdf {
+            background-color: var(--primary-600);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ver-pdf:hover {
+            background-color: #2563eb;
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-ver-pdf:disabled {
+            background-color: var(--gray-200);
+            color: var(--gray-600);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
+        /* Ajustar ancho de columna PDF */
+        #solicitudCotizacionTable th:nth-child(7),
+        #solicitudCotizacionTable td:nth-child(7) {
+            width: 60px;
+            text-align: center;
+        }
+
         @media (max-width: 768px) {
             .form-row {
                 flex-direction: column;
@@ -231,6 +470,7 @@
                 gap: 20px;
             }
         }
+
     </style>
 </head>
 <body>
@@ -291,12 +531,12 @@
                                 <th>ID Producto</th>
                                 <th>Producto</th>
                                 <th>Cantidad</th>
-                                <th>Seleccionar</th>
+                                <!-- ❌ ELIMINAR: <th>Seleccionar</th> -->
                             </tr>
                         </thead>
                         <tbody id="productosTable">
                             <tr>
-                                <td colspan="4" style="text-align: center; color: #666;">
+                                <td colspan="3" style="text-align: center; color: #666;">
                                     Seleccione un requerimiento evaluado
                                 </td>
                             </tr>
@@ -312,14 +552,14 @@
                         <thead>
                             <tr>
                                 <th>RUC</th>
-                                <th>Empresa</th>
+                                <th>Razón Social</th>
                                 <th>Correo</th>
                             </tr>
                         </thead>
                         <tbody id="proveedoresTable">
                             <tr>
                                 <td colspan="3" style="text-align: center; color: #666;">
-                                    Cargando proveedores...
+                                    Seleccione un requerimiento evaluado
                                 </td>
                             </tr>
                         </tbody>
@@ -329,29 +569,27 @@
         </div>
 
         <div class="btn-generar">
-            <button type="button" class="btn btn-primary" id="btnGenerarSolicitud" onclick="generarSolicitud()" disabled>Generar Solicitud</button>
+            <button type="button" class="btn btn-primary" id="btnGenerarYEnviar" onclick="generarYEnviarSolicitud()" disabled>Generar y Enviar Solicitud</button>
         </div>
 
         <div class="section">
-            <h2>Solicitud Cotización</h2>
+            <h2>Historial de Solicitudes Enviadas</h2>
             <div class="table-container">
                 <table>
                     <thead>
                         <tr>
                             <th>ID Solicitud</th>
+                            <th>ID Requerimiento</th>
                             <th>RUC</th>
                             <th>Empresa</th>
                             <th>Correo</th>
-                            <th>ID Producto</th>
-                            <th>Producto</th>
-                            <th>Cantidad</th>
-                            <th>Fecha Emision</th>
-                            <th>Fecha Cierre</th>
+                            <th>Productos Solicitados</th>
+                            <th>PDF</th> <!-- 🎯 NUEVA COLUMNA -->
                         </tr>
                     </thead>
                     <tbody id="solicitudCotizacionTable">
                         <tr>
-                            <td colspan="9" style="text-align: center; color: #666;">
+                            <td colspan="7" style="text-align: center; color: #666;">
                                 No hay solicitudes generadas
                             </td>
                         </tr>
@@ -361,7 +599,6 @@
         </div>
 
         <div class="footer">
-            <button type="button" class="btn btn-primary" id="btnEnviar" onclick="enviarSolicitud()" disabled>Enviar</button>
             <button type="button" class="btn btn-secondary" onclick="salir()">Salir</button>
         </div>
     </div>
@@ -380,43 +617,18 @@
 
         // Variables globales
         let requerimientosSeleccionados = [];
-        let productosSeleccionados = [];
-        let productoSeleccionado = null; // Producto seleccionado (solo uno)
+        let productosDelRequerimiento = []; // ✅ RENOMBRAR de productosSeleccionados
         let proveedores = [];
         let solicitudCotizacion = [];
-
-        // Persistencia de bloqueos entre recargas
-        const LS_REQ_LOCK_KEY = 'CUS14_reqLock';
-        const LS_PROD_DISABLED_PREFIX = 'CUS14_disabledProducts_';
-
-        function getReqLock() { return localStorage.getItem(LS_REQ_LOCK_KEY) || null; }
-        function setReqLock(idReq) { if (idReq) localStorage.setItem(LS_REQ_LOCK_KEY, idReq); }
-        function clearReqLock() { localStorage.removeItem(LS_REQ_LOCK_KEY); }
-        function getDisabledProducts(reqId) {
-            try {
-                const raw = localStorage.getItem(LS_PROD_DISABLED_PREFIX + reqId);
-                if (!raw) return new Set();
-                const arr = JSON.parse(raw);
-                return new Set(Array.isArray(arr) ? arr : []);
-            } catch { return new Set(); }
-        }
-        function addDisabledProduct(reqId, idProducto) {
-            const set = getDisabledProducts(reqId);
-            set.add(String(idProducto));
-            localStorage.setItem(LS_PROD_DISABLED_PREFIX + reqId, JSON.stringify(Array.from(set)));
-        }
-        function clearDisabledProducts(reqId) { localStorage.removeItem(LS_PROD_DISABLED_PREFIX + reqId); }
+        let proveedoresOriginales = []; // ✅ NUEVA: guardar proveedores completos
+        let productoSeleccionado = null; // ✅ NUEVA: guardar producto seleccionado
 
         // Cargar datos al iniciar la página
         document.addEventListener('DOMContentLoaded', async function() {
             cargarDatosResponsable();
             await cargarRequerimientosEvaluados();
-            // No cargar proveedores al inicio, se cargarán cuando se seleccione un producto
             limpiarProveedores();
-            // Cargar solicitudes pendientes en la tabla inferior
-            cargarSolicitudesPendientes();
-
-            // Los event listeners para checkboxes se agregan en renderRequerimientos
+            cargarSolicitudesEnviadas();
         });
 
         // Función para cargar datos del responsable
@@ -447,18 +659,6 @@
                 
                 if (data.success) {
                     renderRequerimientos(data.data);
-                    // Aplicar bloqueo persistido si existe
-                    const lockedReq = getReqLock();
-                    if (lockedReq) {
-                        const tbodyReq = document.getElementById('requerimientosTable');
-                        const checks = tbodyReq ? tbodyReq.querySelectorAll('.checkbox-requerimiento') : [];
-                        checks.forEach(cb => {
-                            if (cb.value === String(lockedReq)) cb.checked = true;
-                            cb.disabled = true;
-                        });
-                        actualizarCheckboxes();
-                        await cargarProductosSeleccionados();
-                    }
                 } else {
                     console.error('Error al cargar requerimientos:', data.message);
                     mostrarErrorRequerimientos('Error al cargar los requerimientos');
@@ -492,14 +692,14 @@
                     <td>${idRequerimiento}</td>
                     <td>
                         <input type="checkbox" class="checkbox checkbox-requerimiento" 
-                               value="${idRequerimiento}" 
-                               data-id="${idRequerimiento}">
+                            value="${idRequerimiento}" 
+                            data-id="${idRequerimiento}">
                     </td>
                 `;
                 tbody.appendChild(tr);
             });
             
-            // Agregar event listeners para selección única
+            // Event listeners para selección única
             tbody.querySelectorAll('.checkbox-requerimiento').forEach(checkbox => {
                 checkbox.addEventListener('change', function() {
                     if (this.checked) {
@@ -511,13 +711,27 @@
                         });
                     }
                     actualizarCheckboxes();
-                    cargarProductosSeleccionados();
-                    // Limpiar selección de producto cuando cambia el requerimiento
-                    productoSeleccionado = null;
-                    limpiarProveedores();
-                    actualizarEstadoBotonGenerar();
+                    cargarDatosRequerimiento(); // ✅ NUEVA FUNCIÓN
                 });
             });
+        }
+
+        async function cargarDatosRequerimiento() {
+            if (requerimientosSeleccionados.length === 0) {
+                limpiarTablasProductosYProveedores();
+                actualizarEstadoBotonGenerar();
+                return;
+            }
+
+            const idRequerimiento = requerimientosSeleccionados[0];
+            
+            // Cargar productos y proveedores en paralelo
+            await Promise.all([
+                cargarProductosRequerimiento(idRequerimiento),
+                cargarProveedoresRequerimiento(idRequerimiento)
+            ]);
+            
+            actualizarEstadoBotonGenerar();
         }
 
         function mostrarErrorRequerimientos(mensaje) {
@@ -541,46 +755,24 @@
         }
 
         // Función para cargar productos del requerimiento seleccionado
-        async function cargarProductosSeleccionados() {
-            // Limpiar selección de producto cuando se cargan nuevos productos
-            productoSeleccionado = null;
-            limpiarProveedores();
-            
-            if (requerimientosSeleccionados.length === 0) {
-                const tbody = document.getElementById('productosTable');
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="4" style="text-align: center; color: #666;">
-                            Seleccione un requerimiento evaluado
-                        </td>
-                    </tr>
-                `;
-                productosSeleccionados = [];
-                actualizarEstadoBotonGenerar();
-                return;
-            }
-
+        async function cargarProductosRequerimiento(idRequerimiento) {
             try {
-                // Solo hay un requerimiento seleccionado (selección única)
-                const idRequerimiento = requerimientosSeleccionados[0];
-                
                 const response = await fetch(`../../Controlador/CUS14Negocio.php?action=obtener_productos_requerimiento&idRequerimiento=${encodeURIComponent(idRequerimiento)}`);
                 const resultado = await response.json();
                 
                 if (resultado.success && resultado.data) {
-                    productosSeleccionados = resultado.data.map(producto => ({
+                    productosDelRequerimiento = resultado.data.map(producto => ({
                         Id_Producto: producto.Id_Producto,
                         NombreProducto: producto.NombreProducto,
                         Cantidad: parseInt(producto.Cantidad || 0)
                     }));
-                    renderProductos(productosSeleccionados);
-                    actualizarEstadoBotonGenerar();
+                    renderProductos(productosDelRequerimiento);
                 } else {
-                    productosSeleccionados = [];
+                    productosDelRequerimiento = [];
                     const tbody = document.getElementById('productosTable');
                     tbody.innerHTML = `
                         <tr>
-                            <td colspan="4" style="text-align: center; color: #666;">
+                            <td colspan="3" style="text-align: center; color: #666;">
                                 No hay productos para este requerimiento
                             </td>
                         </tr>
@@ -591,7 +783,7 @@
                 const tbody = document.getElementById('productosTable');
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="4" style="text-align: center; color: red;">
+                        <td colspan="3" style="text-align: center; color: red;">
                             Error al cargar productos
                         </td>
                     </tr>
@@ -607,8 +799,8 @@
             if (!productos || productos.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="4" style="text-align: center; color: #666;">
-                            No hay productos para los requerimientos seleccionados
+                        <td colspan="3" style="text-align: center; color: #666;">
+                            No hay productos para este requerimiento
                         </td>
                     </tr>
                 `;
@@ -617,113 +809,135 @@
             
             productos.forEach(producto => {
                 const tr = document.createElement('tr');
-                const productoKey = producto.NombreProducto || '';
+                tr.style.cursor = 'pointer'; // ✅ Cambiar cursor
+                tr.dataset.idProducto = producto.Id_Producto; // ✅ Guardar ID en el elemento
+                
                 tr.innerHTML = `
                     <td>${producto.Id_Producto || ''}</td>
                     <td>${producto.NombreProducto}</td>
                     <td>${producto.Cantidad}</td>
-                    <td>
-                        <input type="checkbox" class="checkbox checkbox-producto" 
-                               value="${productoKey}" 
-                               data-producto="${productoKey}"
-                               data-idproducto="${producto.Id_Producto || ''}"
-                               data-cantidad="${producto.Cantidad}">
-                    </td>
                 `;
+                
+                // ✅ EVENTO CLICK EN LA FILA
+                tr.addEventListener('click', function() {
+                    toggleSeleccionProducto(this, producto);
+                });
+                
                 tbody.appendChild(tr);
-            });
-            
-            // Aplicar bloqueos persistidos si existe requerimiento bloqueado
-            const _lockedReq = getReqLock();
-            if (_lockedReq) {
-                const disabledSet = getDisabledProducts(_lockedReq);
-                tbody.querySelectorAll('.checkbox-producto').forEach(cb => {
-                    const idp = cb.getAttribute('data-idproducto') || '';
-                    if (disabledSet.has(String(idp))) {
-                        cb.disabled = true;
-                        cb.checked = false;
-                    }
-                });
-                // Bloquear checkboxes de requerimientos en la parte superior
-                document.querySelectorAll('.checkbox-requerimiento').forEach(cb => cb.disabled = true);
-            }
-            
-            // Agregar event listeners para selección única de productos
-            tbody.querySelectorAll('.checkbox-producto').forEach(checkbox => {
-                checkbox.addEventListener('change', function() {
-                    if (this.checked) {
-                        // Desmarcar todos los demás checkboxes de productos
-                        tbody.querySelectorAll('.checkbox-producto').forEach(cb => {
-                            if (cb !== this) {
-                                cb.checked = false;
-                            }
-                        });
-                        
-                        // Obtener datos del producto de la fila seleccionada
-                        // Estructura: cells[0]=Id_Producto, cells[1]=NombreProducto, cells[2]=Cantidad
-                        const fila = this.closest('tr');
-                        const idProducto = fila.cells[0].textContent.trim();
-                        const nombreProducto = fila.cells[1].textContent.trim();
-                        const cantidad = fila.cells[2].textContent.trim();
-                        
-                        // Guardar el producto seleccionado
-                        productoSeleccionado = {
-                            Id_Producto: idProducto,
-                            NombreProducto: nombreProducto,
-                            Cantidad: parseInt(cantidad) || 0
-                        };
-                        
-                        // Cargar proveedores filtrados por el producto seleccionado
-                        cargarProveedoresPorProducto(nombreProducto);
-                    } else {
-                        // Si se desmarca, limpiar la selección y la tabla de proveedores
-                        productoSeleccionado = null;
-                        limpiarProveedores();
-                    }
-                    
-                    // Actualizar estado del botón
-                    actualizarEstadoBotonGenerar();
-                });
             });
         }
 
-        // Función para cargar proveedores filtrados por producto
-        async function cargarProveedoresPorProducto(nombreProducto) {
-            if (!nombreProducto) {
+        // Función para seleccionar/deseleccionar producto
+        async function toggleSeleccionProducto(filaElement, producto) {
+            const tbody = document.getElementById('productosTable');
+            const todasLasFilas = tbody.querySelectorAll('tr');
+            
+            // Si esta fila ya está seleccionada, deseleccionar
+            if (filaElement.classList.contains('fila-seleccionada')) {
+                filaElement.classList.remove('fila-seleccionada');
+                productoSeleccionado = null;
+                
+                // Restaurar todos los proveedores del requerimiento
+                renderProveedores(proveedoresOriginales);
+            } else {
+                // Deseleccionar todas las filas primero
+                todasLasFilas.forEach(fila => fila.classList.remove('fila-seleccionada'));
+                
+                // Seleccionar esta fila
+                filaElement.classList.add('fila-seleccionada');
+                productoSeleccionado = producto;
+                
+                // Cargar proveedores que venden este producto específico
+                await cargarProveedoresPorProducto(producto.Id_Producto);
+            }
+        }
+
+        // Función para cargar proveedores de un producto específico
+        async function cargarProveedoresPorProducto(idProducto) {
+            try {
+                const response = await fetch(`../../Controlador/CUS14Negocio.php?action=obtener_proveedores_por_producto&idProducto=${encodeURIComponent(idProducto)}`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const proveedoresFiltrados = data.data || [];
+                    
+                    if (proveedoresFiltrados.length === 0) {
+                        const tbody = document.getElementById('proveedoresTable');
+                        tbody.innerHTML = `
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: #ff6b6b;">
+                                    ⚠️ No hay proveedores que vendan este producto
+                                </td>
+                            </tr>
+                        `;
+                    } else {
+                        renderProveedores(proveedoresFiltrados);
+                    }
+                } else {
+                    console.error('Error al cargar proveedores del producto:', data.message);
+                    mostrarErrorProveedores('Error al filtrar proveedores');
+                }
+            } catch (error) {
+                console.error('Error al cargar proveedores del producto:', error);
+                mostrarErrorProveedores('Error de conexión');
+            }
+        }
+        
+        async function cargarProveedoresRequerimiento(idRequerimiento) {
+            if (!idRequerimiento) {
                 limpiarProveedores();
                 return;
             }
 
             try {
-                const response = await fetch(`../../Controlador/CUS14Negocio.php?action=obtener_proveedores&nombreProducto=${encodeURIComponent(nombreProducto)}`);
+                const response = await fetch(`../../Controlador/CUS14Negocio.php?action=obtener_proveedores&idRequerimiento=${encodeURIComponent(idRequerimiento)}`);
                 const data = await response.json();
                 
                 if (data.success) {
                     proveedores = data.data || [];
+                    proveedoresOriginales = [...proveedores]; // ✅ GUARDAR COPIA
                     renderProveedores(proveedores);
                 } else {
                     console.error('Error al cargar proveedores:', data.message);
                     mostrarErrorProveedores('Error al cargar los proveedores');
                     proveedores = [];
+                    proveedoresOriginales = []; // ✅ LIMPIAR COPIA
                 }
             } catch (error) {
                 console.error('Error al cargar proveedores:', error);
                 mostrarErrorProveedores('Error de conexión');
                 proveedores = [];
+                proveedoresOriginales = []; // ✅ LIMPIAR COPIA
             }
         }
-
+        
         // Función para limpiar la tabla de proveedores
         function limpiarProveedores() {
             const tbody = document.getElementById('proveedoresTable');
             tbody.innerHTML = `
                 <tr>
                     <td colspan="3" style="text-align: center; color: #666;">
-                        Seleccione un producto para ver los proveedores
+                        Seleccione un requerimiento evaluado
                     </td>
                 </tr>
             `;
             proveedores = [];
+        }
+
+        function limpiarTablasProductosYProveedores() {
+            const tbodyProductos = document.getElementById('productosTable');
+            tbodyProductos.innerHTML = `
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #666;">
+                        Seleccione un requerimiento evaluado
+                    </td>
+                </tr>
+            `;
+            limpiarProveedores();
+            productosDelRequerimiento = [];
+            proveedores = [];
+            proveedoresOriginales = []; // ✅ LIMPIAR COPIA
+            productoSeleccionado = null; // ✅ LIMPIAR SELECCIÓN
         }
 
         // Función para renderizar proveedores
@@ -735,7 +949,7 @@
                 tbody.innerHTML = `
                     <tr>
                         <td colspan="3" style="text-align: center; color: #666;">
-                            No hay proveedores disponibles
+                            No hay proveedores disponibles para este requerimiento
                         </td>
                     </tr>
                 `;
@@ -745,9 +959,9 @@
             proveedoresData.forEach(item => {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
-                    <td>${item.RUC || ''}</td>
-                    <td>${item.Empresa || item.NombreEmpresa || ''}</td>
-                    <td>${item.Correo || item.Email || ''}</td>
+                    <td>${item.Id_NumRuc || ''}</td>
+                    <td>${item.des_RazonSocial || ''}</td>
+                    <td>${item.Correo || ''}</td>
                 `;
                 tbody.appendChild(tr);
             });
@@ -764,190 +978,216 @@
             `;
         }
 
-        // Función para actualizar estado del botón Generar Solicitud
+        // Función para actualizar estado del botón Generar Y Enviar Solicitud
         function actualizarEstadoBotonGenerar() {
-            const btnGenerar = document.getElementById('btnGenerarSolicitud');
-            const tieneRequerimientoSeleccionado = requerimientosSeleccionados.length > 0;
-            const tieneProductoSeleccionado = productoSeleccionado !== null;
+            const btnGenerar = document.getElementById('btnGenerarYEnviar');
+            const tieneRequerimiento = requerimientosSeleccionados.length > 0;
+            const tieneProductos = productosDelRequerimiento.length > 0;
+            const tieneProveedores = proveedores.length > 0;
             
-            // El botón se habilita solo si hay un requerimiento Y un producto seleccionados
-            btnGenerar.disabled = !(tieneRequerimientoSeleccionado && tieneProductoSeleccionado);
+            btnGenerar.disabled = !(tieneRequerimiento && tieneProductos && tieneProveedores);
         }
 
-        // Función para generar solicitud (ejecuta SP por cada proveedor)
-        async function generarSolicitud() {
+
+        // ✅ REEMPLAZAR FUNCIÓN COMPLETA
+        async function generarYEnviarSolicitud() {
+            // ============================================
+            // 1. VALIDACIONES INICIALES
+            // ============================================
             if (requerimientosSeleccionados.length === 0) {
                 alert('Seleccione un requerimiento evaluado');
                 return;
             }
-            if (!productoSeleccionado) {
-                alert('Seleccione un producto');
+            
+            if (productosDelRequerimiento.length === 0) {
+                alert('No hay productos en este requerimiento');
                 return;
             }
+            
             if (!proveedores || proveedores.length === 0) {
                 alert('No hay proveedores disponibles');
                 return;
             }
 
-            try {
-                const btnGenerar = document.getElementById('btnGenerarSolicitud');
-                btnGenerar.disabled = true;
-                btnGenerar.textContent = 'Generando...';
-
-                const payload = {
-                    idReqEvaluacion: requerimientosSeleccionados[0],
-                    idProducto: productoSeleccionado.Id_Producto,
-                    producto: productoSeleccionado.NombreProducto,
-                    cantidad: productoSeleccionado.Cantidad,
-                    proveedores: proveedores
-                };
-
-                const response = await fetch('../../Controlador/CUS14Negocio.php?action=generar_solicitud_bd', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    alert(`Solicitud generada. Proveedores procesados: ${data.procesados || 0}`);
-                    // Recargar desde BD la tabla de Solicitud Cotización
-                    await cargarSolicitudesPendientes();
-
-                    // Persistir bloqueos tras SP
-                    const currentReq = requerimientosSeleccionados[0];
-                    if (currentReq) {
-                        setReqLock(String(currentReq));
-                        if (productoSeleccionado && productoSeleccionado.Id_Producto) {
-                            addDisabledProduct(String(currentReq), String(productoSeleccionado.Id_Producto));
-                        }
-                    }
-
-                    // Manejo de bloqueos tras ejecutar SP
-                    manejarBloqueosTrasGeneracion();
-                } else {
-                    alert('Error al generar la solicitud: ' + (data.message || ''));
-                }
-
-                btnGenerar.disabled = false;
-                btnGenerar.textContent = 'Generar Solicitud';
-            } catch (error) {
-                console.error('Error al generar solicitud:', error);
-                alert('Error al generar la solicitud');
-                const btnGenerar = document.getElementById('btnGenerarSolicitud');
-                btnGenerar.disabled = false;
-                btnGenerar.textContent = 'Generar Solicitud';
+            if (!confirm(`¿Generar y enviar solicitudes a ${proveedores.length} proveedores?\n\nSe crearán las solicitudes, generarán PDFs y enviarán correos automáticamente.`)) {
+                return;
             }
-        }
 
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+            const btnGenerar = document.getElementById('btnGenerarYEnviar');
+            const textoOriginal = btnGenerar.textContent;
 
-        // Bloquea el producto seleccionado y mantiene bloqueado el requerimiento hasta terminar todos los productos
-        async function manejarBloqueosTrasGeneracion() {
             try {
-                // 1) Bloquear el checkbox del producto usado
-                const prodChecked = document.querySelector('.checkbox-producto:checked');
-                if (prodChecked) {
-                    prodChecked.disabled = true;
-                    prodChecked.checked = false;
-                }
+                btnGenerar.disabled = true;
+                btnGenerar.textContent = '⏳ Generando solicitudes...';
 
-                // Limpiar selección de producto y proveedores
-                productoSeleccionado = null;
-                limpiarProveedores();
+                const idRequerimiento = requerimientosSeleccionados[0];
+                let solicitudesGeneradas = 0;
+                let proveedoresSinProductos = 0;
+                let detalleGeneracion = [];
 
-                // 2) Mantener bloqueados los checkboxes de requerimiento
-                const reqChecks = Array.from(document.querySelectorAll('.checkbox-requerimiento'));
-                const reqChecked = reqChecks.find(cb => cb.checked);
+                // ============================================
+                // PASO 1: GENERAR SOLICITUDES EN BD (Estado: Pendiente)
+                // ============================================
+                for (const proveedor of proveedores) {
+                    const payload = {
+                        idReqEvaluacion: idRequerimiento,
+                        ruc: proveedor.Id_NumRuc,
+                        empresa: proveedor.des_RazonSocial,
+                        correo: proveedor.Correo
+                    };
 
-                // Contar productos pendientes (no deshabilitados)
-                const productosPendientes = document.querySelectorAll('.checkbox-producto:not(:disabled)');
-
-                if (productosPendientes.length > 0) {
-                    // AÚN HAY PRODUCTOS PENDIENTES
-                    // Bloquear todos los checkboxes de requerimiento
-                    reqChecks.forEach(cb => cb.disabled = true);
-                    if (reqChecked) {
-                        reqChecked.checked = true;
-                    }
-                } else {
-                    // TODOS LOS PRODUCTOS FUERON PROCESADOS
-                    // Ejecutar UPDATE para cambiar estado a 'Solicitado'
-                    const idReqEvaluacion = requerimientosSeleccionados[0];
-                    
-                    if (idReqEvaluacion) {
-                        await ejecutarUpdateRequerimientoSolicitado(idReqEvaluacion);
-                    }
-                    
-                    // Liberar requerimientos y limpiar tablas
-                    reqChecks.forEach(cb => {
-                        cb.disabled = false;
-                        cb.checked = false;
+                    const response = await fetch('../../Controlador/CUS14Negocio.php?action=generar_solicitud_por_proveedor', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(payload)
                     });
 
-                    // Limpiar tabla de productos
-                    const tbody = document.getElementById('productosTable');
-                    if (tbody) {
-                        tbody.innerHTML = `
-                            <tr>
-                                <td colspan="4" style="text-align: center; color: #666;">
-                                    Seleccione un requerimiento evaluado
-                                </td>
-                            </tr>
-                        `;
-                    }
-
-                    requerimientosSeleccionados = [];
-
-                    // Limpiar persistencia de bloqueos
-                    const lockedReq = getReqLock();
-                    if (lockedReq) {
-                        clearDisabledProducts(String(lockedReq));
-                        clearReqLock();
+                    const data = await response.json();
+                    
+                    if (data.success) {
+                        if (data.productosInsertados > 0) {
+                            solicitudesGeneradas++;
+                            detalleGeneracion.push(`✅ ${proveedor.des_RazonSocial}: ${data.productosInsertados} producto(s)`);
+                        } else {
+                            proveedoresSinProductos++;
+                            detalleGeneracion.push(`⚠️ ${proveedor.des_RazonSocial}: No vende estos productos`);
+                        }
+                    } else {
+                        console.error(`Error con proveedor ${proveedor.des_RazonSocial}:`, data.message);
+                        detalleGeneracion.push(`❌ ${proveedor.des_RazonSocial}: Error al generar`);
                     }
                 }
 
-                // Recalcular estado del botón Generar
-                actualizarEstadoBotonGenerar();
-            } catch (e) {
-                console.error('Error al manejar bloqueos tras generación:', e);
-            }
-        }
+                // Si no se generó ninguna solicitud, detenemos
+                if (solicitudesGeneradas === 0) {
+                    alert('⚠️ No se generaron solicitudes.\n\nLos proveedores seleccionados no venden estos productos.');
+                    btnGenerar.disabled = false;
+                    btnGenerar.textContent = textoOriginal;
+                    return;
+                }
 
-        // AGREGAR esta nueva función después de manejarBloqueosTrasGeneracion()
-        async function ejecutarUpdateRequerimientoSolicitado(idReqEvaluacion) {
-            try {
-                const response = await fetch('../../Controlador/CUS14Negocio.php?action=actualizar_estado_solicitado', {
+                // ============================================
+                // PASO 2: GENERAR PDFs Y ENVIAR CORREOS
+                // ============================================
+                btnGenerar.textContent = '📧 Enviando correos...';
+                
+                const responseEnvio = await fetch('../../Controlador/CUS14Negocio.php?action=enviar_correos_cotizacion', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+
+                const dataEnvio = await responseEnvio.json();
+
+                if (!dataEnvio.success) {
+                    alert('⚠️ Solicitudes creadas pero hubo un error al enviar correos:\n' + dataEnvio.message);
+                    btnGenerar.disabled = false;
+                    btnGenerar.textContent = textoOriginal;
+                    return;
+                }
+
+                // ============================================
+                // PASO 3: ACTUALIZAR ESTADOS A "ENVIADO" ⭐ NUEVO
+                // ============================================
+                if (dataEnvio.exitosos > 0) {
+                    btnGenerar.textContent = '🔄 Actualizando estados...';
+                    
+                    const responseUpdate = await fetch('../../Controlador/CUS14Negocio.php?action=actualizar_estado_solicitudes_enviadas', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' }
+                    });
+
+                    const dataUpdate = await responseUpdate.json();
+                    console.log('✅ Estados actualizados:', dataUpdate);
+                }
+
+                // ============================================
+                // PASO 4: ACTUALIZAR ESTADO DEL REQUERIMIENTO
+                // ============================================
+                btnGenerar.textContent = '📝 Finalizando...';
+                
+                await fetch('../../Controlador/CUS14Negocio.php?action=actualizar_estado_solicitado', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ idReqEvaluacion })
+                    body: JSON.stringify({ idReqEvaluacion: idRequerimiento })
                 });
+
+                // ============================================
+                // PASO 5: PREPARAR MENSAJE DE RESULTADO
+                // ============================================
+                let mensaje = `🎉 PROCESO COMPLETADO\n\n`;
+                mensaje += `📊 RESUMEN:\n`;
+                mensaje += `📝 Solicitudes creadas: ${solicitudesGeneradas}\n`;
+                mensaje += `📧 Correos enviados: ${dataEnvio.exitosos}\n`;
                 
-                const data = await response.json();
-                
-                if (data.success) {
-                    // Mostrar mensaje de éxito
-                    alert('Requerimiento completado. Todos los productos han sido solicitados.');
-                    
-                    // Limpiar localStorage
-                    clearDisabledProducts(idReqEvaluacion);
-                    clearReqLock();
-                    
-                    // Recargar tabla de requerimientos evaluados
-                    await cargarRequerimientosEvaluados();
-                    
-                    console.log('Estado actualizado a Solicitado para requerimiento:', idReqEvaluacion);
-                } else {
-                    console.error('Error al actualizar estado:', data.message);
-                    alert('Error al actualizar el estado del requerimiento: ' + data.message);
+                if (proveedoresSinProductos > 0) {
+                    mensaje += `⚠️ Proveedores sin productos: ${proveedoresSinProductos}\n`;
                 }
+                
+                if (dataEnvio.fallidos > 0) {
+                    mensaje += `❌ Fallos en envío: ${dataEnvio.fallidos}\n`;
+                }
+                
+                mensaje += `\n📋 DETALLE DE GENERACIÓN:\n${detalleGeneracion.join('\n')}`;
+                
+                if (dataEnvio.detalles && dataEnvio.detalles.length > 0) {
+                    mensaje += `\n\n📧 DETALLE DE ENVÍOS:\n`;
+                    dataEnvio.detalles.forEach(detalle => {
+                        if (detalle.estado === 'exitoso') {
+                            mensaje += `✅ ${detalle.proveedor} - Enviado\n`;
+                        } else {
+                            mensaje += `❌ Solicitud ${detalle.idSolicitud}: ${detalle.mensaje}\n`;
+                        }
+                    });
+                }
+
+                // ============================================
+                // PASO 6: MOSTRAR MENSAJE Y ESPERAR CONFIRMACIÓN
+                // ============================================
+                btnGenerar.disabled = false;
+                btnGenerar.textContent = textoOriginal;
+                
+                alert(mensaje);
+                
+                // ============================================
+                // PASO 7: DESPUÉS DE ACEPTAR, RECARGAR TABLAS ⭐ MEJORADO
+                // ============================================
+                btnGenerar.disabled = true;
+                btnGenerar.textContent = '🔄 Actualizando tablas...';
+
+                // ⏱️ Esperar 1 segundo para que la BD termine de actualizar
+                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Recargar las tablas en paralelo
+                await Promise.all([
+                    cargarRequerimientosEvaluados(),
+                    cargarSolicitudesEnviadas()
+                ]);
+
+                // Limpiar formulario
+                limpiarFormulario();
+
+                // Restaurar botón
+                btnGenerar.textContent = textoOriginal;
+
             } catch (error) {
-                console.error('Error al ejecutar UPDATE:', error);
-                alert('Error de conexión al actualizar el estado del requerimiento');
+                console.error('Error completo:', error);
+                alert('❌ Error en el proceso:\n' + error.message);
+                
+                // Limpiar formulario (esto deshabilita el botón)
+                limpiarFormulario();
+
+                // Restaurar solo el texto
+                btnGenerar.textContent = textoOriginal;
+                
+                // Intentar recargar la tabla de todos modos
+                try {
+                    await cargarSolicitudesEnviadas();
+                } catch (e) {
+                    console.error('Error al recargar tabla:', e);
+                }
             }
         }
-        /////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+        
         // Función para renderizar solicitud de cotización
         function renderSolicitudCotizacion(solicitudData) {
             const tbody = document.getElementById('solicitudCotizacionTable');
@@ -956,7 +1196,7 @@
             if (!solicitudData || solicitudData.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="9" style="text-align: center; color: #666;">
+                        <td colspan="7" style="text-align: center; color: #666;">
                             No hay solicitudes generadas
                         </td>
                     </tr>
@@ -966,25 +1206,48 @@
             
             solicitudData.forEach(item => {
                 const tr = document.createElement('tr');
+                
+                // 🎯 Botón de lupa para ver PDF
+                let btnPDF = '';
+                if (item.RutaPDF) {
+                    btnPDF = `<button class="btn-ver-pdf" onclick="verPDF('${item.RutaPDF}', ${item.IDsolicitud})" title="Ver PDF">
+                                🔍
+                            </button>`;
+                } else {
+                    btnPDF = `<button class="btn-ver-pdf" disabled title="PDF no disponible">❌</button>`;
+                }
+                
                 tr.innerHTML = `
-                    <td>${item.Id_Solicitud || item.IDsolicitud || '-'}</td>
+                    <td>${item.IDsolicitud || '-'}</td>
+                    <td>${item.Id_ReqEvaluacion || '-'}</td>
                     <td>${item.RUC || ''}</td>
                     <td>${item.Empresa || ''}</td>
                     <td>${item.Correo || ''}</td>
-                    <td>${item.Id_Producto || ''}</td>
-                    <td>${item.Producto || item.NombreProducto || ''}</td>
-                    <td>${item.Cantidad || ''}</td>
-                    <td>${item.FechaEmision || ''}</td>
-                    <td>${item.FechaCierre || ''}</td>
+                    <td style="text-align: center;">${item.Productos || 0}</td>
+                    <td style="text-align: center;">${btnPDF}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
-        // Cargar solicitudes pendientes desde BD
-        async function cargarSolicitudesPendientes() {
+        // 🎯 NUEVA FUNCIÓN: Ver PDF en nueva pestaña
+        function verPDF(rutaPDF, idSolicitud) {
+            if (!rutaPDF) {
+                alert('❌ PDF no disponible para esta solicitud');
+                return;
+            }
+            
+            // Construir URL relativa desde la raíz del proyecto
+            const urlPDF = '../../' + rutaPDF; // Ajusta según tu estructura
+            
+            // Abrir en nueva pestaña
+            window.open(urlPDF, '_blank');
+        }
+
+        // Cargar solicitudes enviadas desde BD
+        async function cargarSolicitudesEnviadas() {  // ← Cambiar nombre
             try {
-                const resp = await fetch('../../Controlador/CUS14Negocio.php?action=obtener_solicitudes_pendientes');
+                const resp = await fetch('../../Controlador/CUS14Negocio.php?action=obtener_solicitudes_enviadas');  // ← Cambiar action
                 const data = await resp.json();
                 if (data.success) {
                     renderSolicitudCotizacion(data.data || []);
@@ -992,74 +1255,22 @@
                     renderSolicitudCotizacion([]);
                 }
             } catch (e) {
-                console.error('Error al cargar solicitudes pendientes:', e);
+                console.error('Error al cargar solicitudes enviadas:', e);
                 renderSolicitudCotizacion([]);
             }
         }
-
-        // Función para enviar solicitud
-        async function enviarSolicitud() {
-            if (solicitudCotizacion.length === 0) {
-                alert('No hay solicitudes para enviar');
-                return;
-            }
-
-            if (!confirm('¿Está seguro que desea enviar la solicitud de cotización?')) {
-                return;
-            }
-
-            try {
-                const btnEnviar = document.getElementById('btnEnviar');
-                btnEnviar.disabled = true;
-                btnEnviar.textContent = 'Enviando...';
-
-                const response = await fetch('../../Controlador/CUS14Negocio.php?action=enviar_solicitud', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        requerimientos: requerimientosSeleccionados,
-                        solicitud: solicitudCotizacion
-                    })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    alert('Solicitud enviada exitosamente');
-                    // Limpiar formulario
-                    limpiarFormulario();
-                } else {
-                    alert('Error al enviar la solicitud: ' + data.message);
-                }
-
-                btnEnviar.disabled = true;
-                btnEnviar.textContent = 'Enviar';
-            } catch (error) {
-                console.error('Error al enviar solicitud:', error);
-                alert('Error al enviar la solicitud');
-                const btnEnviar = document.getElementById('btnEnviar');
-                btnEnviar.disabled = false;
-                btnEnviar.textContent = 'Enviar';
-            }
-        }
-
+        
         // Función para limpiar formulario
         function limpiarFormulario() {
             // Desmarcar checkboxes de requerimientos
             document.querySelectorAll('.checkbox-requerimiento').forEach(cb => cb.checked = false);
             requerimientosSeleccionados = [];
             
-            // Desmarcar checkboxes de productos
-            document.querySelectorAll('.checkbox-producto').forEach(cb => cb.checked = false);
-            productoSeleccionado = null;
-            
             // Limpiar tablas
             const tbodyProductos = document.getElementById('productosTable');
             tbodyProductos.innerHTML = `
                 <tr>
-                    <td colspan="4" style="text-align: center; color: #666;">
+                    <td colspan="3" style="text-align: center; color: #666;">
                         Seleccione un requerimiento evaluado
                     </td>
                 </tr>
@@ -1068,21 +1279,12 @@
             // Limpiar tabla de proveedores
             limpiarProveedores();
             
-            const tbodySolicitud = document.getElementById('solicitudCotizacionTable');
-            tbodySolicitud.innerHTML = `
-                <tr>
-                    <td colspan="9" style="text-align: center; color: #666;">
-                        No hay solicitudes generadas
-                    </td>
-                </tr>
-            `;
-            
-            productosSeleccionados = [];
+            productosDelRequerimiento = [];
+            proveedores = [];
             solicitudCotizacion = [];
             
             // Deshabilitar botones
             actualizarEstadoBotonGenerar();
-            document.getElementById('btnEnviar').disabled = true;
         }
 
         function salir() {

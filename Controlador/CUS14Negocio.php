@@ -122,36 +122,41 @@ function obtenerProductosRequerimiento($pdo, $idRequerimiento) {
     }
 }
 
-// Función para obtener proveedores filtrados por producto
-function obtenerProveedores($pdo, $nombreProducto = null) {
+// Función para obtener proveedores filtrados por requerimiento evaluado
+function obtenerProveedores($pdo, $idRequerimiento = null) {
     try {
-        if ($nombreProducto) {
-            // Consulta para obtener proveedores filtrados por producto
-            $sql = "SELECT DISTINCT
-                        p.Id_NumRuc AS RUC,
-                        p.des_RazonSocial AS Empresa,
-                        p.Correo
-                    FROM 
-                        t17CatalogoProveedor p
-                    JOIN 
-                        t99_proveedores_productos pp 
-                        ON p.Id_NumRuc = pp.Id_NumRuc
-                    JOIN 
-                        t18CatalogoProducto c 
-                        ON pp.Id_Producto = c.Id_Producto
-                    WHERE 
-                        p.estado = 'Activo'
-                        AND c.NombreProducto = :nombreProducto
-                    ORDER BY p.des_RazonSocial";
-            
-            $stmt = $pdo->prepare($sql);
-            $stmt->bindParam(':nombreProducto', $nombreProducto);
-            $stmt->execute();
-            $resultados = $stmt->fetchAll();
-        } else {
-            // Si no se proporciona nombre de producto, no mostrar proveedores
-            $resultados = [];
+        if (!$idRequerimiento) {
+            return [
+                'success' => false,
+                'message' => 'Falta el parámetro idRequerimiento'
+            ];
         }
+
+        // Nueva consulta: Proveedores que tienen al menos 1 producto del requerimiento
+        $sql = "SELECT DISTINCT
+                    prov.Id_NumRuc,
+                    prov.des_RazonSocial,
+                    prov.Correo
+                FROM 
+                    t17CatalogoProveedor prov
+                JOIN 
+                    t99_proveedores_productos pp 
+                    ON prov.Id_NumRuc = pp.Id_NumRuc
+                JOIN 
+                    t18CatalogoProducto prod 
+                    ON pp.Id_Producto = prod.Id_Producto
+                JOIN 
+                    t408DetalleReqEvaluado det 
+                    ON det.Id_Producto = prod.Id_Producto
+                WHERE 
+                    det.Id_ReqEvaluacion = :idRequerimiento
+                    AND prov.estado = 'Activo'
+                ORDER BY prov.des_RazonSocial";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':idRequerimiento', $idRequerimiento);
+        $stmt->execute();
+        $resultados = $stmt->fetchAll();
 
         return [
             'success' => true,
@@ -161,6 +166,50 @@ function obtenerProveedores($pdo, $nombreProducto = null) {
         return [
             'success' => false,
             'message' => 'Error al obtener proveedores: ' . $e->getMessage()
+        ];
+    }
+}
+
+// Función para obtener proveedores de un producto específico
+function obtenerProveedoresPorProducto($pdo, $idProducto) {
+    try {
+        if (!$idProducto) {
+            return [
+                'success' => false,
+                'message' => 'Falta el parámetro idProducto'
+            ];
+        }
+
+        $sql = "SELECT 
+                    p.Id_NumRuc,
+                    p.des_RazonSocial,
+                    p.Correo
+                FROM 
+                    t17CatalogoProveedor p
+                INNER JOIN 
+                    t99_proveedores_productos pp 
+                    ON p.Id_NumRuc = pp.Id_NumRuc
+                INNER JOIN 
+                    t18CatalogoProducto c 
+                    ON pp.Id_Producto = c.Id_Producto
+                WHERE 
+                    c.Id_Producto = :idProducto
+                    AND p.estado = 'Activo'
+                ORDER BY p.des_RazonSocial";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->bindParam(':idProducto', $idProducto, PDO::PARAM_INT);
+        $stmt->execute();
+        $resultados = $stmt->fetchAll();
+
+        return [
+            'success' => true,
+            'data' => $resultados
+        ];
+    } catch(PDOException $e) {
+        return [
+            'success' => false,
+            'message' => 'Error al obtener proveedores del producto: ' . $e->getMessage()
         ];
     }
 }
@@ -388,26 +437,53 @@ function generarSolicitudCotizacionBD($pdo, $datos) {
     }
 }
 
+// Función para actualizar estado de solicitudes de Pendiente a Enviado
+function actualizarEstadoSolicitudesEnviadas($pdo) {
+    try {
+        $sql = "UPDATE t100Solicitud_Cotizacion_Proveedor 
+                SET Estado = 'Enviado', 
+                    FechaEnvio = NOW() 
+                WHERE Estado = 'Pendiente'";
+        
+        $stmt = $pdo->prepare($sql);
+        $stmt->execute();
+        
+        $filasActualizadas = $stmt->rowCount();
+        
+        return [
+            'success' => true,
+            'message' => "Se actualizaron $filasActualizadas solicitudes a estado Enviado",
+            'filasActualizadas' => $filasActualizadas
+        ];
+    } catch(PDOException $e) {
+        return [
+            'success' => false,
+            'message' => 'Error al actualizar estado de solicitudes: ' . $e->getMessage()
+        ];
+    }
+}
+
 // Obtener solicitudes de cotización pendientes desde BD
-function obtenerSolicitudesPendientes($pdo) {
+function obtenerSolicitudesEnviadas($pdo) {
     try {
         $sql = "SELECT 
-                    c.IDsolicitud AS Id_Solicitud,
-                    c.RUC,
-                    c.Empresa,
-                    c.Correo,
-                    d.Id_Producto,
-                    d.Producto,
-                    d.Cantidad,
-                    c.FechaEmision,
-                    c.FechaCierre
+                    s.IDsolicitud,
+                    s.Id_ReqEvaluacion,
+                    s.RUC,
+                    s.Empresa,
+                    s.Correo,
+                    s.RutaPDF,  -- 🎯 NUEVO
+                    COUNT(d.Id_Producto) AS Productos
                 FROM 
-                    t100Solicitud_Cotizacion_Proveedor c
-                JOIN 
+                    t100Solicitud_Cotizacion_Proveedor s
+                LEFT JOIN 
                     t101Detalle_Solicitud_Cotizacion_Proveedor d 
-                    ON c.IDsolicitud = d.IDsolicitud
+                    ON s.IDsolicitud = d.IDsolicitud
                 WHERE 
-                    c.Estado = 'Pendiente'";
+                    s.Estado = 'Enviado'
+                GROUP BY 
+                    s.IDsolicitud, s.Id_ReqEvaluacion, s.RUC, s.Empresa, s.Correo, s.RutaPDF
+                ORDER BY s.FechaEnvio DESC";
 
         $stmt = $pdo->prepare($sql);
         $stmt->execute();
@@ -436,10 +512,15 @@ switch ($action) {
         break;
         
     case 'obtener_proveedores':
-        $nombreProducto = isset($_GET['nombreProducto']) ? $_GET['nombreProducto'] : null;
-        echo json_encode(obtenerProveedores($pdo, $nombreProducto));
+        $idRequerimiento = isset($_GET['idRequerimiento']) ? $_GET['idRequerimiento'] : null;
+        echo json_encode(obtenerProveedores($pdo, $idRequerimiento));
         break;
-        
+
+    case 'obtener_proveedores_por_producto':
+        $idProducto = isset($_GET['idProducto']) ? $_GET['idProducto'] : null;
+        echo json_encode(obtenerProveedoresPorProducto($pdo, $idProducto));
+        break;
+
     case 'generar_solicitud':
         // Leer datos JSON del cuerpo de la petición
         $json = file_get_contents('php://input');
@@ -454,8 +535,8 @@ switch ($action) {
         echo json_encode(generarSolicitudCotizacionBD($pdo, $datos));
         break;
 
-    case 'obtener_solicitudes_pendientes':
-        echo json_encode(obtenerSolicitudesPendientes($pdo));
+    case 'obtener_solicitudes_enviadas':  // ← Cambiar nombre
+        echo json_encode(obtenerSolicitudesEnviadas($pdo));  // ← Cambiar función
         break;
         
     case 'enviar_solicitud':
@@ -471,7 +552,56 @@ switch ($action) {
         $datos = json_decode($json, true);
         echo json_encode(actualizarEstadoSolicitado($pdo, $datos));
         break;
+    
+    case 'actualizar_estado_solicitudes_enviadas':
+        echo json_encode(actualizarEstadoSolicitudesEnviadas($pdo));
+        break;
         
+    case 'generar_solicitud_por_proveedor':
+        $json = file_get_contents('php://input');
+        $datos = json_decode($json, true);
+        
+        try {
+            $idReq = $datos['idReqEvaluacion'];
+            $ruc = $datos['ruc'];
+            $empresa = $datos['empresa'];
+            $correo = $datos['correo'];
+            
+            // Llamar al stored procedure
+            $stmt = $pdo->prepare("CALL sp_GenerarSolicitudCotizacionPorProveedor(:idReq, :ruc, :empresa, :correo)");
+            $stmt->bindParam(':idReq', $idReq, PDO::PARAM_INT);
+            $stmt->bindParam(':ruc', $ruc, PDO::PARAM_STR);
+            $stmt->bindParam(':empresa', $empresa, PDO::PARAM_STR);
+            $stmt->bindParam(':correo', $correo, PDO::PARAM_STR);
+            $stmt->execute();
+            
+            // Obtener el resultado
+            $result = $stmt->fetch();
+            
+            $stmt->closeCursor();
+            
+            echo json_encode([
+                'success' => true,
+                'message' => $result['Mensaje'],
+                'idSolicitud' => $result['IDsolicitud_Generado'],
+                'productosInsertados' => $result['Productos_Insertados']
+            ]);
+            
+        } catch(PDOException $e) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Error: ' . $e->getMessage()
+            ]);
+        }
+        break;
+
+
+    case 'enviar_correos_cotizacion':
+        require_once(__DIR__ . '/enviar_email_cotizacion.php');
+        echo json_encode(procesarYEnviarSolicitudesPendientes($pdo));
+        break;
+
+
     default:
         echo json_encode([
             'success' => false,

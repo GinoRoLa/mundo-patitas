@@ -10,7 +10,7 @@
     if (!btnCancelar) return;
     btnCancelar.addEventListener("click", () => {
       if (confirm("¿Está seguro que desea cancelar? Se perderán los cambios no guardados.")) {
-        window.location.href = "../"; // o donde corresponda
+        window.location.href = "http://localhost:8080/mundo-patitas/"; // o donde corresponda
       }
     });
   }

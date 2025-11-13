@@ -230,10 +230,9 @@ CREATE TABLE t406PartidaPeriodo (
   Descripcion VARCHAR(200) NOT NULL,
   Mes VARCHAR(15) NOT NULL,
   MontoPeriodo DECIMAL(12,2) NOT NULL,
-  MontoConsumido DECIMAL(12,2) DEFAULT 0,
   Estado VARCHAR(15) NOT NULL DEFAULT 'Activo',
   PRIMARY KEY (Id_PartidaPeriodo),
-  CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0 AND MontoConsumido >= 0)
+  CONSTRAINT chk_montos_partida CHECK (MontoPeriodo >= 0)
 ) ENGINE=InnoDB AUTO_INCREMENT=1000;
 
 CREATE TABLE t407RequerimientoEvaluado (

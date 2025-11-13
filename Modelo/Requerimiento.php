@@ -81,7 +81,7 @@ final class Requerimiento
       pp.CodigoPartida,
       pp.Descripcion      AS DescripcionPartida,
       pp.MontoPeriodo,
-      (pp.MontoPeriodo - pp.MontoConsumido) AS SaldoDisponible
+      (pp.MontoPeriodo) AS SaldoDisponible
     FROM t407RequerimientoEvaluado ev
     LEFT JOIN t406PartidaPeriodo pp
       ON ev.Id_PartidaPeriodo = pp.Id_PartidaPeriodo

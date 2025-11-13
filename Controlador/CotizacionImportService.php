@@ -539,7 +539,7 @@ final class CotizacionImportService
     /**
    * Devuelve la última FechaCierre para (Id_ReqEvaluacion, RUC) o null si no hay solicitud.
    */
-  private function getFechaCierreSolicitud(int $idReq, string $ruc): ?string
+  /* private function getFechaCierreSolicitud(int $idReq, string $ruc): ?string
   {
     $sql = "SELECT MAX(FechaCierre) AS fc
             FROM t100Solicitud_Cotizacion_Proveedor
@@ -553,7 +553,26 @@ final class CotizacionImportService
 
     $fc = $row['fc'] ?? null;
     return $fc ? substr((string)$fc, 0, 19) : null; // 'YYYY-mm-dd HH:ii:ss'
+  } */
+
+  private function getFechaCierreSolicitud(int $idReq, string $ruc): ?string{
+    // Calculamos la fecha de cierre en MySQL: 10 días después
+    $sql = "SELECT DATE_ADD(MAX(FechaEnvio), INTERVAL 10 DAY) AS fc
+            FROM t100Solicitud_Cotizacion_Proveedor
+            WHERE Id_ReqEvaluacion = ? AND RUC = ?";
+
+    $st = mysqli_prepare($this->cn, $sql);
+    mysqli_stmt_bind_param($st, "is", $idReq, $ruc);
+    mysqli_stmt_execute($st);
+    $rs  = mysqli_stmt_get_result($st);
+    $row = $rs ? mysqli_fetch_assoc($rs) : null;
+    mysqli_stmt_close($st);
+
+    $fc = $row['fc'] ?? null;
+    // Devuelve 'YYYY-mm-dd HH:ii:ss' o null si no hay solicitudes
+    return $fc ? substr((string)$fc, 0, 19) : null;
   }
+
 
 
   /** Lee una celda usando columna numérica (A=1, B=2, …) */

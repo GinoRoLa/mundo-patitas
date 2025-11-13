@@ -674,16 +674,18 @@ CREATE TABLE t100Solicitud_Cotizacion_Proveedor (
   RUC VARCHAR(11) NOT NULL,
   Empresa VARCHAR(50) NOT NULL,
   Correo VARCHAR(100) NOT NULL,
-  FechaEmision DATETIME NOT NULL DEFAULT NOW(),
-  FechaCierre DATETIME NOT NULL DEFAULT (NOW() + INTERVAL 10 DAY),
+  RutaPDF VARCHAR(255) NULL,
+  FechaEnvio DATETIME NOT NULL DEFAULT NOW(),
   Estado VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
   PRIMARY KEY (IDsolicitud),
-  KEY fk_t100_req (Id_ReqEvaluacion),
-  CONSTRAINT fk_t100_req FOREIGN KEY (Id_ReqEvaluacion)
+  KEY fk_t100_t407 (Id_ReqEvaluacion),
+  CONSTRAINT fk_t100_t407 FOREIGN KEY (Id_ReqEvaluacion)
     REFERENCES t407RequerimientoEvaluado (Id_ReqEvaluacion)
     ON DELETE RESTRICT ON UPDATE RESTRICT
-) ENGINE=InnoDB AUTO_INCREMENT=1000 
-DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+) ENGINE=InnoDB 
+AUTO_INCREMENT=1000 
+DEFAULT CHARSET=utf8mb4 
+COLLATE=utf8mb4_0900_ai_ci;
 
 
 CREATE TABLE t101Detalle_Solicitud_Cotizacion_Proveedor (

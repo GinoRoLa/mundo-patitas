@@ -14,7 +14,7 @@ final class SolicitudCotizacion
 
   /**
    * Listar solicitudes de cotización por requerimiento
-   * @param string $idReq - Id del requerimiento
+   * @param string $idReq - Id del requerimiento (Id_ReqEvaluacion)
    * @return array - Lista de solicitudes
    */
   public function listarPorRequerimiento(string $idReq): array
@@ -25,12 +25,13 @@ final class SolicitudCotizacion
               s.RUC,
               s.Empresa,
               s.Correo,
-              s.FechaEmision,
-              s.FechaCierre,
+              s.RutaPDF,
+              s.FechaEnvio                                  AS FechaEmision,
+              DATE_ADD(s.FechaEnvio, INTERVAL 10 DAY)      AS FechaCierre,
               s.Estado
             FROM t100Solicitud_Cotizacion_Proveedor s
             WHERE s.Id_ReqEvaluacion = ?
-            ORDER BY s.FechaEmision DESC, s.IDsolicitud ASC";
+            ORDER BY s.FechaEnvio DESC, s.IDsolicitud ASC";
 
     $st = mysqli_prepare($this->cn, $sql);
     if (!$st) {
@@ -49,8 +50,9 @@ final class SolicitudCotizacion
         'RUC'               => $r['RUC'],
         'Empresa'           => $r['Empresa'],
         'Correo'            => $r['Correo'],
-        'FechaEmision'      => $r['FechaEmision'],
-        'FechaCierre'       => $r['FechaCierre'],
+        'RutaPDF'           => $r['RutaPDF'],
+        'FechaEmision'      => $r['FechaEmision'],   // alias de FechaEnvio
+        'FechaCierre'       => $r['FechaCierre'],    // FechaEnvio + 10 días
         'Estado'            => $r['Estado']
       ];
     }
@@ -71,8 +73,9 @@ final class SolicitudCotizacion
               s.RUC,
               s.Empresa,
               s.Correo,
-              s.FechaEmision,
-              s.FechaCierre,
+              s.RutaPDF,
+              s.FechaEnvio                                  AS FechaEmision,
+              DATE_ADD(s.FechaEnvio, INTERVAL 10 DAY)      AS FechaCierre,
               s.Estado
             FROM t100Solicitud_Cotizacion_Proveedor s
             WHERE s.IDsolicitud = ?";
@@ -83,37 +86,46 @@ final class SolicitudCotizacion
     $rs  = mysqli_stmt_get_result($st);
     $row = mysqli_fetch_assoc($rs);
     mysqli_stmt_close($st);
-    
+
     return $row ?: null;
   }
 
   /**
    * Crear una nueva solicitud de cotización
-   * @param array $datos - ['Id_ReqEvaluacion', 'RUC', 'Empresa', 'Correo']
+   * @param array $datos - ['Id_ReqEvaluacion', 'RUC', 'Empresa', 'Correo', 'RutaPDF'?]
    * @return int - ID de la solicitud creada
    */
   public function crear(array $datos): int
   {
+    // RutaPDF es opcional
+    $rutaPdf = $datos['RutaPDF'] ?? null;
+
     $sql = "INSERT INTO t100Solicitud_Cotizacion_Proveedor 
-            (Id_ReqEvaluacion, RUC, Empresa, Correo, FechaEmision, FechaCierre, Estado)
-            VALUES (?, ?, ?, ?, NOW(), NOW() + INTERVAL 10 DAY, 'Pendiente')";
+            (Id_ReqEvaluacion, RUC, Empresa, Correo, RutaPDF, FechaEnvio, Estado)
+            VALUES (?, ?, ?, ?, ?, NOW(), 'Pendiente')";
 
     $st = mysqli_prepare($this->cn, $sql);
+    if (!$st) {
+      throw new Exception("Error al preparar INSERT: " . mysqli_error($this->cn));
+    }
+
     mysqli_stmt_bind_param(
       $st,
-      "ssss",
+      "sssss",
       $datos['Id_ReqEvaluacion'],
       $datos['RUC'],
       $datos['Empresa'],
-      $datos['Correo']
+      $datos['Correo'],
+      $rutaPdf
     );
-    
+
     if (!mysqli_stmt_execute($st)) {
+      $err = mysqli_error($this->cn);
       mysqli_stmt_close($st);
-      throw new Exception("Error al crear solicitud: " . mysqli_error($this->cn));
+      throw new Exception("Error al crear solicitud: " . $err);
     }
 
-    $id = mysqli_insert_id($this->cn);
+    $id = (int)mysqli_insert_id($this->cn);
     mysqli_stmt_close($st);
     return $id;
   }
@@ -121,14 +133,14 @@ final class SolicitudCotizacion
   /**
    * Actualizar estado de una solicitud
    * @param int $idSolicitud
-   * @param string $nuevoEstado - 'Pendiente', 'Enviada', 'Respondida', 'Vencida'
+   * @param string $nuevoEstado - 'Pendiente', 'Enviada', 'Respondida', 'Vencida', etc.
    */
   public function actualizarEstado(int $idSolicitud, string $nuevoEstado): void
   {
     $sql = "UPDATE t100Solicitud_Cotizacion_Proveedor 
             SET Estado = ?
             WHERE IDsolicitud = ?";
-    
+
     $st = mysqli_prepare($this->cn, $sql);
     mysqli_stmt_bind_param($st, "si", $nuevoEstado, $idSolicitud);
     mysqli_stmt_execute($st);

@@ -915,7 +915,7 @@
         <td>${r.correo ?? r.Correo ?? "—"}</td>
         <td>${r.direccion ?? r.Direccion ?? r.DireccionProv ?? "—"}</td>
         <td>${fmtFecha(r.fecEmision ?? r.FechaEmision)}</td>
-        <td>${fmtFechaHora(r.fecRecepcion ?? r.FechaRecepcion)}</td>
+        <td>${fmtFechaHora(r.fecRecepcion ?? r.FechaEntrega)}</td>
       `;
       tb.appendChild(tr);
     }

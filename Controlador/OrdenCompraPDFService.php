@@ -33,6 +33,9 @@ final class OrdenCompraPDFService
     $logoData = (is_file($logoPath) && ($raw=@file_get_contents($logoPath))!==false)
       ? 'data:image/png;base64,'.base64_encode($raw) : '';
 
+    $fechaEntregaRaw = $e['FechaEntregaCotizacion'] ?? null;
+    $fechaEntregaFmt = $fechaEntregaRaw ? date('d/m/Y', strtotime($fechaEntregaRaw)) : '—';
+
     ob_start(); ?>
 <!doctype html>
 <html lang="es">
@@ -242,9 +245,9 @@ final class OrdenCompraPDFService
   </table>
 
   <div class="section">
-    <div class="row"><div class="lbl">Plazo de entrega:</div><div class="val"><?= htmlspecialchars($e['TiempoEntregaDias'] ?? 15) ?> días</div></div>
-    <div class="row"><div class="lbl">Dirección de entrega:</div><div class="val"><?= htmlspecialchars($c['Direccion']) ?></div></div>
-    <div class="row"><div class="lbl">Notas:</div><div class="val">—</div></div>
+    <div class="row"><div class="lbl">Fecha de entrega:</div><div class="val"><?= htmlspecialchars($fechaEntregaFmt) ?></div></div>
+    <div class="row"><div class="lbl">Dirección de entrega:</div><div class="val"><?= htmlspecialchars($c['Direccion']) ?></div></div><div class="row">
+    <div class="lbl">Notas:</div><div class="val">—</div></div>
   </div>
 
   <div class="sign">

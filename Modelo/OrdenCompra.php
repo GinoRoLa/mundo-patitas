@@ -125,27 +125,46 @@ if (!$this->evaluacionEsValida($idEval)) {
       // 5) Insert cabecera t06 (añadido NumeroOrdenCompra en el INSERT)
       if ($t06TieneHuella) {
         $sqlCab = "INSERT INTO t06OrdenCompra
-          (Fec_Emision, Serie, NumeroOrdenCompra,
-           RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
-           TiempoEntregaDias, Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado, Huella)
-          VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida', ?)";
+  (Fec_Emision, Serie, NumeroOrdenCompra,
+   RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
+   Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado, Huella)
+  VALUES (NOW(), ?, ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida', ?)";
 
-        $st = mysqli_prepare($this->cn, $sqlCab);
-        // tipos: Serie(s), NumeroTmp(s), RUC(s), Razon(s), IdEval(i), IdCot(i), TiempoEntrega(i), PorcIGV(d), Huella(s)
-        mysqli_stmt_bind_param(
-          $st,"ssssiiids",$serie,$numeroTmp,$ruc,$razon,$idEval,$idCot,$tiempoEntrega,$porcIGV,$finger);
+$st = mysqli_prepare($this->cn, $sqlCab);
+mysqli_stmt_bind_param(
+  $st,
+  "ssssiids",  // Serie, Numero, RUC, Razon, IdEval, IdCot, PorcIGV, Huella
+  $serie,
+  $numeroTmp,
+  $ruc,
+  $razon,
+  $idEval,
+  $idCot,
+  $porcIGV,
+  $finger
+);
+
       } else {
         $sqlCab = "INSERT INTO t06OrdenCompra
-          (Fec_Emision, Serie, NumeroOrdenCompra,
-           RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
-           TiempoEntregaDias, Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado)
-          VALUES (NOW(), ?, ?, ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida')";
+  (Fec_Emision, Serie, NumeroOrdenCompra,
+   RUC_Proveedor, RazonSocial, Id_ReqEvaluacion, Id_Cotizacion,
+   Moneda, PorcentajeIGV, SubTotal, Impuesto, MontoTotal, Estado)
+  VALUES (NOW(), ?, ?, ?, ?, ?, ?, 'PEN', ?, 0, 0, 0, 'Emitida')";
 
-        $st = mysqli_prepare($this->cn, $sqlCab);
-        // tipos: Serie(s), NumeroTmp(s), RUC(s), Razon(s), IdEval(i), IdCot(i), TiempoEntrega(i), PorcIGV(d)
-        mysqli_stmt_bind_param(
-          $st,
-          "ssssiiid",$serie,$numeroTmp,$ruc,$razon,$idEval,$idCot,$tiempoEntrega,$porcIGV);
+$st = mysqli_prepare($this->cn, $sqlCab);
+mysqli_stmt_bind_param(
+  $st,
+  "ssssiid", // Serie, Numero, RUC, Razon, IdEval, IdCot, PorcIGV
+  $serie,
+  $numeroTmp,
+  $ruc,
+  $razon,
+  $idEval,
+  $idCot,
+  $porcIGV
+);
+
+
       }
 
       mysqli_stmt_execute($st);
@@ -392,13 +411,13 @@ if (!$this->evaluacionEsValida($idEval)) {
       oc.SubTotal,
       oc.Impuesto,
       oc.MontoTotal,
-      oc.TiempoEntregaDias,
       p.Id_NumRuc,
       p.des_RazonSocial AS ProvRazon,
       p.DireccionProv  AS ProvDireccion,
       p.Correo         AS ProvCorreo,
       p.Telefono       AS ProvTelefono,
       c.NroCotizacionProv,
+      c.FechaEntrega   AS FechaEntregaCotizacion,
       oc.NumeroOrdenCompra,
       c.Id_Cotizacion AS IdCotizacionInterna
     FROM t06OrdenCompra oc

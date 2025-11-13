@@ -18,7 +18,7 @@ final class Cotizacion
               c.Id_ReqEvaluacion,
               c.RUC_Proveedor,
               c.FechaEmision,
-              c.FechaRecepcion,
+              c.FechaEntrega,
               c.Observaciones,
               c.SubTotal,
               c.IGV,
@@ -30,7 +30,7 @@ final class Cotizacion
             FROM t86Cotizacion c
             JOIN t17CatalogoProveedor p ON p.Id_NumRuc = c.RUC_Proveedor
             WHERE c.Id_ReqEvaluacion = ? AND c.Estado = ?
-            ORDER BY c.FechaRecepcion ASC, c.Id_Cotizacion ASC";
+            ORDER BY c.FechaEntrega ASC, c.Id_Cotizacion ASC";
 
     $st = mysqli_prepare($this->cn, $sql);
     mysqli_stmt_bind_param($st, "ss", $idReq, $estado);
@@ -47,7 +47,7 @@ final class Cotizacion
         'Direccion'       => $r['Direccion'],
         'Correo'           => $r['Correo'],
         'FechaEmision'    => $r['FechaEmision'],
-        'FechaRecepcion'  => $r['FechaRecepcion'],
+        'FechaEntrega'  => $r['FechaEntrega'],
         'Observaciones'   => $r['Observaciones'],
         'SubTotal'        => (float)$r['SubTotal'],
         'IGV'             => (float)$r['IGV'],

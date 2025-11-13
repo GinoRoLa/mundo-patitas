@@ -184,8 +184,8 @@ final class CotizacionImportService
     $ws = $ss->getSheetByName('COTIZACION') ?? $ss->getActiveSheet();
 
     $meta         = $this->leerMetadatos($ws);
-    $fecEmision   = isset($meta['FechaEmision'])   ? $this->toDateYmd($meta['FechaEmision'])     : date('Y-m-d');
-    $fecRecepcion = isset($meta['FechaRecepcion']) ? $this->toDateYmdHis($meta['FechaRecepcion']) : date('Y-m-d H:i:s');
+    $fecEmision   = isset($meta['FechaEmision']) ? $this->toDateYmd($meta['FechaEmision']) : date('Y-m-d');
+    $fecEntrega   = isset($meta['FechaEntrega']) ? $this->toDateYmd($meta['FechaEntrega']) : date('Y-m-d');
     $obs          = $meta['Observaciones'] ?? null;
 
     // Encabezado de detalle
@@ -285,11 +285,11 @@ final class CotizacionImportService
 
       // Cabecera
       $sqlCab = "INSERT INTO t86Cotizacion (Id_ReqEvaluacion, RUC_Proveedor, NroCotizacionProv,
-   FechaEmision, FechaRecepcion, Observaciones,
-   SubTotal, IGV, Total, Estado)
-  VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'Recibida')";
+                   FechaEmision, FechaEntrega, Observaciones,
+                   SubTotal, IGV, Total, Estado)
+                 VALUES (?, ?, ?, ?, ?, ?, 0, 0, 0, 'Recibida')";
       $sc = mysqli_prepare($this->cn, $sqlCab);
-      mysqli_stmt_bind_param( $sc, "isssss",$idReqInt,$ruc,$nroCotProv, $fecEmision, $fecRecepcion,$obs);
+      mysqli_stmt_bind_param($sc, "isssss", $idReqInt, $ruc, $nroCotProv, $fecEmision, $fecEntrega, $obs);
       mysqli_stmt_execute($sc);
       $idCot = (int)mysqli_insert_id($this->cn);
       mysqli_stmt_close($sc);
@@ -477,42 +477,12 @@ final class CotizacionImportService
   }
 
   // ===== Lectura Excel =====
-
-  /** Extrae metadatos sueltos tipo:
-   *  RUC | <valor>
-   *  FechaEmision | <valor>
-   *  FechaRecepcion | <valor>
-   *  Moneda | <valor>
-   *  Observaciones | <valor>
-   */
-  /* private function leerMetadatos(Worksheet $ws): array
-  {
-    $pairs = [
-      'RUC'            => 'RUC',
-      'FechaEmision'   => 'FechaEmision',
-      'FechaRecepcion' => 'FechaRecepcion',
-      'Moneda'         => 'Moneda',
-      'Observaciones'  => 'Observaciones',
-    ];
-    $meta = [];
-    for ($r=1; $r<=80; $r++) {
-      for ($c=1; $c<=10; $c++) {
-        $label = trim((string)$this->valBy($ws, $r, $c));
-        if (!$label) continue;
-        if (isset($pairs[$label])) {
-          $val = $this->valBy($ws, $r, $c + 1);
-          $meta[$label] = $val;
-        }
-      }
-    }
-    return $meta;
-  } */
   private function leerMetadatos(Worksheet $ws): array
   {
     $pairs = [
       'RUC'            => 'RUC',
       'FechaEmision'   => 'FechaEmision',
-      'FechaRecepcion' => 'FechaRecepcion',
+      'FechaEntrega'   => 'FechaEntrega',
       'Moneda'         => 'Moneda',
       'Observaciones'  => 'Observaciones',
     ];

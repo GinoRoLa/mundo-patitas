@@ -36,5 +36,18 @@ class CUS13Negocio {
         return $this->model->registrarEvaluacion($idReq, $idPartida, $resultadoSimulado, $criterio);
     }
 
+    public function listarEvaluaciones() {
+        require_once(__DIR__ . '/../Modelo/RequerimientoModel.php');
+        $model = new RequerimientoModel();
+        return $model->obtenerEvaluaciones();
+    }
+
+    public function obtenerDetalleEvaluacion($idEval) {
+        $model = new RequerimientoModel();
+        $detalle = $model->obtenerDetalleEvaluacion($idEval);
+        return ['success' => true, 'detalle' => $detalle];
+    }
+
+
 }
 ?>

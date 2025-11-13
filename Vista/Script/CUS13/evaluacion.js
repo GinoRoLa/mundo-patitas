@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const tablaSolicitudes = document.querySelector('#tablaSolicitudes tbody');
     const tablaDetalle = document.querySelector('#tablaDetalle tbody');
     const btnEvaluar = document.getElementById('btnEvaluar');
+    const btnRegistrar = document.getElementById('btnRegistrar');
     const tablaResultado = document.querySelector('#tablaResultado tbody');
     const resultadoResumen = document.getElementById('resultadoResumen');
 
@@ -49,9 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         descEl.textContent = f.Descripcion || '-';
-        montoEl.textContent = `S/ ${monto.toFixed(2)}`;
-        saldoAntEl.textContent = `S/ ${saldoAnterior.toFixed(2)}`;
-        totalEl.textContent = `S/ ${total.toFixed(2)}`;
+        montoEl.textContent = `S/ ${monto.toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}`;
+        saldoAntEl.textContent = `S/ ${saldoAnterior.toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}`;
+        totalEl.textContent = `S/ ${total.toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}`;
         }
 
 
@@ -74,8 +75,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 tr.innerHTML = `
                     <td>${r.Id_Requerimiento}</td>
                     <td>${r.FechaRequerimiento}</td>
-                    <td>S/ ${parseFloat(r.Total).toFixed(2)}</td>
-                    <td>S/ ${parseFloat(r.PrecioPromedio).toFixed(2)}</td>
+                    <td>S/ ${Number(r.Total||0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>S/ ${Number(r.PrecioPromedio||0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                     <td><span class="badge">${r.Estado || 'Pendiente'}</span></td>
                     <td><button class="btnSelect" data-id="${r.Id_Requerimiento}">Seleccionar</button></td>
                 `;
@@ -145,8 +146,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 row.innerHTML = `
                     <td>${item.Id_Producto}</td>
                     <td>${item.Cantidad}</td>
-                    <td>S/ ${Number(item.PrecioPromedio).toFixed(2)}</td>
-                    <td>S/ ${total.toFixed(2)}</td>
+                    <td>S/ ${(Number(item.PrecioPromedio)||0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                    <td>S/ ${total.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 `;
                 tbody.appendChild(row);
             });
@@ -154,7 +155,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Actualizar el total en el pie de tabla
             const totalEl = document.getElementById("totalSolicitado");
             if (totalEl) {
-                totalEl.textContent = `S/ ${totalSolicitado.toFixed(2)}`;
+                totalEl.textContent = `S/ ${totalSolicitado.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
             }
             
         } catch (error) {
@@ -179,10 +180,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const criterioSeleccionado = document.querySelector('input[name="criterio"]:checked')?.value || 'Precio';
-
-        if (!confirm(`¿Desea evaluar la solicitud #${seleccionRequerimiento} con el criterio "${criterioSeleccionado}"?`)) {
-            return;
-        }
 
         btnEvaluar.disabled = true;
         btnEvaluar.textContent = 'Evaluando...';
@@ -225,6 +222,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // === BOTÓN REGISTRAR ===
+    
     document.getElementById('btnRegistrar').addEventListener('click', async () => {
         if (!window.resultadoSimulado) {
             alert('⚠️ Primero debe evaluar la solicitud antes de registrar.');
@@ -232,10 +230,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         const criterioSeleccionado = document.querySelector('input[name="criterio"]:checked')?.value || 'Precio';
-
-        if (!confirm(`La evaluación se completó con el criterio "${criterioSeleccionado}".\n¿Desea aprobar y registrar oficialmente la evaluación?`)) {
-            return;
-        }
 
         const btnRegistrar = document.getElementById('btnRegistrar');
         btnRegistrar.disabled = true;
@@ -267,10 +261,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
 
-            console.log("📋 Resultado final (registro):", finalJson);
-
             if (finalJson.success) {
-                alert('✅ Evaluación aprobada y registrada correctamente.');
+                
                 mostrarResultado(finalJson);
                 await cargarFinanciamiento();
                 await cargarSolicitudes();
@@ -281,6 +273,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('accionesEvaluacion').style.display = 'none';
                 document.getElementById('detalleVacio').style.display = 'block';
                 document.getElementById('detalleContenido').style.display = 'none';
+                
+                alert('✅ Evaluación registrada correctamente.');
             } else {
                 alert('❌ Error al registrar evaluación: ' + (finalJson.error || 'Error desconocido.'));
             }
@@ -297,7 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // === FUNCIONES GLOBALES ===
-        function mostrarResultado(json) {
+    function mostrarResultado(json) {
         document.getElementById('resultadoVacio').style.display = 'none';
         document.getElementById('resultadoContenido').style.display = 'block';
         
@@ -318,9 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <div class="info-grid">
                     <div><strong>ID Evaluación:</strong> ${json.idEvaluacion || '-'}</div>
-                    <div><strong>Monto Solicitado:</strong> S/ ${montoSolicitado.toFixed(2)}</div>
-                    <div><strong>Monto Aprobado:</strong> S/ ${montoAprobado.toFixed(2)}</div>
-                    <div><strong>Saldo Después:</strong> S/ ${saldoDespues.toFixed(2)}</div>
+                    <div><strong>Monto Solicitado:</strong> S/ ${montoSolicitado.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div><strong>Monto Aprobado:</strong> S/ ${montoAprobado.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                    <div><strong>Saldo Después:</strong> S/ ${saldoDespues.toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 </div>
             </div>
         `;
@@ -338,18 +332,147 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td>${d.Id_Producto || '-'}</td>
                 <td>${d.CantidadSolicitada || 0}</td>
                 <td class="${d.CantidadAprobada > 0 ? 'ok' : 'no'}">${d.CantidadAprobada || 0}</td>
-                <td>S/ ${(d.Precio ?? 0).toFixed(2)}</td>
-                <td>S/ ${(d.MontoAsignado ?? 0).toFixed(2)}</td>
+                <td>S/ ${((d.CantidadSolicitada ?? 0) * (d.Precio ?? 0)).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
+                <td>S/ ${(d.MontoAsignado ?? 0).toLocaleString('es-PE', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</td>
                 <td><span class="badge-${(d.EstadoProducto || 'desconocido').toLowerCase()}">${d.EstadoProducto || '-'}</span></td>
             `;
             tablaResultado.appendChild(tr);
         });
     }
 
+    async function cargarSolicitudesEvaluadas() {
+        try {
+            const res = await fetch('../../Vista/Ajax/CUS13/obtenerEvaluadas.php');
+            const json = await res.json();
 
-    // Inicializar
+            const tbody = document.querySelector('#tablaEvaluadas tbody');
+            tbody.innerHTML = '';
+
+            if (!json.success || !Array.isArray(json.data)) {
+            tbody.innerHTML = `<tr><td colspan="9">No hay solicitudes evaluadas.</td></tr>`;
+            return;
+            }
+
+            json.data.forEach(ev => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${ev.Id_ReqEvaluacion}</td>
+                <td>${ev.Id_Requerimiento}</td>
+                <td>${ev.CriterioEvaluacion}</td>
+                <td>S/ ${(Number(ev.MontoSolicitado)||0).toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}</td>
+                <td>S/ ${(Number(ev.MontoAprobado)||0).toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}</td>
+                <td>S/ ${(Number(ev.SaldoRestantePeriodo)||0).toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}</td>
+                <td>${ev.Estado}</td>
+                <td>${ev.FechaEvaluacion}</td>
+                <td><button class="btn-secundario ver-detalle" data-id="${ev.Id_ReqEvaluacion}">Ver detalle</button></td>
+            `;
+            tbody.appendChild(tr);
+            });
+
+            // Agregar eventos a los botones
+            document.querySelectorAll('.ver-detalle').forEach(btn => {
+            btn.addEventListener('click', async e => {
+                const idEval = e.target.dataset.id;
+                await mostrarDetalleEvaluacion(idEval);
+            });
+            });
+
+        } catch (err) {
+            console.error('Error cargando solicitudes evaluadas:', err);
+        }
+    }
+
+    async function mostrarDetalleEvaluacion(idEval) {
+        try {
+            console.log("Solicitando detalle de evaluación ID:", idEval);
+
+            const res = await fetch(`../../Vista/Ajax/CUS13/obtenerDetalleEvaluacion.php?id=${idEval}`);
+            const json = await res.json();
+
+            console.log("📦 Respuesta detalle:", json);
+
+            if (!json.success || !json.detalle) {
+                alert('No se encontró el detalle de esta evaluación.');
+                return;
+            }
+
+            // Aseguramos que sea array
+            const detalleArray = Array.isArray(json.detalle) ? json.detalle : [json.detalle];
+
+            // Generamos el HTML del detalle
+            let detalleHTML = `
+                <h3>Detalle de evaluación #${idEval}</h3>
+                <table class="detalle-evaluacion">
+                    <thead>
+                        <tr>
+                            <th>Producto</th>
+                            <th>Cantidad</th>
+                            <th>Precio</th>
+                            <th>Monto Total</th>
+                            <th>Estado</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${detalleArray.map(d => `
+                            <tr>
+                                <td>${d.Id_Producto}</td>
+                                <td>${d.Cantidad}</td>
+                                <td>S/ ${(Number(d.Precio) || 0).toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}</td>
+                                <td>S/ ${(d.Cantidad * d.Precio).toLocaleString('es-PE',{minimumFractionDigits: 2, maximumFractionDigits:2})}</td>
+                                <td>${d.Estado}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            // Insertamos en el modal
+            const modal = document.getElementById('modalDetalle');
+            const contenido = document.getElementById('contenidoDetalle');
+            contenido.innerHTML = detalleHTML;
+
+            // Mostrar modal
+            modal.classList.add('show');
+
+            /*/ Botón para cerrar modal
+            document.getElementById('cerrarModal').onclick = () => {
+                modal.classList.remove('show');
+            };
+
+            // Cerrar si hace clic fuera del modal
+            window.onclick = (event) => {
+                if (event.target === modal) {
+                    modal.style.display = 'none';
+                }
+            };*/
+
+        } catch (err) {
+            console.error('Error mostrando detalle de evaluación:', err);
+            alert('Error cargando el detalle.');
+        }
+    }
+
+    // --- Configuración global del modal ---
+    const modal = document.getElementById('modalDetalle');
+    const btnCerrar = document.getElementById('cerrarModal');
+
+    function cerrarModal() {
+        modal.classList.remove('show');
+    }
+
+    btnCerrar.addEventListener('click', cerrarModal);
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) cerrarModal();
+    });
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') cerrarModal();
+    });
+
+
+        // Inicializar
     cargarFinanciamiento();
     cargarSolicitudes();
+    cargarSolicitudesEvaluadas();  
 
     // Actualizar hora
     setInterval(() => {

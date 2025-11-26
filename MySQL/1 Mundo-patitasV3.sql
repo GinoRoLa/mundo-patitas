@@ -1167,20 +1167,15 @@ CREATE TABLE t60DetOrdenPedido (
   Id_DetOrdenPedido INT NOT NULL AUTO_INCREMENT,
   t18CatalogoProducto_Id_Producto INT NOT NULL,
   t02OrdenPedido_Id_OrdenPedido INT NOT NULL,
-  Id_Cliente INT NOT NULL,
   Cantidad INT NOT NULL CHECK (Cantidad >= 0),
   PRIMARY KEY (Id_DetOrdenPedido),
   KEY fk_t60_t02 (t02OrdenPedido_Id_OrdenPedido),
   KEY fk_t60_t18 (t18CatalogoProducto_Id_Producto),
-  KEY fk_t60_cli (Id_Cliente),
   CONSTRAINT fk_t60_t02 FOREIGN KEY (t02OrdenPedido_Id_OrdenPedido)
     REFERENCES t02OrdenPedido (Id_OrdenPedido)
     ON UPDATE RESTRICT ON DELETE RESTRICT,
   CONSTRAINT fk_t60_t18 FOREIGN KEY (t18CatalogoProducto_Id_Producto)
     REFERENCES t18CatalogoProducto (Id_Producto)
-    ON UPDATE RESTRICT ON DELETE RESTRICT,
-  CONSTRAINT fk_t60_cli FOREIGN KEY (Id_Cliente)
-    REFERENCES t20Cliente (Id_Cliente)
     ON UPDATE RESTRICT ON DELETE RESTRICT
 ) ENGINE=InnoDB AUTO_INCREMENT=1;
 
@@ -1282,6 +1277,143 @@ CREATE TABLE t99_proveedores_productos (
     CONSTRAINT fk_99_prod FOREIGN KEY (Id_Producto)
         REFERENCES t18catalogoproducto(Id_Producto)
         ON UPDATE CASCADE ON DELETE CASCADE
+);
+
+-- Temporal hasta que jose haga su tabla
+CREATE TABLE t419NotaCajaDelivery (
+  Id_NotaCajaDelivery INT NOT NULL AUTO_INCREMENT,
+  Id_OrdenAsignacion  INT NOT NULL,         -- Hoja de ruta: t40OrdenAsignacionReparto
+  Id_Trabajador       INT NOT NULL,         -- Repartidor
+
+  FechaEmision        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  MontoFondo          DECIMAL(12,2) NOT NULL CHECK (MontoFondo >= 0),
+
+  -- Opcional: desglose de billetes/monedas
+  DetalleFondo        VARCHAR(300) NULL,    -- Ej: '5x10, 10x2, 8x1'
+
+  Estado              VARCHAR(20) NOT NULL DEFAULT 'Emitida',
+  -- 'Emitida'  = se generó y está pendiente de recaudación
+  -- 'Liquidada' = se cerró correctamente en CUS30
+  -- 'Con Faltante', 'Con Sobrante', etc. si quieres refinar
+
+  PRIMARY KEY (Id_NotaCajaDelivery),
+  KEY fk_t419_t40 (Id_OrdenAsignacion),
+  KEY fk_t419_t16 (Id_Trabajador),
+
+  CONSTRAINT fk_t419_t40 FOREIGN KEY (Id_OrdenAsignacion)
+    REFERENCES t40OrdenAsignacionReparto (Id_OrdenAsignacion)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+  CONSTRAINT fk_t419_t16 FOREIGN KEY (Id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE t420RecaudacionDelivery (
+  Id_Recaudacion      INT NOT NULL AUTO_INCREMENT,
+  Id_OrdenAsignacion  INT NOT NULL,         -- t40OrdenAsignacionReparto
+  Id_Trabajador       INT NOT NULL,         -- repartidor
+  Id_NotaCajaDelivery INT NOT NULL,         -- t419NotaCajaDelivery
+
+  FechaRecaudacion    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+  -- Referencias para control
+  MontoFondoRetirado      DECIMAL(12,2) NOT NULL CHECK (MontoFondoRetirado >= 0),
+  MontoVentasEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVentasEsperado >= 0),
+  MontoVueltoEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVueltoEsperado >= 0),
+
+  -- Lo que el repartidor trae físicamente
+  MontoEfectivoEntregado  DECIMAL(12,2) NOT NULL CHECK (MontoEfectivoEntregado >= 0),
+
+  Diferencia              DECIMAL(12,2) NOT NULL,  -- 0 = ok, <0 faltante, >0 sobrante
+  Estado                  VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+  -- 'Pendiente', 'Cuadrado', 'Con Faltante', 'Con Sobrante'
+
+  PRIMARY KEY (Id_Recaudacion),
+  KEY fk_t420_t40  (Id_OrdenAsignacion),
+  KEY fk_t420_t16  (Id_Trabajador),
+  KEY fk_t420_t419 (Id_NotaCajaDelivery),
+
+  CONSTRAINT fk_t420_t40 FOREIGN KEY (Id_OrdenAsignacion)
+    REFERENCES t40OrdenAsignacionReparto (Id_OrdenAsignacion)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+  CONSTRAINT fk_t420_t16 FOREIGN KEY (Id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+  CONSTRAINT fk_t420_t419 FOREIGN KEY (Id_NotaCajaDelivery)
+    REFERENCES t419NotaCajaDelivery (Id_NotaCajaDelivery)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+
+
+CREATE TABLE t421RecaudacionDeliveryPedido (
+  Id_RecaudacionDet INT NOT NULL AUTO_INCREMENT,
+  Id_Recaudacion    INT NOT NULL,         -- FK a t420RecaudacionDelivery
+  Id_OrdenPedido    INT NOT NULL,         -- FK a t02OrdenPedido
+
+  MontoPedido          DECIMAL(12,2) NOT NULL CHECK (MontoPedido >= 0),
+  MontoCobrado         DECIMAL(12,2) NOT NULL CHECK (MontoCobrado >= 0),
+  MontoVueltoEntregado DECIMAL(12,2) NOT NULL CHECK (MontoVueltoEntregado >= 0),
+  Diferencia              DECIMAL(12,2) NOT NULL, 
+
+  EstadoPedido VARCHAR(20) NOT NULL,
+  -- 'Entregado', 'No Entregado', 'Reprogramado'
+
+  PRIMARY KEY (Id_RecaudacionDet),
+  KEY fk_t421_t420 (Id_Recaudacion),
+  KEY fk_t421_t02  (Id_OrdenPedido),
+
+  CONSTRAINT fk_t421_t420 FOREIGN KEY (Id_Recaudacion)
+    REFERENCES t420RecaudacionDelivery (Id_Recaudacion)
+    ON UPDATE RESTRICT ON DELETE CASCADE,
+
+  CONSTRAINT fk_t421_t02 FOREIGN KEY (Id_OrdenPedido)
+    REFERENCES t02OrdenPedido (Id_OrdenPedido)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+
+CREATE TABLE t422NotaDescuentoPlanilla (
+  Id_NotaDescuento INT NOT NULL AUTO_INCREMENT,
+  Id_Recaudacion   INT NOT NULL,
+  id_Trabajador    INT NOT NULL,
+
+  FechaEmision     DATE NOT NULL,
+  PeriodoPlanilla  VARCHAR(7) NOT NULL,
+  MontoDescuento   DECIMAL(12,2) NOT NULL CHECK (MontoDescuento >= 0),
+  Motivo           VARCHAR(200) NOT NULL,
+  Estado           VARCHAR(20) NOT NULL DEFAULT 'Pendiente',
+
+  PRIMARY KEY (Id_NotaDescuento),
+  KEY fk_t422_t420 (Id_Recaudacion),
+  KEY fk_t422_t16  (id_Trabajador),
+
+  CONSTRAINT fk_t422_t420 FOREIGN KEY (Id_Recaudacion)
+    REFERENCES t420RecaudacionDelivery (Id_Recaudacion)
+    ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+  CONSTRAINT fk_t422_t16 FOREIGN KEY (id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores (id_Trabajador)
+    ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+DROP TABLE IF EXISTS T501DetalleOPCE;
+
+CREATE TABLE T501DetalleOPCE (
+IdDet INT NOT NULL AUTO_INCREMENT,
+IdOrdenPedido INT NOT NULL, 
+Total DECIMAL(10, 2) NOT NULL,
+EfectivoCliente DECIMAL(10, 2) NOT NULL,
+Vuelto DECIMAL(10, 2) NOT NULL,
+    
+CONSTRAINT PK_T501DetalleOPCE PRIMARY KEY (IdDet),
+CONSTRAINT FK_T501DetalleOPCE_T02OrdenPedido FOREIGN KEY (IdOrdenPedido)
+        REFERENCES t02ordenpedido (Id_OrdenPedido) 
 );
 
 -- ==========================================================

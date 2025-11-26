@@ -252,11 +252,11 @@ BEGIN
 
   SET v_orden_id = LAST_INSERT_ID();
 
-  -- Inserta el detalle desde el JSON (ajusta a tu tabla real de detalle)
+  -- Inserta el detalle SIN Id_Cliente (ya está en t02OrdenPedido)
   INSERT INTO t60DetOrdenPedido
-    (t18CatalogoProducto_Id_Producto, t02OrdenPedido_Id_OrdenPedido, Id_Cliente, Cantidad)
+    (t18CatalogoProducto_Id_Producto, t02OrdenPedido_Id_OrdenPedido, Cantidad)
   SELECT
-    jt.IdProducto, v_orden_id, p_id_cliente, jt.Cantidad
+    jt.IdProducto, v_orden_id, jt.Cantidad
   FROM JSON_TABLE(p_items, '$[*]' COLUMNS (
     IdProducto INT PATH '$.IdProducto',
     Cantidad   INT PATH '$.Cantidad'

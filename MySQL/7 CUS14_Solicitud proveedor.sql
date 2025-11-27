@@ -2,6 +2,12 @@ use mundo_patitas3;
 
 -- -------------------------------------------------------------------------------------------------
 
+DROP TABLE IF EXISTS t99_proveedores_productos;
+DROP TABLE IF EXISTS t101detalle_solicitud_cotizacion_proveedor;
+DROP TABLE IF EXISTS t100Solicitud_Cotizacion_Proveedor;
+
+-- -------------------------------------------------------------------------------------------------
+
 CREATE TABLE t99_proveedores_productos (
     Id_ProvProd INT AUTO_INCREMENT PRIMARY KEY,
     Id_NumRuc VARCHAR(11) NOT NULL,

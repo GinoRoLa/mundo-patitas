@@ -159,6 +159,20 @@
                         </div>
                     </div>
 
+                    <!-- Card CUS28 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS28</h5>
+                                <p class="card-text flex-grow-1">Generar Nota De Caja Para Repartidor</p>
+                                <a href="vista/page/CUS28_IU028.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
         </main>

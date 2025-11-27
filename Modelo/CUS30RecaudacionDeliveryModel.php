@@ -537,35 +537,39 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
       // 1) Insertar t420
       $estEsc = mysqli_real_escape_string($this->cn, $estadoRec);
 
-      $sqlIns420 = "
-        INSERT INTO t420RecaudacionDelivery (
-          Id_OrdenAsignacion,
-          Id_Trabajador,
-          Id_NotaCajaDelivery,
-          FechaRecaudacion,
-          MontoFondoRetirado,
-          MontoVentasEsperado,
-          MontoVueltoEsperado,
-          MontoEfectivoEntregado,
-          Diferencia,
-          Estado
-        ) VALUES (
-          {$idOrdenAsignacion},
-          {$idTrabajadorRepartidor},
-          {$idNotaCajaDelivery},
-          NOW(),
-          {$mF},
-          {$mV},
-          {$mVu},
-          {$mEf},
-          {$dif},
-          '{$estEsc}'
-        )
-      ";
-      if (!mysqli_query($this->cn, $sqlIns420)) {
-        throw new Exception('Error insertando recaudación (t420): ' . mysqli_error($this->cn));
-      }
-      $idRecaudacion = (int)mysqli_insert_id($this->cn);
+      $montoEsperadoRetorno = $mF + $mV - $mVu;
+
+$sqlIns420 = "
+  INSERT INTO t420RecaudacionDelivery (
+    Id_OrdenAsignacion,
+    Id_Trabajador,
+    Id_NotaCajaDelivery,
+    FechaRecaudacion,
+    MontoFondoRetirado,
+    MontoVentasEsperado,
+    MontoVueltoEsperado,
+    MontoEsperadoRetorno,
+    MontoEfectivoEntregado,
+    Diferencia,
+    Estado
+  ) VALUES (
+    {$idOrdenAsignacion},
+    {$idTrabajadorRepartidor},
+    {$idNotaCajaDelivery},
+    NOW(),
+    {$mF},
+    {$mV},
+    {$mVu},
+    {$montoEsperadoRetorno},
+    {$mEf},
+    {$dif},
+    '{$estEsc}'
+  )
+";
+if (!mysqli_query($this->cn, $sqlIns420)) {
+  throw new Exception('Error insertando recaudación (t420): ' . mysqli_error($this->cn));
+}
+$idRecaudacion = (int)mysqli_insert_id($this->cn);
 
       // 2) Insertar detalle t421
       foreach ($rowsDetalle as $rowDet) {

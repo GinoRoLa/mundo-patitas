@@ -34,7 +34,22 @@
   }
 
   /* ============================================================
-     2) Render tabla de pedidos (versión final)
+     2) Obtener color según estado
+  ============================================================ */
+  function getEstadoColor(estado) {
+    const estadoNorm = (estado || "").trim();
+    
+    if (estadoNorm === "Entregado") {
+      return "#28a745"; // Verde
+    } else if (estadoNorm === "No Entregado") {
+      return "#dc3545"; // Rojo
+    } else {
+      return "#ff9800"; // Naranja
+    }
+  }
+
+  /* ============================================================
+     3) Render tabla de pedidos (versión con colores)
   ============================================================ */
   function renderPedidosTabla() {
     const tbody = document.querySelector("#tblPedidos tbody");
@@ -118,10 +133,12 @@
       tr.appendChild(tdEsp);
 
       /* ================================
-         Estado Pedido (solo lectura)
+         Estado Pedido (con color)
       ================================== */
       const tdEst = document.createElement("td");
       tdEst.textContent = estado;
+      tdEst.style.fontWeight = "bold";
+      tdEst.style.color = getEstadoColor(estado);
       tr.appendChild(tdEst);
 
       tbody.appendChild(tr);
@@ -132,7 +149,7 @@
   }
 
   /* ============================================================
-     3) Recibir datos desde API
+     4) Recibir datos desde API
   ============================================================ */
   function setDetalleRecaudacion(res) {
     window.CUS30 = window.CUS30 || {};

@@ -65,7 +65,7 @@ BEGIN
   LEFT JOIN t20Cliente c
        ON c.Id_Cliente = t02.Id_Cliente
   WHERE d401.Id_OrdenAsignacion = pIdAsignacion
-    AND t02.Estado = 'Pagado'
+    AND t02.Estado IN ('Pagado', 'Emitido')
   ORDER BY d.DescNombre, t71.DireccionSnap, t02.Id_OrdenPedido;
 END$$
 DELIMITER ;

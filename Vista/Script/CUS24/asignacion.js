@@ -136,48 +136,52 @@
 
   /* ============ Pedidos (Tabla) ============ */
   function pintarPedidos(pedidos = []) {
-    const tb = $("#tblPedidos tbody");
-    if (!tb) return;
-    tb.innerHTML = "";
+  const tb = $("#tblPedidos tbody");
+  if (!tb) return;
+  tb.innerHTML = "";
 
-    const frag = document.createDocumentFragment();
+  const frag = document.createDocumentFragment();
 
-    pedidos.forEach((p) => {
-      const op = Number(p.idOrdenPedido || p.op || 0);
-      const estado = String(p.estadoOP || p.estado || "").trim();
-      const cliente = p.cliente || p.clienteNombre || "";
-      const dir = p.direccion || p.direccionSnap || "";
-      const dist = p.distritoNombre || p.distrito || "";
-      const ose = p.idOSE || p.ose || "";
+  pedidos.forEach((p) => {
+    const op = Number(p.idOrdenPedido || p.op || 0);
+    const estado = String(p.estadoOP || p.estado || "").trim();
+    const cliente = p.cliente || p.clienteNombre || "";
+    const dir = p.direccion || p.direccionSnap || "";
+    const dist = p.distritoNombre || p.distrito || "";
+    const ose = p.idOSE || p.ose || "";
 
-      const elegible = estado === "Pagado";
+    //const elegible = estado === "Pagado";
+    const elegible = true;
 
-      const tr = document.createElement("tr");
-      tr.innerHTML = `
-        <td data-label="Código Orden Pedido">${op || ""}</td>
-        <td data-label="Cliente">${cliente}</td>
-        <td data-label="Dirección">${dir}</td>
-        <td data-label="Distrito">${dist}</td>
-        <td data-label="OSE">${ose}</td>
-        <td data-label="Estado">${estado || ""}</td>
-        <td class="incluida-cell" data-label="Incluida">${
-          elegible
-            ? `<input type="checkbox" class="chk-incluida" checked disabled>`
-            : "—"
-        }</td>
-      `;
-      frag.appendChild(tr);
-    });
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td data-label="Código Orden Pedido">${op || ""}</td>
+      <td data-label="Cliente">${cliente}</td>
+      <td data-label="Dirección">${dir}</td>
+      <td data-label="Distrito">${dist}</td>
+      <td data-label="OSE">${ose}</td>
+      <td data-label="Estado">${estado || ""}</td>
+      <td class="incluida-cell" data-label="Incluida">
+        <input type="checkbox" class="chk-incluida" checked disabled>
+      </td>
+    `;
+    frag.appendChild(tr);
+  });
 
-    tb.appendChild(frag);
-  }
+  tb.appendChild(frag);
+}
 
   /* ============ Agrupación por destino ============ */
   function agruparPorDestino(pedidos = []) {
     // Sólo OP elegibles (Pagado)
-    const elegibles = pedidos.filter(
+    /* const elegibles = pedidos.filter(
       (p) => String(p.estadoOP || p.estado || "").trim() === "Pagado"
-    );
+    ); */
+
+    const elegibles = pedidos.filter(p => 
+    (p.idOrdenPedido || p.op) && 
+    (p.receptorDni || "").trim() !== ""
+  );
 
     const map = new Map();
     for (const p of elegibles) {

@@ -14,7 +14,7 @@ class CUS30RecaudacionDeliveryModel
   // -------------------------------------------------------
   // Asignaciones pendientes por DNI de repartidor
   // -------------------------------------------------------
-  public function buscarAsignacionesPendientesPorDniRepartidor(string $dniRepartidor): array
+  /* public function buscarAsignacionesPendientesPorDniRepartidor(string $dniRepartidor): array
   {
     $dniEsc = mysqli_real_escape_string($this->cn, $dniRepartidor);
 
@@ -63,12 +63,70 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
     }
 
     return $rutas;
+  } */
+
+      public function buscarAsignacionesPendientesPorDniRepartidor(string $dniRepartidor): array
+  {
+    $dniEsc = mysqli_real_escape_string($this->cn, $dniRepartidor);
+
+    $sql = "
+      SELECT
+        oa.Id_OrdenAsignacion,
+        oa.FechaProgramada,
+        oa.Estado AS EstadoRuta,
+
+        -- t28 en lugar de t419
+        nc.IDNotaCaja        AS Id_NotaCajaDelivery,
+        nc.VueltoTotal       AS MontoFondo,
+        nc.Estado            AS EstadoNota,
+
+        t.id_Trabajador,
+        t.des_nombreTrabajador,
+        t.des_apepatTrabajador,
+        t.des_apematTrabajador
+      FROM t40OrdenAsignacionReparto oa
+      JOIN t79AsignacionRepartidorVehiculo ar
+        ON oa.Id_AsignacionRepartidorVehiculo = ar.Id_AsignacionRepartidorVehiculo
+      JOIN t16CatalogoTrabajadores t
+        ON ar.Id_Trabajador = t.id_Trabajador
+      LEFT JOIN t28Nota_caja nc
+        ON nc.IDAsignacionReparto = oa.Id_OrdenAsignacion
+       AND nc.IDRepartidor      = t.id_Trabajador
+      WHERE t.DNITrabajador = '{$dniEsc}'
+        AND oa.Estado IN ('Pendiente','En Ruta','Por Recaudar')
+      ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
+    ";
+
+    $rs = mysqli_query($this->cn, $sql);
+    if (!$rs) {
+      throw new Exception('Error al listar asignaciones: ' . mysqli_error($this->cn));
+    }
+
+    $rutas = [];
+    while ($row = mysqli_fetch_assoc($rs)) {
+      $rutas[] = [
+        'Id_OrdenAsignacion' => (int)$row['Id_OrdenAsignacion'],
+        'FechaProgramada'    => $row['FechaProgramada'],
+        'EstadoRuta'         => $row['EstadoRuta'],
+        'Id_NotaCajaDelivery'=> isset($row['Id_NotaCajaDelivery']) ? (int)$row['Id_NotaCajaDelivery'] : null,
+        'MontoFondo'         => isset($row['MontoFondo']) ? (float)$row['MontoFondo'] : 0.0,
+        'EstadoNota'         => $row['EstadoNota'] ?? null,
+        'RepartidorId'       => (int)$row['id_Trabajador'],
+        'RepartidorNombre'   => trim(
+                                  ($row['des_nombreTrabajador'] ?? '') . ' ' .
+                                  ($row['des_apepatTrabajador'] ?? '') . ' ' .
+                                  ($row['des_apematTrabajador'] ?? '')
+                                ),
+      ];
+    }
+
+    return $rutas;
   }
 
   // -------------------------------------------------------
   // Cabecera de asignación + nota de caja
   // -------------------------------------------------------
-  public function obtenerCabeceraAsignacion(int $idOrdenAsignacion): ?array
+  /* public function obtenerCabeceraAsignacion(int $idOrdenAsignacion): ?array
   {
     $sql = "
       SELECT
@@ -112,7 +170,60 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
       'MontoFondo'         => (float)$row['MontoFondo'],
       'EstadoNota'         => $row['EstadoNota'],
     ];
+  } */
+
+    public function obtenerCabeceraAsignacion(int $idOrdenAsignacion): ?array
+  {
+    $sql = "
+      SELECT
+        oa.Id_OrdenAsignacion,
+        oa.FechaProgramada,
+        oa.Estado AS EstadoRuta,
+        ar.Id_Trabajador,
+        t.des_nombreTrabajador,
+        t.des_apepatTrabajador,
+        t.des_apematTrabajador,
+
+        nc.IDNotaCaja      AS Id_NotaCajaDelivery,
+        nc.VueltoTotal     AS MontoFondo,
+        nc.Estado          AS EstadoNota
+      FROM t40OrdenAsignacionReparto oa
+      JOIN t79AsignacionRepartidorVehiculo ar
+        ON oa.Id_AsignacionRepartidorVehiculo = ar.Id_AsignacionRepartidorVehiculo
+      JOIN t16CatalogoTrabajadores t
+        ON ar.Id_Trabajador = t.id_Trabajador
+      LEFT JOIN t28Nota_caja nc
+        ON nc.IDAsignacionReparto = oa.Id_OrdenAsignacion
+       AND nc.IDRepartidor      = ar.Id_Trabajador
+      WHERE oa.Id_OrdenAsignacion = {$idOrdenAsignacion}
+      LIMIT 1
+    ";
+
+    $rs = mysqli_query($this->cn, $sql);
+    if (!$rs) {
+      throw new Exception('Error al obtener cabecera: ' . mysqli_error($this->cn));
+    }
+    $row = mysqli_fetch_assoc($rs);
+    if (!$row || empty($row['Id_NotaCajaDelivery'])) {
+      return null;
+    }
+
+    return [
+      'Id_OrdenAsignacion' => (int)$row['Id_OrdenAsignacion'],
+      'FechaProgramada'    => $row['FechaProgramada'],
+      'EstadoRuta'         => $row['EstadoRuta'],
+      'Id_Trabajador'      => (int)$row['Id_Trabajador'],
+      'RepartidorNombre'   => trim(
+                                ($row['des_nombreTrabajador'] ?? '') . ' ' .
+                                ($row['des_apepatTrabajador'] ?? '') . ' ' .
+                                ($row['des_apematTrabajador'] ?? '')
+                              ),
+      'Id_NotaCajaDelivery'=> (int)$row['Id_NotaCajaDelivery'],
+      'MontoFondo'         => (float)$row['MontoFondo'],   // viene de VueltoTotal
+      'EstadoNota'         => $row['EstadoNota'],
+    ];
   }
+
 
   // -------------------------------------------------------
   // Pedidos delivery + contraentrega de la asignación
@@ -206,7 +317,7 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
   // -------------------------------------------------------
   // Obtener monto de fondo de nota de caja
   // -------------------------------------------------------
-  public function obtenerMontoFondoNotaCaja(int $idNotaCajaDelivery, int $idOrdenAsignacion): ?float
+  /* public function obtenerMontoFondoNotaCaja(int $idNotaCajaDelivery, int $idOrdenAsignacion): ?float
   {
     $sql = "
       SELECT MontoFondo
@@ -222,7 +333,26 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
     $row = mysqli_fetch_assoc($rs);
     if (!$row) return null;
     return (float)$row['MontoFondo'];
+  } */
+
+    public function obtenerMontoFondoNotaCaja(int $idNotaCajaDelivery, int $idOrdenAsignacion): ?float
+  {
+    $sql = "
+      SELECT VueltoTotal
+      FROM t28Nota_caja
+      WHERE IDNotaCaja        = {$idNotaCajaDelivery}
+        AND IDAsignacionReparto = {$idOrdenAsignacion}
+      LIMIT 1
+    ";
+    $rs = mysqli_query($this->cn, $sql);
+    if (!$rs) {
+      throw new Exception('Error consultando nota de caja (t28): ' . mysqli_error($this->cn));
+    }
+    $row = mysqli_fetch_assoc($rs);
+    if (!$row) return null;
+    return (float)$row['VueltoTotal'];
   }
+
 
   // -------------------------------------------------------
   // Cerrar recaudación:
@@ -230,7 +360,7 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
   // - t422 si faltante
   // - estados t419 y t40
   // -------------------------------------------------------
-  public function cerrarRecaudacion(array $cab, array $rowsDetalle): array
+  /* public function cerrarRecaudacion(array $cab, array $rowsDetalle): array
   {
     $idOrdenAsignacion      = (int)$cab['Id_OrdenAsignacion'];
     $idTrabajadorRepartidor = (int)$cab['Id_TrabajadorRepartidor'];
@@ -365,6 +495,167 @@ ORDER BY oa.FechaProgramada, oa.Id_OrdenAsignacion;
       if (!mysqli_query($this->cn, $sqlUpd419)) {
         throw new Exception('Error actualizando estado NotaCajaDelivery (t419): ' . mysqli_error($this->cn));
       }
+
+      // 5) Actualizar t40 estado
+      $estadoRuta = ($estadoRec === 'Cuadrado') ? 'Recaudado' : 'Recaudado con obs';
+      $estadoRutaEsc = mysqli_real_escape_string($this->cn, $estadoRuta);
+      $sqlUpd40 = "
+        UPDATE t40OrdenAsignacionReparto
+        SET Estado = '{$estadoRutaEsc}'
+        WHERE Id_OrdenAsignacion = {$idOrdenAsignacion}
+      ";
+      if (!mysqli_query($this->cn, $sqlUpd40)) {
+        throw new Exception('Error actualizando estado OrdenAsignacion (t40): ' . mysqli_error($this->cn));
+      }
+
+      mysqli_commit($this->cn);
+
+      return [
+        'Id_Recaudacion' => $idRecaudacion,
+        'NotaDescuento'  => $notaDescuentoData,
+      ];
+    } catch (Throwable $e) {
+      mysqli_rollback($this->cn);
+      throw $e;
+    }
+  } */
+
+  public function cerrarRecaudacion(array $cab, array $rowsDetalle): array
+  {
+    $idOrdenAsignacion      = (int)$cab['Id_OrdenAsignacion'];
+    $idTrabajadorRepartidor = (int)$cab['Id_TrabajadorRepartidor'];
+    $idNotaCajaDelivery     = (int)$cab['Id_NotaCajaDelivery'];
+    $mF                      = (float)$cab['MontoFondoRetirado'];
+    $mV                      = (float)$cab['MontoVentasEsperado'];
+    $mVu                     = (float)$cab['MontoVueltoEsperado'];
+    $mEf                     = (float)$cab['MontoEfectivoEntregado'];
+    $dif                     = (float)$cab['DiferenciaGlobal'];
+    $estadoRec               = (string)$cab['EstadoRec'];
+
+    mysqli_begin_transaction($this->cn);
+    try {
+      // 1) Insertar t420
+      $estEsc = mysqli_real_escape_string($this->cn, $estadoRec);
+
+      $sqlIns420 = "
+        INSERT INTO t420RecaudacionDelivery (
+          Id_OrdenAsignacion,
+          Id_Trabajador,
+          Id_NotaCajaDelivery,
+          FechaRecaudacion,
+          MontoFondoRetirado,
+          MontoVentasEsperado,
+          MontoVueltoEsperado,
+          MontoEfectivoEntregado,
+          Diferencia,
+          Estado
+        ) VALUES (
+          {$idOrdenAsignacion},
+          {$idTrabajadorRepartidor},
+          {$idNotaCajaDelivery},
+          NOW(),
+          {$mF},
+          {$mV},
+          {$mVu},
+          {$mEf},
+          {$dif},
+          '{$estEsc}'
+        )
+      ";
+      if (!mysqli_query($this->cn, $sqlIns420)) {
+        throw new Exception('Error insertando recaudación (t420): ' . mysqli_error($this->cn));
+      }
+      $idRecaudacion = (int)mysqli_insert_id($this->cn);
+
+      // 2) Insertar detalle t421
+      foreach ($rowsDetalle as $rowDet) {
+        $idOp = (int)$rowDet['Id_OrdenPedido'];
+        $mp   = (float)$rowDet['MontoPedido'];
+        $mc   = (float)$rowDet['MontoCobrado'];
+        $mv   = (float)$rowDet['MontoVueltoEntregado'];
+        $df   = (float)$rowDet['Diferencia'];
+        $ep   = mysqli_real_escape_string($this->cn, $rowDet['EstadoPedido']);
+
+        $sqlIns421 = "
+          INSERT INTO t421RecaudacionDeliveryPedido (
+            Id_Recaudacion,
+            Id_OrdenPedido,
+            MontoPedido,
+            MontoCobrado,
+            MontoVueltoEntregado,
+            Diferencia,
+            EstadoPedido
+          ) VALUES (
+            {$idRecaudacion},
+            {$idOp},
+            {$mp},
+            {$mc},
+            {$mv},
+            {$df},
+            '{$ep}'
+          )
+        ";
+        if (!mysqli_query($this->cn, $sqlIns421)) {
+          throw new Exception('Error insertando detalle recaudación (t421): ' . mysqli_error($this->cn));
+        }
+      }
+
+      // 3) t422 si faltante
+      $notaDescuentoData = null;
+      if ($estadoRec === 'Faltante') {
+        $montoDescuento = abs($dif);
+        $hoy            = date('Y-m-d');
+        $periodo        = date('Y-m');
+        $motivo         = "Faltante en recaudación delivery Id_Recaudacion={$idRecaudacion}";
+        $motivoEsc      = mysqli_real_escape_string($this->cn, $motivo);
+
+        $sqlIns422 = "
+          INSERT INTO t422NotaDescuentoPlanilla (
+            Id_Recaudacion,
+            id_Trabajador,
+            FechaEmision,
+            PeriodoPlanilla,
+            MontoDescuento,
+            Motivo,
+            Estado
+          ) VALUES (
+            {$idRecaudacion},
+            {$idTrabajadorRepartidor},
+            '{$hoy}',
+            '{$periodo}',
+            {$montoDescuento},
+            '{$motivoEsc}',
+            'Pendiente'
+          )
+        ";
+        if (!mysqli_query($this->cn, $sqlIns422)) {
+          throw new Exception('Error insertando nota de descuento (t422): ' . mysqli_error($this->cn));
+        }
+        $idNotaDesc = (int)mysqli_insert_id($this->cn);
+        $notaDescuentoData = [
+          'Id_NotaDescuento' => $idNotaDesc,
+          'MontoDescuento'   => $montoDescuento,
+          'PeriodoPlanilla'  => $periodo,
+        ];
+      }
+
+      // 4) Actualizar t419 estado
+      $estadoNota = 'Liquidada';
+      if ($estadoRec === 'Con Faltante') {
+        $estadoNota = 'Con Faltante';
+      } elseif ($estadoRec === 'Con Sobrante') {
+        $estadoNota = 'Con Sobrante';
+      }
+      $estadoNotaEsc = mysqli_real_escape_string($this->cn, $estadoNota);
+      $sqlUpdT28 = "
+  UPDATE t28Nota_caja
+  SET Estado = '{$estadoNotaEsc}'
+  WHERE IDNotaCaja = {$idNotaCajaDelivery}
+";
+if (!mysqli_query($this->cn, $sqlUpdT28)) {
+  throw new Exception('Error actualizando estado NotaCaja (t28Nota_caja): ' . mysqli_error($this->cn));
+}
+
 
       // 5) Actualizar t40 estado
       $estadoRuta = ($estadoRec === 'Cuadrado') ? 'Recaudado' : 'Recaudado con obs';

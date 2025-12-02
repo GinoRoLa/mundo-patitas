@@ -190,6 +190,8 @@
 
     btn.disabled = false;
 
+  // Fragmento mejorado de cerrarRecaudacionHandler en main30.js
+
     if (!res.ok) {
       console.error("Error cerrar-recaudacion:", res);
       const errorMsg = res.error || "No se pudo cerrar la recaudación.";
@@ -202,7 +204,7 @@
       return;
     }
 
-    // Éxito
+    // ✅ Éxito - Mostrar mensaje principal
     const successMsg = res.msg || "Recaudación cerrada correctamente.";
     if (msg) {
       msg.textContent = successMsg;
@@ -210,10 +212,40 @@
       msg.classList.add("ok");
     }
 
-    showToast(
-      successMsg,
-      res.estadoFinal === "Cuadrado" ? "ok" : "info"
-    );
+    // 🔔 Manejar información de faltas y suspensión
+    const faltas = Number(res.faltasAcumuladas ?? 0);
+    const suspendido = !!res.repartidorSuspendido;
+
+    if (suspendido) {
+      // Alerta crítica de suspensión
+      showToast(
+        `REPARTIDOR SUSPENDIDO: Ha acumulado ${faltas} faltas. Se requiere intervención de supervisión.`,
+        "error"
+      );
+      // Opcional: Mensaje adicional en consola para auditoría
+      console.warn(`[CUS30] Repartidor suspendido automáticamente. Faltas: ${faltas}`);
+    } else if (res.estadoFinal === "Faltante") {
+      // Advertencia de faltante con contador de faltas
+      const faltaRestante = 3 - faltas;
+      let msgFalta = `Recaudación con FALTANTE.`;
+      
+      if (faltaRestante === 1) {
+        msgFalta += " ¡ÚLTIMA OPORTUNIDAD antes de suspensión!";
+      } else if (faltaRestante === 2) {
+        msgFalta += " Quedan 2 oportunidades.";
+      }
+      
+      showToast(msgFalta, "warning");
+    } else if (res.estadoFinal === "Sobrante") {
+      // Información de sobrante
+      showToast(
+        `Recaudación con SOBRANTE de S/ ${Math.abs(res.diferencia).toFixed(2)}. Revisar con supervisión.`,
+        "info"
+      );
+    } else {
+      // Cuadrado - Todo OK
+      showToast(successMsg, "success");
+    }
 
     // Limpiar totalmente el CUS
     limpiarCUS30();
@@ -222,7 +254,7 @@
     const txtDni = getEl("txtDniRepartidor");
     if (txtDni && txtDni.value.trim() && window.Asignaciones30) {
       window.Asignaciones30.buscarAsignacionesPorDni();
-    }
+    } 
   }
 
   /* ===========================================

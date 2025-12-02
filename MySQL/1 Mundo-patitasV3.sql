@@ -1339,7 +1339,7 @@ CREATE TABLE t420RecaudacionDelivery (
   -- Referencias para control
   MontoFondoRetirado      DECIMAL(12,2) NOT NULL CHECK (MontoFondoRetirado >= 0),
   MontoVentasEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVentasEsperado >= 0),
-  MontoVueltoEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVueltoEsperado >= 0),
+  -- MontoVueltoEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVueltoEsperado >= 0),
   MontoEsperadoRetorno DECIMAL(12,2) NOT NULL,
 
   -- Lo que el repartidor trae físicamente

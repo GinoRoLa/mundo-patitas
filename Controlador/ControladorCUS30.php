@@ -104,13 +104,8 @@ try {
 
       // Inicializar totales para front
       $ventasEsperadas = 0.0;
-      $vueltoEsperado  = 0.0;
       foreach ($pedidos as &$p) {
         $montoPedido = (float)$p['MontoPedido'];
-        $vueltoProg  = (float)$p['VueltoProgramado'];
-        
-        // NO sobrescribir el estado, ya viene de la BD
-        // $p['EstadoPedido'] = 'Entregado'; // ❌ QUITAR ESTA LÍNEA
         
         // Inicializar campos de edición según el estado REAL
         if ($p['EstadoPedido'] === 'Entregado') {
@@ -124,7 +119,6 @@ try {
         }
         
         $p['Diferencia'] = 0.0;
-        $vueltoEsperado += $vueltoProg;
       }
       unset($p);
 
@@ -138,7 +132,6 @@ try {
         'pedidos'  => $pedidos,
         'totalesIniciales' => [
           'MontoVentasEsperado' => $ventasEsperadas,
-          'MontoVueltoEsperado' => $vueltoEsperado,
         ],
       ]);
       break;
@@ -176,7 +169,6 @@ try {
 
       // Calcular totales con base en el detalle enviado
       $montoVentasEsperado = 0.0;
-      $montoVueltoEsperado = 0.0;
       $rowsDetalle = [];
 
       foreach ($detalle as $idx => $item) {
@@ -196,7 +188,6 @@ try {
         if ($estadoPed === 'Entregado') {
           $montoVentasEsperado += $montoCobrado;
         }
-        $montoVueltoEsperado += $montoVuelto;
 
         $diferenciaPed = $montoCobrado - $montoPedido;
 
@@ -210,7 +201,9 @@ try {
         ];
       }
 
-      $montoEsperadoRetorno = $montoFondoRetirado + $montoVentasEsperado - $montoVueltoEsperado;
+      // Cálculo del monto esperado de retorno:
+      // Fondo + Ventas (el fondo ya incluye el vuelto de caja)
+      $montoEsperadoRetorno = $montoFondoRetirado + $montoVentasEsperado;
       $diferenciaGlobal     = $montoEfectivoEntregado - $montoEsperadoRetorno;
 
       $epsilon = 0.01;
@@ -231,7 +224,7 @@ try {
           'Id_NotaCajaDelivery'     => $idNotaCajaDelivery,
           'MontoFondoRetirado'      => $montoFondoRetirado,
           'MontoVentasEsperado'     => $montoVentasEsperado,
-          'MontoVueltoEsperado'     => $montoVueltoEsperado,
+          'MontoEsperadoRetorno'    => $montoEsperadoRetorno,
           'MontoEfectivoEntregado'  => $montoEfectivoEntregado,
           'DiferenciaGlobal'        => $diferenciaGlobal,
           'EstadoRec'               => $estadoRec,

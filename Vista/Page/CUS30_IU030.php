@@ -8,6 +8,7 @@ $fecha = date('Y-m-d');
   <title>Mundo Patitas – CUS30 Recaudación Delivery</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="../Style/CUS30/CUS30_style.css">
+  <link rel="stylesheet" href="../Style/CUS30/toast.css">
 </head>
 
 <body>
@@ -140,23 +141,30 @@ $fecha = date('Y-m-d');
     <h3>Resumen</h3>
 
     <div class="grid grid-4 resumen">
-      <div>
-        <label>Total Pedido (S/)</label>
-        <input id="txtResVentas" readonly />
-      </div>
-      <div>
-        <label>Total Vuelto (S/)</label>
-        <input id="txtResVuelto" readonly />
-      </div>
-      <div>
-        <label>Monto Esperado Retorno (S/)</label>
-        <input id="txtResEsperado" readonly />
-      </div>
-      <div>
-        <label>Efectivo Contado (S/)</label>
-        <input id="txtResEfectivo" inputmode="decimal" disabled />
-      </div>
-    </div>
+  <div>
+    <label>Total Pedido (S/)</label>
+    <input id="txtResVentas" readonly />
+  </div>
+  <div>
+    <label>Total Vuelto (S/)</label>
+    <input id="txtResVuelto" readonly />
+  </div>
+  <div>
+    <label>Monto Esperado Retorno (S/)</label>
+    <input id="txtResEsperado" readonly />
+  </div>
+  <div>
+    <label for="txtResEfectivo">Efectivo Contado (S/)</label>
+    <input id="txtResEfectivo" inputmode="decimal" disabled />
+
+    <!-- NUEVO: checkbox para habilitar edición -->
+    <label class="chk-inline" style="display:block; margin-top:4px; font-size:0.85rem;">
+      <input type="checkbox" id="chkEditarEfectivo" />
+      Editar efectivo
+    </label>
+  </div>
+</div>
+
 
     <div class="grid grid-2 mt-16">
       <div>

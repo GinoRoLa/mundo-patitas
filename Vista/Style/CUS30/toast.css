@@ -1,0 +1,280 @@
+/* /vista/Styles/CUS30/toast.css */
+
+/* ============================================
+   CONTENEDOR DE TOASTS
+============================================ */
+.toast-container {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column-reverse; /* Los nuevos aparecen arriba */
+  gap: 12px;
+  max-width: 420px;
+  width: calc(100% - 40px);
+  pointer-events: none; /* Permite clicks debajo */
+}
+
+/* ============================================
+   TOAST BASE
+============================================ */
+.toast {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 16px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.07),
+    0 10px 20px rgba(0, 0, 0, 0.1);
+  border-left: 4px solid currentColor;
+  pointer-events: auto; /* El toast sí recibe clicks */
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  max-width: 100%;
+  word-wrap: break-word;
+}
+
+/* Animación de entrada */
+.toast.toast-show {
+  transform: translateX(0);
+  opacity: 1;
+}
+
+/* Animación de salida */
+.toast.toast-hide {
+  transform: translateX(400px);
+  opacity: 0;
+  transition: all 0.2s ease-in;
+}
+
+/* ============================================
+   TIPOS DE TOAST (COLORES)
+============================================ */
+.toast-success {
+  border-left-color: #16a34a;
+  background: #f0fdf4; /* Fondo verde claro */
+}
+
+.toast-success .toast-icon {
+  color: #16a34a;
+}
+
+.toast-error {
+  border-left-color: #dc2626;
+  background: #fef2f2; /* Fondo rojo claro */
+}
+
+.toast-error .toast-icon {
+  color: #dc2626;
+}
+
+.toast-warning {
+  border-left-color: #d97706;
+  background: #fffbeb; /* Fondo amarillo claro */
+}
+
+.toast-warning .toast-icon {
+  color: #d97706;
+}
+
+.toast-info {
+  border-left-color: #0284c7;
+  background: #f0f9ff; /* Fondo azul claro */
+}
+
+.toast-info .toast-icon {
+  color: #0284c7;
+}
+
+.toast-confirm {
+  border-left-color: #7c3aed;
+  background: #faf5ff; /* Fondo morado claro */
+}
+
+.toast-confirm .toast-icon {
+  color: #7c3aed;
+}
+
+/* ============================================
+   ESTRUCTURA INTERNA
+============================================ */
+.toast-icon {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+}
+
+.toast-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.toast-message {
+  color: #1f2937; /* Texto oscuro para mejor legibilidad */
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+  word-break: break-word;
+  font-weight: 500; /* Un poco más bold para mejor visibilidad */
+}
+
+/* ============================================
+   BOTÓN DE CERRAR
+============================================ */
+.toast-close {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: #6b7280;
+  cursor: pointer;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  margin-left: 8px;
+}
+
+.toast-close:hover {
+  background: rgba(0, 0, 0, 0.05);
+  color: #374151;
+}
+
+.toast-close:active {
+  transform: scale(0.95);
+}
+
+/* ============================================
+   TOAST CON ACCIONES (CONFIRM)
+============================================ */
+.toast-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.toast-btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.toast-btn-confirm {
+  background: #7c3aed;
+  color: white;
+}
+
+.toast-btn-confirm:hover {
+  background: #6d28d9;
+}
+
+.toast-btn-cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+
+.toast-btn-cancel:hover {
+  background: #d1d5db;
+}
+
+/* ============================================
+   RESPONSIVE
+============================================ */
+@media (max-width: 640px) {
+  .toast-container {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    width: auto;
+    max-width: none;
+  }
+
+  .toast {
+    padding: 12px;
+    font-size: 13px;
+  }
+
+  .toast-message {
+    font-size: 13px;
+  }
+}
+
+/* ============================================
+   HOVER EFFECTS
+============================================ */
+.toast:hover {
+  box-shadow: 
+    0 6px 8px rgba(0, 0, 0, 0.09),
+    0 12px 24px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+/* ============================================
+   DARK MODE (OPCIONAL)
+============================================ */
+@media (prefers-color-scheme: dark) {
+  .toast {
+    background: #1f2937;
+    box-shadow: 
+      0 4px 6px rgba(0, 0, 0, 0.3),
+      0 10px 20px rgba(0, 0, 0, 0.4);
+  }
+
+  .toast-message {
+    color: #f3f4f6;
+  }
+
+  .toast-close {
+    color: #9ca3af;
+  }
+
+  .toast-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #d1d5db;
+  }
+
+  .toast-btn-cancel {
+    background: #374151;
+    color: #d1d5db;
+  }
+
+  .toast-btn-cancel:hover {
+    background: #4b5563;
+  }
+}
+
+/* ============================================
+   ANIMACIÓN DE PROGRESO (OPCIONAL)
+============================================ */
+.toast-progress {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: currentColor;
+  opacity: 0.3;
+  transform-origin: left;
+  animation: toast-progress 5s linear forwards;
+}
+
+@keyframes toast-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}

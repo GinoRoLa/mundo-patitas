@@ -1435,6 +1435,40 @@ CONSTRAINT FK_T501DetalleOPCE_T02OrdenPedido FOREIGN KEY (IdOrdenPedido)
         REFERENCES t02ordenpedido (Id_OrdenPedido) 
 );
 
+CREATE TABLE `t171consolidacion_entrega` (
+  `ID_Consolidacion` int NOT NULL AUTO_INCREMENT,
+  `Id_Repartidor` int NOT NULL,
+  `Id_OrdenPedido` int NOT NULL,
+  `Fecha` date DEFAULT NULL,
+  `Hora` time DEFAULT NULL,
+  `Estado` varchar(50) DEFAULT NULL,
+  `Observaciones` varchar(255) DEFAULT NULL,
+  PRIMARY KEY (`ID_Consolidacion`),
+  KEY `Id_OrdenPedido` (`Id_OrdenPedido`),
+  KEY `Id_Repartidor` (`Id_Repartidor`),
+  CONSTRAINT `t171consolidacion_entrega_ibfk_1` FOREIGN KEY (`Id_OrdenPedido`) REFERENCES `t02ordenpedido` (`Id_OrdenPedido`),
+  CONSTRAINT `t171consolidacion_entrega_ibfk_2` FOREIGN KEY (`Id_Repartidor`) REFERENCES `t16catalogotrabajadores` (`id_Trabajador`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `t172gestionnoentregados` (
+  `Id_Gestion` int NOT NULL AUTO_INCREMENT,
+  `Id_Consolidacion` int NOT NULL,
+  `Id_OrdenPedido` int NOT NULL,
+  `Id_Cliente` int NOT NULL,
+  `Decision` varchar(50) NOT NULL,
+  `Observaciones` varchar(255) DEFAULT NULL,
+  `FechaGestion` datetime DEFAULT CURRENT_TIMESTAMP,
+  `FechaLimiteReprogramacion` date NOT NULL,
+  `Estado` varchar(20) DEFAULT 'Registrado',
+  PRIMARY KEY (`Id_Gestion`),
+  KEY `Id_Consolidacion` (`Id_Consolidacion`),
+  KEY `Id_OrdenPedido` (`Id_OrdenPedido`),
+  KEY `Id_Cliente` (`Id_Cliente`),
+  CONSTRAINT `t172gestionnoentregados_ibfk_1` FOREIGN KEY (`Id_Consolidacion`) REFERENCES `t171consolidacion_entrega` (`ID_Consolidacion`),
+  CONSTRAINT `t172gestionnoentregados_ibfk_2` FOREIGN KEY (`Id_OrdenPedido`) REFERENCES `t02ordenpedido` (`Id_OrdenPedido`),
+  CONSTRAINT `t172gestionnoentregados_ibfk_3` FOREIGN KEY (`Id_Cliente`) REFERENCES `t20cliente` (`Id_Cliente`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 -- ==========================================================
 -- 13) Índices adicionales
 -- ==========================================================

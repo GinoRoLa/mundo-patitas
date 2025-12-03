@@ -262,7 +262,7 @@ class CUS30RecaudacionDeliveryModel
 
   mysqli_begin_transaction($this->cn);
   try {
-    // 1) Insertar t420 (SIN MontoVueltoEsperado)
+    // 1) Insertar t420 (sin cambios)
     $estEsc = mysqli_real_escape_string($this->cn, $estadoRec);
 
     $sqlIns420 = "
@@ -295,22 +295,22 @@ class CUS30RecaudacionDeliveryModel
     }
     $idRecaudacion = (int)mysqli_insert_id($this->cn);
 
-    // 2) Insertar detalle t421
+    // 2) Insertar detalle t421 - ⚠️ CAMBIO: Ya NO insertamos MontoVueltoEntregado
     foreach ($rowsDetalle as $rowDet) {
       $idOp = (int)$rowDet['Id_OrdenPedido'];
       $mp   = (float)$rowDet['MontoPedido'];
       $mc   = (float)$rowDet['MontoCobrado'];
-      $mv   = (float)$rowDet['MontoVueltoEntregado'];
+      // ❌ ELIMINADO: $mv = (float)$rowDet['MontoVueltoEntregado'];
       $df   = (float)$rowDet['Diferencia'];
       $ep   = mysqli_real_escape_string($this->cn, $rowDet['EstadoPedido']);
 
+      // ⚠️ CAMBIO: Query actualizado sin MontoVueltoEntregado
       $sqlIns421 = "
         INSERT INTO t421RecaudacionDeliveryPedido (
           Id_Recaudacion,
           Id_OrdenPedido,
           MontoPedido,
           MontoCobrado,
-          MontoVueltoEntregado,
           Diferencia,
           EstadoPedido
         ) VALUES (
@@ -318,7 +318,6 @@ class CUS30RecaudacionDeliveryModel
           {$idOp},
           {$mp},
           {$mc},
-          {$mv},
           {$df},
           '{$ep}'
         )
@@ -328,7 +327,7 @@ class CUS30RecaudacionDeliveryModel
       }
     }
 
-    // 3) t422 si faltante
+    // 3) t422 si faltante (sin cambios)
     $notaDescuentoData = null;
     if ($estadoRec === 'Faltante') {
       $montoDescuento = abs($dif);
@@ -367,7 +366,7 @@ class CUS30RecaudacionDeliveryModel
       ];
     }
 
-    // 4) Actualizar t419 estado
+    // 4) Actualizar t28 estado (sin cambios)
     $estadoNota = 'Liquidada';
     if ($estadoRec === 'Con Faltante') {
       $estadoNota = 'Con Faltante';
@@ -384,7 +383,7 @@ class CUS30RecaudacionDeliveryModel
       throw new Exception('Error actualizando estado NotaCaja (t28Nota_caja): ' . mysqli_error($this->cn));
     }
 
-        // 5) Actualizar t40 estado
+    // 5) Actualizar t40 estado (sin cambios)
     $estadoRuta = ($estadoRec === 'Cuadrado') ? 'Recaudado' : 'Recaudado con obs';
     $estadoRutaEsc = mysqli_real_escape_string($this->cn, $estadoRuta);
     $sqlUpd40 = "
@@ -396,7 +395,7 @@ class CUS30RecaudacionDeliveryModel
       throw new Exception('Error actualizando estado OrdenAsignacion (t40): ' . mysqli_error($this->cn));
     }
 
-    // 6) Contar faltas del repartidor (recaudaciones con estado 'Faltante')
+    // 6) Contar faltas y suspender si > 3 (sin cambios)
     $sqlCntFaltas = "
       SELECT COUNT(*) AS Cnt
       FROM t420RecaudacionDelivery
@@ -410,7 +409,6 @@ class CUS30RecaudacionDeliveryModel
     $rowCnt = mysqli_fetch_assoc($rsCnt);
     $faltas = (int)($rowCnt['Cnt'] ?? 0);
 
-    // Regla de negocio: si tiene MÁS DE 3 faltas -> Suspendido
     $repartidorSuspendido = false;
     $maxFaltas = 3;
     if ($faltas > $maxFaltas) {
@@ -434,11 +432,9 @@ class CUS30RecaudacionDeliveryModel
       'RepartidorSuspendido' => $repartidorSuspendido,
     ];
 
-
   } catch (Throwable $e) {
     mysqli_rollback($this->cn);
     throw $e;
   }
-
 }
 }

@@ -90,159 +90,157 @@ try {
     // 3) DETALLE DE RECAUDACIÓN (SOLO CONSULTA)
     // =====================================================
     case 'recaudacion-detalle':
-      if ($_SERVER['REQUEST_METHOD'] !== 'GET') err('Method Not Allowed', 405);
+  if ($_SERVER['REQUEST_METHOD'] !== 'GET') err('Method Not Allowed', 405);
 
-      $idOrdenAsignacion = (int)($_GET['idOrdenAsignacion'] ?? 0);
-      if ($idOrdenAsignacion <= 0) err('Id_OrdenAsignacion inválido.', 422);
+  $idOrdenAsignacion = (int)($_GET['idOrdenAsignacion'] ?? 0);
+  if ($idOrdenAsignacion <= 0) err('Id_OrdenAsignacion inválido.', 422);
 
-      $cabecera = $model->obtenerCabeceraAsignacion($idOrdenAsignacion);
-      if (!$cabecera) {
-        err('No se encontró la orden de asignación o no tiene nota de caja.', 404);
-      }
+  $cabecera = $model->obtenerCabeceraAsignacion($idOrdenAsignacion);
+  if (!$cabecera) {
+    err('No se encontró la orden de asignación o no tiene nota de caja.', 404);
+  }
 
-      $pedidos = $model->listarPedidosDeliveryContraentrega($idOrdenAsignacion);
+  $pedidos = $model->listarPedidosDeliveryContraentrega($idOrdenAsignacion);
 
-      // Inicializar totales para front
-      $ventasEsperadas = 0.0;
-      foreach ($pedidos as &$p) {
-        $montoPedido = (float)$p['MontoPedido'];
-        
-        // Inicializar campos de edición según el estado REAL
-        if ($p['EstadoPedido'] === 'Entregado') {
-          $p['MontoCobrado']         = $montoPedido;
-          $p['MontoVueltoEntregado'] = 0.0;
-          $ventasEsperadas += $montoPedido;
-        } else {
-          // No entregado: cobrado = 0
-          $p['MontoCobrado']         = 0.0;
-          $p['MontoVueltoEntregado'] = 0.0;
-        }
-        
-        $p['Diferencia'] = 0.0;
-      }
-      unset($p);
+  // Inicializar totales para front
+  $ventasEsperadas = 0.0;
+  foreach ($pedidos as &$p) {
+    $montoPedido = (float)$p['MontoPedido'];
+    
+    // ⚠️ CAMBIO: Ya NO inicializamos MontoVueltoEntregado
+    if ($p['EstadoPedido'] === 'Entregado') {
+      $p['MontoCobrado'] = $montoPedido;
+      $ventasEsperadas += $montoPedido;
+    } else {
+      $p['MontoCobrado'] = 0.0;
+    }
+    
+    $p['Diferencia'] = 0.0;
+  }
+  unset($p);
 
-      ok([
-        'cabecera' => $cabecera,
-        'notaCaja' => [
-          'Id_NotaCajaDelivery' => $cabecera['Id_NotaCajaDelivery'],
-          'MontoFondo'          => $cabecera['MontoFondo'],
-          'Estado'              => $cabecera['EstadoNota'],
-        ],
-        'pedidos'  => $pedidos,
-        'totalesIniciales' => [
-          'MontoVentasEsperado' => $ventasEsperadas,
-        ],
-      ]);
-      break;
+  ok([
+    'cabecera' => $cabecera,
+    'notaCaja' => [
+      'Id_NotaCajaDelivery' => $cabecera['Id_NotaCajaDelivery'],
+      'MontoFondo'          => $cabecera['MontoFondo'],
+      'Estado'              => $cabecera['EstadoNota'],
+    ],
+    'pedidos'  => $pedidos,
+    'totalesIniciales' => [
+      'MontoVentasEsperado' => $ventasEsperadas,
+    ],
+  ]);
+  break;
 
-    // =====================================================
-    // 4) CERRAR RECAUDACIÓN (GRABA t420, t421, t422, ESTADOS)
-    // =====================================================
-    case 'cerrar-recaudacion':
-      if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
+// =====================================================
+// CASO: cerrar-recaudacion - ⚠️ CAMBIO: No procesamos MontoVueltoEntregado
+// =====================================================
 
-      $idOrdenAsignacion      = (int)($_POST['idOrdenAsignacion'] ?? 0);
-      $idTrabajadorRepartidor = (int)($_POST['idTrabajadorRepartidor'] ?? 0);
-      $idNotaCajaDelivery     = (int)($_POST['idNotaCajaDelivery'] ?? 0);
-      $montoEfectivoEntregado = dec($_POST['montoEfectivoEntregado'] ?? 0);
-      $detalleJson            = $_POST['detalleJson'] ?? '[]';
+case 'cerrar-recaudacion':
+  if ($_SERVER['REQUEST_METHOD'] !== 'POST') err('Method Not Allowed', 405);
 
-      if ($idOrdenAsignacion <= 0) err('Id_OrdenAsignacion inválido.', 422);
-      if ($idTrabajadorRepartidor <= 0) err('Id del repartidor inválido.', 422);
-      if ($idNotaCajaDelivery <= 0) err('Id de Nota de Caja inválido.', 422);
-      if ($montoEfectivoEntregado < 0) err('Monto efectivo inválido.', 422);
+  $idOrdenAsignacion      = (int)($_POST['idOrdenAsignacion'] ?? 0);
+  $idTrabajadorRepartidor = (int)($_POST['idTrabajadorRepartidor'] ?? 0);
+  $idNotaCajaDelivery     = (int)($_POST['idNotaCajaDelivery'] ?? 0);
+  $montoEfectivoEntregado = dec($_POST['montoEfectivoEntregado'] ?? 0);
+  $detalleJson            = $_POST['detalleJson'] ?? '[]';
 
-      $detalle = json_decode($detalleJson, true);
-      if (!is_array($detalle)) {
-        err('detalleJson inválido (no es JSON de arreglo).', 422, ['detalleJson' => $detalleJson]);
-      }
+  if ($idOrdenAsignacion <= 0) err('Id_OrdenAsignacion inválido.', 422);
+  if ($idTrabajadorRepartidor <= 0) err('Id del repartidor inválido.', 422);
+  if ($idNotaCajaDelivery <= 0) err('Id de Nota de Caja inválido.', 422);
+  if ($montoEfectivoEntregado < 0) err('Monto efectivo inválido.', 422);
 
-      if ($model->existeRecaudacionParaAsignacion($idOrdenAsignacion)) {
-        err('Ya existe una recaudación registrada para esta asignación.', 409);
-      }
+  $detalle = json_decode($detalleJson, true);
+  if (!is_array($detalle)) {
+    err('detalleJson inválido (no es JSON de arreglo).', 422, ['detalleJson' => $detalleJson]);
+  }
 
-      $montoFondoRetirado = $model->obtenerMontoFondoNotaCaja($idNotaCajaDelivery, $idOrdenAsignacion);
-      if ($montoFondoRetirado === null) {
-        err('No se encontró la nota de caja para esta asignación.', 404);
-      }
+  if ($model->existeRecaudacionParaAsignacion($idOrdenAsignacion)) {
+    err('Ya existe una recaudación registrada para esta asignación.', 409);
+  }
 
-      // Calcular totales con base en el detalle enviado
-      $montoVentasEsperado = 0.0;
-      $rowsDetalle = [];
+  $montoFondoRetirado = $model->obtenerMontoFondoNotaCaja($idNotaCajaDelivery, $idOrdenAsignacion);
+  if ($montoFondoRetirado === null) {
+    err('No se encontró la nota de caja para esta asignación.', 404);
+  }
 
-      foreach ($detalle as $idx => $item) {
-        $idOrdenPed   = (int)($item['idOrdenPedido'] ?? 0);
-        $montoPedido  = dec($item['montoPedido'] ?? 0);
-        $montoCobrado = dec($item['montoCobrado'] ?? 0);
-        $montoVuelto  = dec($item['montoVueltoEntregado'] ?? 0);
-        $estadoPed    = trim($item['estadoPedido'] ?? 'Entregado');
+  // ⚠️ CAMBIO: Calculamos totales SIN MontoVueltoEntregado
+  $montoVentasEsperado = 0.0;
+  $rowsDetalle = [];
 
-        if ($idOrdenPed <= 0) {
-          err("Id_OrdenPedido inválido en detalle índice {$idx}.", 422);
-        }
-        if ($montoPedido < 0 || $montoCobrado < 0 || $montoVuelto < 0) {
-          err("Montos negativos en detalle índice {$idx}.", 422);
-        }
+  foreach ($detalle as $idx => $item) {
+    $idOrdenPed   = (int)($item['idOrdenPedido'] ?? 0);
+    $montoPedido  = dec($item['montoPedido'] ?? 0);
+    $montoCobrado = dec($item['montoCobrado'] ?? 0);
+    // ❌ ELIMINADO: $montoVuelto = dec($item['montoVueltoEntregado'] ?? 0);
+    $estadoPed    = trim($item['estadoPedido'] ?? 'Entregado');
 
-        if ($estadoPed === 'Entregado') {
-          $montoVentasEsperado += $montoCobrado;
-        }
+    if ($idOrdenPed <= 0) {
+      err("Id_OrdenPedido inválido en detalle índice {$idx}.", 422);
+    }
+    // ⚠️ CAMBIO: Solo validamos montoPedido y montoCobrado
+    if ($montoPedido < 0 || $montoCobrado < 0) {
+      err("Montos negativos en detalle índice {$idx}.", 422);
+    }
 
-        $diferenciaPed = $montoCobrado - $montoPedido;
+    if ($estadoPed === 'Entregado') {
+      $montoVentasEsperado += $montoCobrado;
+    }
 
-        $rowsDetalle[] = [
-          'Id_OrdenPedido'       => $idOrdenPed,
-          'MontoPedido'          => $montoPedido,
-          'MontoCobrado'         => $montoCobrado,
-          'MontoVueltoEntregado' => $montoVuelto,
-          'Diferencia'           => $diferenciaPed,
-          'EstadoPedido'         => $estadoPed,
-        ];
-      }
+    $diferenciaPed = $montoCobrado - $montoPedido;
 
-      // Cálculo del monto esperado de retorno:
-      // Fondo + Ventas (el fondo ya incluye el vuelto de caja)
-      $montoEsperadoRetorno = $montoFondoRetirado + $montoVentasEsperado;
-      $diferenciaGlobal     = $montoEfectivoEntregado - $montoEsperadoRetorno;
+    // ⚠️ CAMBIO: Ya NO incluimos MontoVueltoEntregado en el array
+    $rowsDetalle[] = [
+      'Id_OrdenPedido' => $idOrdenPed,
+      'MontoPedido'    => $montoPedido,
+      'MontoCobrado'   => $montoCobrado,
+      'Diferencia'     => $diferenciaPed,
+      'EstadoPedido'   => $estadoPed,
+    ];
+  }
 
-      $epsilon = 0.01;
-      if (abs($diferenciaGlobal) <= $epsilon) {
-        $estadoRec = 'Cuadrado';
-        $diferenciaGlobal = 0.0;
-      } elseif ($diferenciaGlobal < 0) {
-        $estadoRec = 'Faltante';
-      } else {
-        $estadoRec = 'Sobrante';
-      }
+  // Cálculo sin cambios (el vuelto ya está en el fondo)
+  $montoEsperadoRetorno = $montoFondoRetirado + $montoVentasEsperado;
+  $diferenciaGlobal     = $montoEfectivoEntregado - $montoEsperadoRetorno;
 
-      // Delegar la transacción y SQL al modelo
-      $resultado = $model->cerrarRecaudacion(
-        [
-          'Id_OrdenAsignacion'      => $idOrdenAsignacion,
-          'Id_TrabajadorRepartidor'=> $idTrabajadorRepartidor,
-          'Id_NotaCajaDelivery'     => $idNotaCajaDelivery,
-          'MontoFondoRetirado'      => $montoFondoRetirado,
-          'MontoVentasEsperado'     => $montoVentasEsperado,
-          'MontoEsperadoRetorno'    => $montoEsperadoRetorno,
-          'MontoEfectivoEntregado'  => $montoEfectivoEntregado,
-          'DiferenciaGlobal'        => $diferenciaGlobal,
-          'EstadoRec'               => $estadoRec,
-        ],
-        $rowsDetalle
-      );
+  $epsilon = 0.01;
+  if (abs($diferenciaGlobal) <= $epsilon) {
+    $estadoRec = 'Cuadrado';
+    $diferenciaGlobal = 0.0;
+  } elseif ($diferenciaGlobal < 0) {
+    $estadoRec = 'Faltante';
+  } else {
+    $estadoRec = 'Sobrante';
+  }
 
-      ok([
-        'idRecaudacion'        => $resultado['Id_Recaudacion'],
-        'estadoFinal'          => $estadoRec,
-        'diferencia'           => $diferenciaGlobal,
-        'montoEsperadoRetorno' => $montoEsperadoRetorno,
-        'notaDescuento'        => $resultado['NotaDescuento'] ?? null,
-        'msg'                  => ($estadoRec === 'Cuadrado'
-                                    ? 'Recaudación cerrada correctamente.'
-                                    : 'Recaudación cerrada con observación.')
-      ]);
-      break;
+  // Delegar al modelo (sin cambios en parámetros de cabecera)
+  $resultado = $model->cerrarRecaudacion(
+    [
+      'Id_OrdenAsignacion'      => $idOrdenAsignacion,
+      'Id_TrabajadorRepartidor'=> $idTrabajadorRepartidor,
+      'Id_NotaCajaDelivery'     => $idNotaCajaDelivery,
+      'MontoFondoRetirado'      => $montoFondoRetirado,
+      'MontoVentasEsperado'     => $montoVentasEsperado,
+      'MontoEsperadoRetorno'    => $montoEsperadoRetorno,
+      'MontoEfectivoEntregado'  => $montoEfectivoEntregado,
+      'DiferenciaGlobal'        => $diferenciaGlobal,
+      'EstadoRec'               => $estadoRec,
+    ],
+    $rowsDetalle
+  );
+
+  ok([
+    'idRecaudacion'        => $resultado['Id_Recaudacion'],
+    'estadoFinal'          => $estadoRec,
+    'diferencia'           => $diferenciaGlobal,
+    'montoEsperadoRetorno' => $montoEsperadoRetorno,
+    'notaDescuento'        => $resultado['NotaDescuento'] ?? null,
+    'msg'                  => ($estadoRec === 'Cuadrado'
+                                ? 'Recaudación cerrada correctamente.'
+                                : 'Recaudación cerrada con observación.')
+  ]);
+  break;
 
     default:
       err('Acción no encontrada', 404, ['accion' => $accion]);

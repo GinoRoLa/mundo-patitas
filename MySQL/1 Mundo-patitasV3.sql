@@ -1335,11 +1335,8 @@ CREATE TABLE t420RecaudacionDelivery (
   Id_NotaCajaDelivery INT NOT NULL,         -- t419NotaCajaDelivery
 
   FechaRecaudacion    DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-  -- Referencias para control
   MontoFondoRetirado      DECIMAL(12,2) NOT NULL CHECK (MontoFondoRetirado >= 0),
   MontoVentasEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVentasEsperado >= 0),
-  -- MontoVueltoEsperado     DECIMAL(12,2) NOT NULL CHECK (MontoVueltoEsperado >= 0),
   MontoEsperadoRetorno DECIMAL(12,2) NOT NULL,
 
   -- Lo que el repartidor trae físicamente
@@ -1377,7 +1374,6 @@ CREATE TABLE t421RecaudacionDeliveryPedido (
 
   MontoPedido          DECIMAL(12,2) NOT NULL CHECK (MontoPedido >= 0),
   MontoCobrado         DECIMAL(12,2) NOT NULL CHECK (MontoCobrado >= 0),
-  MontoVueltoEntregado DECIMAL(12,2) NOT NULL CHECK (MontoVueltoEntregado >= 0),
   Diferencia              DECIMAL(12,2) NOT NULL, 
 
   EstadoPedido VARCHAR(20) NOT NULL,

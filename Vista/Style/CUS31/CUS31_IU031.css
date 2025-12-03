@@ -1,0 +1,352 @@
+:root {
+    --primary-color: #f4c2c2; /* Rosa pastel - suavidad y dulzura */
+    --primary-color-hover: rgba(244, 194, 194, 0.4);
+    --secondary-color: #ffb7b2; /* Melocotón suave - atractivo y moderno */
+    --accent-color: #ffd1a9; /* Durazno claro - cálido y acogedor */
+    --background-color: #fffaf0; /* Crema claro - neutro y suave */
+    --text-color: #6b4226; /* Marrón cálido - tono natural para el texto */
+    --highlight-color: #ffefba; /* Amarillo claro - toque alegre para resaltar */
+    --dark-color: #533747; /* Marrón oscuro - elegante y serio para contrastes */
+    --shadow-color: 40deg 28% 61%;
+    --container-color: hsl(0, 0%, 100%);
+    --shadow-elevation-medium:
+        0.3px 0.5px 0.6px hsl(var(--shadow-color) / 0.44),
+        0.7px 1.5px 1.7px -1px hsl(var(--shadow-color) / 0.4),
+        2px 3.9px 4.6px -2px hsl(var(--shadow-color) / 0.36),
+        5px 10px 11.7px -3px hsl(var(--shadow-color) / 0.32);
+    --shadow-elevation-high:
+        0.3px 0.5px 0.6px hsl(var(--shadow-color) / 0.41),
+        1.2px 2.4px 2.8px -0.4px hsl(var(--shadow-color) / 0.39),
+        2.3px 4.6px 5.4px -0.9px hsl(var(--shadow-color) / 0.37),
+        4px 7.9px 9.2px -1.3px hsl(var(--shadow-color) / 0.35),
+        6.6px 13.3px 15.5px -1.7px hsl(var(--shadow-color) / 0.34),
+        10.7px 21.5px 25px -2.2px hsl(var(--shadow-color) / 0.32),
+        16.7px 33.4px 38.9px -2.6px hsl(var(--shadow-color) / 0.3),
+        25px 50px 58.3px -3px hsl(var(--shadow-color) / 0.28);
+}
+
+/* ********************************** */
+/*        SERVICIO DE ENTREGA         */
+
+.filtroOSE,.comboZonas, .botonesFiltro {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.filtroOSE {
+    padding: 1.5rem 1rem;
+}
+
+.comboZonas label{
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.zonas {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: #ffffff;
+  border: 2px solid #000000;
+  border-radius: 12px;
+  padding: 8px 30px 8px 12px;
+  font-size: 12px;
+  font-family: "Inter", "Roboto", sans-serif;
+  color: #000000;
+  outline: none;
+  transition: border-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml;utf8,<svg fill='black' height='18' viewBox='0 0 24 24' width='18' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  min-width: 180px;
+}
+
+/* Hover */
+.zonas:hover {
+  border-color: var(--dark-color);
+}
+
+/* Focus */
+.zonas:focus {
+  border-color: var(--dark-color);
+}
+
+/* Opcional: estilo interno de las opciones */
+.zonas option {
+  color: #000000;
+  background-color: #ffffff;
+}
+
+/* Oculta flecha nativa en IE */
+select::-ms-expand {
+  display: none;
+}
+
+/* TABLA PEDIDOS*/
+
+.filter-order-table {
+    max-width: 1050px !important;
+    font-size: 12px;
+}
+
+/* TABLA REPARTIDORES*/
+
+.filter-repartidor-table {
+    max-width: 1050px !important;
+    font-size: 12px;
+}
+
+.custom-toast {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: #323232;
+  color: #fff;
+  padding: 10px 18px;
+  border-radius: 6px;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.3s ease;
+  z-index: 9999;
+  font-size: 14px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.custom-toast.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+.custom-toast.info { background: #2196f3; }
+.custom-toast.success { background: #4caf50; }
+.custom-toast.warning { background: #ff9800; }
+.custom-toast.error { background: #f44336; }
+
+/* REPARTIDORES */
+
+.repartidorVehiculo {
+    border-bottom: 1px solid #cccccc;
+}
+.verDisponibilidad,.buscarRepartidor, .botonBuscar {
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+}
+
+.verDisponibilidad {
+    padding: 1.5rem 1rem;
+}
+
+.buscarRepartidor label{
+    font-size: 14px;
+    font-weight: bold;
+}
+
+/* BOTONES DISPONIBILIDAD */
+
+.btn-disponibilidad {
+    margin-left: 30px;
+    padding: 0.3rem 1rem;
+}
+
+/* Contenedor del calendario */
+#calendar {
+  width: 1050px;
+  margin: 20px auto;
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Fondo base de las celdas */
+.fc-daygrid-day {
+  background-color: #f7f7f7;
+  transition: background-color 0.3s ease;
+}
+
+/* Días del mes actual */
+.fc-daygrid-day:not(.fc-day-other) {
+  background-color: #fafafa;
+}
+
+/* Días de otro mes */
+.fc-day-other {
+  background-color: #f0f0f0 !important;
+}
+
+/* Días deshabilitados (fuera de los próximos 5 días) */
+.fc-day-disabled {
+  opacity: 0.4;
+  pointer-events: none;
+  filter: grayscale(60%);
+  background-color: #d3d3d3 !important; /* 🔹 tono más opaco */
+}
+
+
+/* Encabezados */
+.fc-col-header-cell {
+  background-color: var(--primary-color);
+  color: #333;
+  font-weight: 600;
+  text-transform: uppercase;
+  border: none;
+}
+
+/* Bordes */
+.fc-theme-standard td,
+.fc-theme-standard th {
+  border-color: #ddd;
+}
+
+/* Estilos para eventos */
+.fc-event[style*="#b9f6ca"] {
+  background-color: #a5f0b4 !important;
+}
+
+.fc-event[style*="#ff8a80"] {
+  background-color: #ffb3b3 !important;
+}
+
+/* Desactiva hover */
+.fc-daygrid-day:hover {
+  background-color: inherit;
+  cursor: default;
+}
+
+.fc-day-today {
+  background-color: inherit !important;
+  border: none !important;
+}
+
+.fc-day-disabled {
+  background-color: #f0f0f0 !important;
+  opacity: 0.6;
+  pointer-events: none;
+}
+.fc-daygrid-day:not(.fc-day-disabled):hover {
+  cursor: pointer;
+  background-color: #e8f5e9 !important;
+}
+
+.fila-seleccionada {
+  background-color: #cce5ff !important;
+  transition: background-color 0.3s ease;
+}
+.fc-day-disabled {
+  background-color: #f5f5f5;
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.btn-disponibilidad-disabled {
+    margin-left: 30px;
+    padding: 0.3rem 1rem;
+    border: 2px solid #ccc;
+    border-radius: 1rem;
+    background-color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    cursor: not-allowed;
+    font-weight: 700;
+    color: #888;
+    opacity: 0.6;
+}
+
+.detalleSeleccion {
+    border-bottom: 1px solid #cccccc;
+    display: grid;
+    gap: 1rem;
+    padding: 1rem 0;
+}
+
+.repartidor-information {
+    padding: 1rem 1.5rem;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem 0;
+
+}
+
+.repartidor-details {
+    margin: 0 13rem;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: space-between;
+    align-content: center;
+    width: 55%;
+}
+
+.repartidor-details h2{
+    padding: 4px;
+}
+
+.repartidor-details input {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    width: 50%;
+    padding: 0.5rem;
+}
+
+.button-change {
+    margin: 0 auto;
+}
+
+.details-repartidor-table {
+    max-width: 1050px !important;
+    font-size: 12px;
+}
+
+.rutaTrazada {
+    max-width: 950px;
+    width: 100%;
+    display: flex;
+    margin: 0 auto;
+    flex-flow: column wrap;
+    gap: 1rem;
+    padding: 1rem;
+}
+
+.botonesCUS {
+    border-bottom: 1px solid #cccccc;
+    display: flex;
+    flex-flow: row wrap;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem 1rem;
+}
+
+.rutaTxt {
+    text-decoration: none;
+    border: 2px solid var(--dark-color);
+    border-radius: 8px;
+    padding: 0.5rem;
+}
+
+.resumen-ose {
+  /*margin-bottom: 10px;*/
+  margin: auto;
+  font-size: 15px;
+  color: #333;
+  background: #f7f7f7;
+  border-radius: 8px;
+  padding: 8px 12px;
+  display: inline-block;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.icon-add-ose, .icon-remove-ose {
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.icon-add-ose:hover { color: green; transform: scale(1.2); }
+.icon-remove-ose:hover { color: red; transform: scale(1.2); }

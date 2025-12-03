@@ -70,7 +70,7 @@ showToast("Productos cargados correctamente.", "success");
 
 
 } else {
-tbody.append(`       <tr>         <td colspan="7" class="no-data">No se encontraron productos.</td>       </tr>
+tbody.append(`       <tr>         <td colspan="7" class="no-data">No se encontraron productos con cantidad a solicitar mayor a 0.</td>       </tr>
     `);
 showToast("No se encontraron productos en el inventario.", "warning");
 }

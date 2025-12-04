@@ -2,41 +2,36 @@
 // Controlador para la funcionalidad de consolidación de entrega
 header('Content-Type: application/json; charset=utf-8');
 
-// Configuración de la base de datos
-$host = 'localhost';
-$port = '3306';
-$dbname = 'mundo_patitas3';
-$username = 'root';
-$password = '12345';
+// ✅ USAR LA CONEXIÓN DEL GRUPO
+require_once(__DIR__ . '/Conexion.php');
 
-try {
-    // Conexión a la base de datos
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
+// ✅ CREAR INSTANCIA DE CONEXIÓN
+$conexion = new Conexion();
+$cn = $conexion->conecta();
+
+// Verificar conexión
+if (!$cn) {
     echo json_encode([
         'success' => false,
-        'message' => 'Error de conexión a la base de datos: ' . $e->getMessage()
+        'message' => 'Error de conexión a la base de datos'
     ]);
     exit;
 }
 
 // Función para obtener datos del repartidor
-function obtenerRepartidor($pdo) {
+function obtenerRepartidor($cn) {
     try {
         $sql = "SELECT 
                     id_Trabajador, 
                     des_nombreTrabajador, 
                     des_apepatTrabajador
                 FROM t16CatalogoTrabajadores
-                WHERE id_Trabajador = 50010";
+                WHERE id_Trabajador = 50008";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        $repartidor = $stmt->fetch();
+        $resultado = mysqli_query($cn, $sql);
         
-        if ($repartidor) {
+        if ($resultado && mysqli_num_rows($resultado) > 0) {
+            $repartidor = mysqli_fetch_assoc($resultado);
             return [
                 'success' => true,
                 'data' => $repartidor
@@ -47,7 +42,7 @@ function obtenerRepartidor($pdo) {
                 'message' => 'No se encontró el repartidor'
             ];
         }
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener datos del repartidor: ' . $e->getMessage()
@@ -56,7 +51,7 @@ function obtenerRepartidor($pdo) {
 }
 
 // Función para obtener direcciones con órdenes de pedido
-function obtenerDirecciones($pdo, $idTrabajador) {
+function obtenerDirecciones($cn, $idTrabajador) {
     try {
         if (!$idTrabajador) {
             return [
@@ -64,6 +59,8 @@ function obtenerDirecciones($pdo, $idTrabajador) {
                 'message' => 'Falta el parámetro requerido: idTrabajador'
             ];
         }
+
+        $idTrabajador = mysqli_real_escape_string($cn, $idTrabajador);
 
         $sql = "SELECT 
                     t02.Id_OrdenPedido AS OrdenPedido,
@@ -89,19 +86,23 @@ function obtenerDirecciones($pdo, $idTrabajador) {
                     ON t02.Id_OrdenPedido = t71.Id_OrdenPedido
                 JOIN t77DistritoEnvio AS t77
                     ON t71.Id_Distrito = t77.Id_Distrito
-                WHERE t16.id_Trabajador = :idTrabajador 
+                WHERE t16.id_Trabajador = '$idTrabajador' 
                 AND t02.Estado = 'En Reparto'";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idTrabajador', $idTrabajador);
-        $stmt->execute();
-        $resultados = $stmt->fetchAll();
+        $resultado = mysqli_query($cn, $sql);
+        $datos = [];
+        
+        if ($resultado) {
+            while ($fila = mysqli_fetch_assoc($resultado)) {
+                $datos[] = $fila;
+            }
+        }
 
         return [
             'success' => true,
-            'data' => $resultados
+            'data' => $datos
         ];
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener direcciones: ' . $e->getMessage()
@@ -110,7 +111,7 @@ function obtenerDirecciones($pdo, $idTrabajador) {
 }
 
 // Función para obtener productos por orden de pedido
-function obtenerProductosPorOrden($pdo, $idOrdenPedido) {
+function obtenerProductosPorOrden($cn, $idOrdenPedido) {
     try {
         if (!$idOrdenPedido) {
             return [
@@ -119,24 +120,30 @@ function obtenerProductosPorOrden($pdo, $idOrdenPedido) {
             ];
         }
 
+        $idOrdenPedido = mysqli_real_escape_string($cn, $idOrdenPedido);
+
         $sql = "SELECT 
                     t18.NombreProducto,
                     t60.Cantidad
                 FROM t60DetOrdenPedido AS t60
                 JOIN t18CatalogoProducto AS t18
                     ON t60.t18CatalogoProducto_Id_Producto = t18.Id_Producto
-                WHERE t60.t02OrdenPedido_Id_OrdenPedido = :idOrdenPedido";
+                WHERE t60.t02OrdenPedido_Id_OrdenPedido = '$idOrdenPedido'";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idOrdenPedido', $idOrdenPedido);
-        $stmt->execute();
-        $resultados = $stmt->fetchAll();
+        $resultado = mysqli_query($cn, $sql);
+        $datos = [];
+        
+        if ($resultado) {
+            while ($fila = mysqli_fetch_assoc($resultado)) {
+                $datos[] = $fila;
+            }
+        }
 
         return [
             'success' => true,
-            'data' => $resultados
+            'data' => $datos
         ];
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener productos: ' . $e->getMessage()
@@ -145,7 +152,7 @@ function obtenerProductosPorOrden($pdo, $idOrdenPedido) {
 }
 
 // Función para obtener datos del destinatario por orden de pedido
-function obtenerDestinatarioPorOrden($pdo, $idOrdenPedido) {
+function obtenerDestinatarioPorOrden($cn, $idOrdenPedido) {
     try {
         if (!$idOrdenPedido) {
             return [
@@ -154,23 +161,23 @@ function obtenerDestinatarioPorOrden($pdo, $idOrdenPedido) {
             ];
         }
 
+        $idOrdenPedido = mysqli_real_escape_string($cn, $idOrdenPedido);
+
         $sql = "SELECT 
                     ReceptorDniSnap,
                     NombreContactoSnap,
                     TelefonoSnap,
                     DireccionSnap
                 FROM t71OrdenDirecEnvio
-                WHERE Id_OrdenPedido = :idOrdenPedido";
+                WHERE Id_OrdenPedido = '$idOrdenPedido'";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idOrdenPedido', $idOrdenPedido);
-        $stmt->execute();
-        $resultado = $stmt->fetch();
-
-        if ($resultado) {
+        $resultado = mysqli_query($cn, $sql);
+        
+        if ($resultado && mysqli_num_rows($resultado) > 0) {
+            $destinatario = mysqli_fetch_assoc($resultado);
             return [
                 'success' => true,
-                'data' => $resultado
+                'data' => $destinatario
             ];
         } else {
             return [
@@ -178,7 +185,7 @@ function obtenerDestinatarioPorOrden($pdo, $idOrdenPedido) {
                 'message' => 'No se encontró información del destinatario'
             ];
         }
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener datos del destinatario: ' . $e->getMessage()
@@ -187,7 +194,7 @@ function obtenerDestinatarioPorOrden($pdo, $idOrdenPedido) {
 }
 
 // Función para obtener Id_OrdenAsignacion por repartidor
-function obtenerOrdenAsignacionPorRepartidor($pdo, $idTrabajador) {
+function obtenerOrdenAsignacionPorRepartidor($cn, $idTrabajador) {
     try {
         if (!$idTrabajador) {
             return [
@@ -196,26 +203,26 @@ function obtenerOrdenAsignacionPorRepartidor($pdo, $idTrabajador) {
             ];
         }
 
+        $idTrabajador = mysqli_real_escape_string($cn, $idTrabajador);
+
         $sql = "SELECT t40.Id_OrdenAsignacion
                 FROM t16CatalogoTrabajadores AS t16
                 JOIN t79AsignacionRepartidorVehiculo AS t79
                     ON t16.id_Trabajador = t79.Id_Trabajador
                 JOIN t40OrdenAsignacionReparto AS t40
                     ON t79.Id_AsignacionRepartidorVehiculo = t40.Id_AsignacionRepartidorVehiculo
-                WHERE t16.id_Trabajador = :idTrabajador";
+                WHERE t16.id_Trabajador = '$idTrabajador'";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idTrabajador', $idTrabajador);
-        $stmt->execute();
-        $row = $stmt->fetch();
-
-        if ($row && isset($row['Id_OrdenAsignacion'])) {
+        $resultado = mysqli_query($cn, $sql);
+        
+        if ($resultado && mysqli_num_rows($resultado) > 0) {
+            $row = mysqli_fetch_assoc($resultado);
             return [ 'success' => true, 'data' => $row['Id_OrdenAsignacion'] ];
         }
 
         return [ 'success' => true, 'data' => null ];
 
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener orden asignada: ' . $e->getMessage()
@@ -224,7 +231,7 @@ function obtenerOrdenAsignacionPorRepartidor($pdo, $idTrabajador) {
 }
 
 // Función para finalizar orden de asignación
-function finalizarOrdenAsignacion($pdo, $idOrdenAsignacion) {
+function finalizarOrdenAsignacion($cn, $idOrdenAsignacion) {
     try {
         if (!$idOrdenAsignacion) {
             return [
@@ -233,20 +240,27 @@ function finalizarOrdenAsignacion($pdo, $idOrdenAsignacion) {
             ];
         }
 
+        $idOrdenAsignacion = mysqli_real_escape_string($cn, $idOrdenAsignacion);
+
         $sql = "UPDATE t40OrdenAsignacionReparto 
                 SET Estado = 'Finalizado' 
-                WHERE Id_OrdenAsignacion = :idOrdenAsignacion";
+                WHERE Id_OrdenAsignacion = '$idOrdenAsignacion'";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idOrdenAsignacion', $idOrdenAsignacion);
-        $stmt->execute();
+        $resultado = mysqli_query($cn, $sql);
+        
+        if ($resultado) {
+            return [
+                'success' => true,
+                'message' => 'Orden de asignación finalizada exitosamente'
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Error al finalizar orden: ' . mysqli_error($cn)
+            ];
+        }
 
-        return [
-            'success' => true,
-            'message' => 'Orden de asignación finalizada exitosamente'
-        ];
-
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al finalizar orden de asignación: ' . $e->getMessage()
@@ -255,7 +269,7 @@ function finalizarOrdenAsignacion($pdo, $idOrdenAsignacion) {
 }
 
 // Función para procesar el registro de consolidación
-function procesarRegistroConsolidacion($pdo, $datos) {
+function procesarRegistroConsolidacion($cn, $datos) {
     try {
         // Validar datos requeridos
         if (!$datos['idOrdenPedido']) {
@@ -292,36 +306,48 @@ function procesarRegistroConsolidacion($pdo, $datos) {
         }
 
         // Preparar parámetros para el procedimiento almacenado
-        $idOrdenPedido = $datos['idOrdenPedido'];
-        $estado = $datos['estadoEntrega'];
-        $observaciones = $datos['observaciones'];
+        $idOrdenPedido = mysqli_real_escape_string($cn, $datos['idOrdenPedido']);
+        $estado = mysqli_real_escape_string($cn, $datos['estadoEntrega']);
+        $observaciones = mysqli_real_escape_string($cn, $datos['observaciones']);
+
+        // Construir la llamada con LOAD_FILE correctamente
+        $fotoDireccionParam = $fotoDireccion ? "LOAD_FILE('$fotoDireccion')" : "NULL";
+        $fotoDniParam = $fotoDni ? "LOAD_FILE('$fotoDni')" : "NULL";
+        $fotoEntregaParam = $fotoEntrega ? "LOAD_FILE('$fotoEntrega')" : "NULL";
 
         // Construir la llamada al procedimiento almacenado
         $sql = "CALL sp_cus25_RegistrarConsolidacion(
-            :idOrdenPedido,
-            :fotoDireccion,
-            :fotoDni,
-            :fotoEntrega,
-            :estado,
-            :observaciones
+            '$idOrdenPedido',
+            $fotoDireccionParam,
+            $fotoDniParam,
+            $fotoEntregaParam,
+            '$estado',
+            '$observaciones'
         )";
 
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idOrdenPedido', $idOrdenPedido);
-        $stmt->bindParam(':fotoDireccion', $fotoDireccion);
-        $stmt->bindParam(':fotoDni', $fotoDni);
-        $stmt->bindParam(':fotoEntrega', $fotoEntrega);
-        $stmt->bindParam(':estado', $estado);
-        $stmt->bindParam(':observaciones', $observaciones);
+        $resultado = mysqli_query($cn, $sql);
+        
+        // Liberar resultados adicionales del stored procedure
+        while (mysqli_more_results($cn)) {
+            mysqli_next_result($cn);
+            if ($res = mysqli_store_result($cn)) {
+                mysqli_free_result($res);
+            }
+        }
+        
+        if ($resultado) {
+            return [
+                'success' => true,
+                'message' => 'Consolidación registrada exitosamente'
+            ];
+        } else {
+            return [
+                'success' => false,
+                'message' => 'Error al ejecutar procedimiento: ' . mysqli_error($cn)
+            ];
+        }
 
-        $stmt->execute();
-
-        return [
-            'success' => true,
-            'message' => 'Consolidación registrada exitosamente'
-        ];
-
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al procesar el registro: ' . $e->getMessage()
@@ -336,7 +362,8 @@ function procesarArchivo($archivo, $uploadDir, $tipo) {
     $rutaCompleta = $uploadDir . $nombreArchivo;
     
     if (move_uploaded_file($archivo['tmp_name'], $rutaCompleta)) {
-        return "LOAD_FILE('" . str_replace('\\', '/', $rutaCompleta) . "')";
+        // Retornar solo la ruta, sin LOAD_FILE
+        return str_replace('\\', '/', $rutaCompleta);
     }
     
     return null;
@@ -347,32 +374,32 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 switch ($action) {
     case 'obtener_repartidor':
-        echo json_encode(obtenerRepartidor($pdo));
+        echo json_encode(obtenerRepartidor($cn));
         break;
         
     case 'obtener_direcciones':
         $idTrabajador = isset($_GET['idTrabajador']) ? $_GET['idTrabajador'] : null;
-        echo json_encode(obtenerDirecciones($pdo, $idTrabajador));
+        echo json_encode(obtenerDirecciones($cn, $idTrabajador));
         break;
         
     case 'obtener_productos':
         $idOrdenPedido = isset($_GET['idOrdenPedido']) ? $_GET['idOrdenPedido'] : null;
-        echo json_encode(obtenerProductosPorOrden($pdo, $idOrdenPedido));
+        echo json_encode(obtenerProductosPorOrden($cn, $idOrdenPedido));
         break;
         
     case 'obtener_destinatario':
         $idOrdenPedido = isset($_GET['idOrdenPedido']) ? $_GET['idOrdenPedido'] : null;
-        echo json_encode(obtenerDestinatarioPorOrden($pdo, $idOrdenPedido));
+        echo json_encode(obtenerDestinatarioPorOrden($cn, $idOrdenPedido));
         break;
         
     case 'obtener_orden_asignacion':
         $idTrabajador = isset($_GET['idTrabajador']) ? $_GET['idTrabajador'] : null;
-        echo json_encode(obtenerOrdenAsignacionPorRepartidor($pdo, $idTrabajador));
+        echo json_encode(obtenerOrdenAsignacionPorRepartidor($cn, $idTrabajador));
         break;
         
     case 'finalizar_orden_asignacion':
         $idOrdenAsignacion = isset($_GET['idOrdenAsignacion']) ? $_GET['idOrdenAsignacion'] : null;
-        echo json_encode(finalizarOrdenAsignacion($pdo, $idOrdenAsignacion));
+        echo json_encode(finalizarOrdenAsignacion($cn, $idOrdenAsignacion));
         break;
         
     case 'procesar_entrega':
@@ -382,7 +409,7 @@ switch ($action) {
             'estadoEntrega' => isset($_POST['estadoEntrega']) ? $_POST['estadoEntrega'] : null,
             'observaciones' => isset($_POST['observaciones']) ? $_POST['observaciones'] : null
         ];
-        echo json_encode(procesarRegistroConsolidacion($pdo, $datos));
+        echo json_encode(procesarRegistroConsolidacion($cn, $datos));
         break;
         
     default:
@@ -392,4 +419,7 @@ switch ($action) {
         ]);
         break;
 }
+
+// Cerrar conexión
+mysqli_close($cn);
 ?>

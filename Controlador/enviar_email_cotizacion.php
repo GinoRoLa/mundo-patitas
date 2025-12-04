@@ -11,7 +11,6 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
         // ============================================
         // CONFIGURACIÓN DEL SERVIDOR SMTP
         // ============================================
-        // Para Gmail:
         $mail->isSMTP();
         $mail->Host       = 'smtp.gmail.com';
         $mail->SMTPAuth   = true;
@@ -20,21 +19,13 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = 587;
         
-        // Para otros servidores SMTP, ajusta estos valores:
-        // $mail->Host = 'smtp.tuservidor.com';
-        // $mail->Port = 465; // o 587
-        // $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS; // o STARTTLS
-        
         $mail->CharSet = 'UTF-8';
         
         // ============================================
         // REMITENTE Y DESTINATARIO
         // ============================================
-        $mail->setFrom('mundopatitas.venta@gmail.com', 'Mundo Patitas - Compras'); // ⚠️ CAMBIAR
+        $mail->setFrom('mundopatitas.venta@gmail.com', 'Mundo Patitas - Compras');
         $mail->addAddress($correoProveedor, $razonSocial);
-        
-        // Copia opcional para el responsable de compras
-        // $mail->addCC('responsable_compras@empresa.com');
         
         // ============================================
         // ADJUNTAR PDF
@@ -51,7 +42,6 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
         if (file_exists($rutaExcel)) {
             $mail->addAttachment($rutaExcel, 'Ejemplo de Respuesta a la Solicitud.xlsx');
         } else {
-            // Log del error pero continúa el envío (opcional)
             error_log('⚠️ Advertencia: No se encontró el archivo Excel en: ' . $rutaExcel);
         }
         
@@ -103,15 +93,6 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
                     padding: 10px;
                     margin: 15px 0;
                 }
-                .btn {
-                    display: inline-block;
-                    background-color: #28a745;
-                    color: white;
-                    padding: 10px 20px;
-                    text-decoration: none;
-                    border-radius: 4px;
-                    margin-top: 15px;
-                }
             </style>
         </head>
         <body>
@@ -126,7 +107,7 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
                     <p>Por medio de la presente, solicitamos su cotización para los productos detallados en el documento adjunto.</p>
                     
                     <div class="highlight">
-                        <strong>📎 Documentos adjuntos:</strong><br>
+                        <strong>🔎 Documentos adjuntos:</strong><br>
                         1️⃣ ' . htmlspecialchars($nombreArchivo) . ' (Solicitud de cotización)<br>
                         2️⃣ Ejemplo de Respuesta a la Solicitud.xlsx (Plantilla para responder)
                     </div>
@@ -159,7 +140,6 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
         </html>
         ';
         
-        // Versión en texto plano (para clientes que no soportan HTML)
         $mail->AltBody = "Estimado(a) proveedor $razonSocial,\n\n"
                        . "Adjuntamos solicitud de cotización (ID: $idSolicitud).\n\n"
                        . "Por favor revise el documento adjunto y envíe su cotización antes de la fecha de cierre.\n\n"
@@ -187,7 +167,7 @@ function enviarEmailCotizacion($rutaArchivoPDF, $nombreArchivo, $correoProveedor
 // ============================================
 // FUNCIÓN PRINCIPAL: Procesar todas las solicitudes pendientes
 // ============================================
-function procesarYEnviarSolicitudesPendientes($pdo) {
+function procesarYEnviarSolicitudesPendientes($cn) {
     require_once(__DIR__ . '/generar_pdf_cotizacion.php');
     
     try {
@@ -197,8 +177,14 @@ function procesarYEnviarSolicitudesPendientes($pdo) {
                 WHERE Estado = 'Pendiente'
                 ORDER BY IDsolicitud";
         
-        $stmt = $pdo->query($sql);
-        $solicitudes = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        $resultado = mysqli_query($cn, $sql);
+        $solicitudes = [];
+        
+        if ($resultado) {
+            while ($fila = mysqli_fetch_assoc($resultado)) {
+                $solicitudes[] = $fila['IDsolicitud'];
+            }
+        }
         
         if (empty($solicitudes)) {
             return [
@@ -213,7 +199,7 @@ function procesarYEnviarSolicitudesPendientes($pdo) {
         
         foreach ($solicitudes as $idSolicitud) {
             // 1. Generar PDF
-            $resultadoPDF = generarPDFCotizacion($pdo, $idSolicitud);
+            $resultadoPDF = generarPDFCotizacion($cn, $idSolicitud);
             
             if (!$resultadoPDF['success']) {
                 $fallidos++;
@@ -235,7 +221,6 @@ function procesarYEnviarSolicitudesPendientes($pdo) {
             );
             
             if ($resultadoEmail['success']) {
-                
                 $exitosos++;
                 $resultados[] = [
                     'idSolicitud' => $idSolicitud,
@@ -243,9 +228,6 @@ function procesarYEnviarSolicitudesPendientes($pdo) {
                     'proveedor' => $resultadoPDF['razonSocial'],
                     'correo' => $resultadoPDF['correoProveedor']
                 ];
-                
-                // 4. Eliminar PDF temporal (opcional)
-                // unlink($resultadoPDF['rutaArchivo']);
             } else {
                 $fallidos++;
                 $resultados[] = [
@@ -264,7 +246,7 @@ function procesarYEnviarSolicitudesPendientes($pdo) {
             'detalles' => $resultados
         ];
         
-    } catch (PDOException $e) {
+    } catch (Exception $e) {
         return [
             'success' => false,
             'message' => 'Error en el proceso: ' . $e->getMessage()

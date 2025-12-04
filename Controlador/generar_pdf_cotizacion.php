@@ -4,8 +4,11 @@ require_once(__DIR__ . '/../vendor/autoload.php');
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
-function generarPDFCotizacion($pdo, $idSolicitud) {
+function generarPDFCotizacion($cn, $idSolicitud) {
     try {
+        // Escapar ID
+        $idSolicitud = mysqli_real_escape_string($cn, $idSolicitud);
+        
         // Obtener datos de la solicitud y proveedor
         $sqlCabecera = "SELECT 
                 s.IDsolicitud,
@@ -21,12 +24,10 @@ function generarPDFCotizacion($pdo, $idSolicitud) {
                 t17CatalogoProveedor p 
                 ON s.RUC = p.Id_NumRuc
             WHERE 
-                s.IDsolicitud = :idSolicitud";
+                s.IDsolicitud = '$idSolicitud'";
         
-        $stmt = $pdo->prepare($sqlCabecera);
-        $stmt->bindParam(':idSolicitud', $idSolicitud, PDO::PARAM_INT);
-        $stmt->execute();
-        $cabecera = $stmt->fetch();
+        $resultado = mysqli_query($cn, $sqlCabecera);
+        $cabecera = mysqli_fetch_assoc($resultado);
         
         if (!$cabecera) {
             return ['success' => false, 'message' => 'Solicitud no encontrada'];
@@ -43,12 +44,16 @@ function generarPDFCotizacion($pdo, $idSolicitud) {
                 t18CatalogoProducto p 
                 ON d.Id_Producto = p.Id_Producto
             WHERE 
-                d.IDsolicitud = :idSolicitud";
+                d.IDsolicitud = '$idSolicitud'";
         
-        $stmt = $pdo->prepare($sqlDetalle);
-        $stmt->bindParam(':idSolicitud', $idSolicitud, PDO::PARAM_INT);
-        $stmt->execute();
-        $productos = $stmt->fetchAll();
+        $resultadoDetalle = mysqli_query($cn, $sqlDetalle);
+        $productos = [];
+        
+        if ($resultadoDetalle) {
+            while ($fila = mysqli_fetch_assoc($resultadoDetalle)) {
+                $productos[] = $fila;
+            }
+        }
         
         if (empty($productos)) {
             return ['success' => false, 'message' => 'No hay productos en esta solicitud'];
@@ -62,7 +67,7 @@ function generarPDFCotizacion($pdo, $idSolicitud) {
             $logoBase64 = 'data:image/png;base64,' . base64_encode($logoData);
         }
         
-        // Crear HTML para el PDF (mismo código HTML que ya tienes)
+        // Crear HTML para el PDF
         $html = '
         <!DOCTYPE html>
         <html>
@@ -173,12 +178,6 @@ function generarPDFCotizacion($pdo, $idSolicitud) {
                 .footer strong {
                     color: #856404;
                     font-size: 11px;
-                }
-                .highlight { 
-                    color: #dc3545; 
-                    font-weight: bold;
-                    background-color: #ffe6e6;
-                    padding: 2px 6px;
                 }
                 .badge {
                     display: inline-block;
@@ -323,9 +322,9 @@ function generarPDFCotizacion($pdo, $idSolicitud) {
         $dompdf->setPaper('A4', 'portrait');
         $dompdf->render();
         
-        // 🎯 CAMBIO: Guardar en carpeta PERMANENTE
-        $nombreArchivo = "Cotizacion_" . $cabecera['RUC'] . "_" . $idSolicitud . ".pdf";
-        $carpetaPDFs = __DIR__ . "/../src/Documentos/pdf_cotizaciones/"; // Carpeta permanente
+        // Guardar PDF en carpeta permanente
+        $nombreArchivo = "Cotizacion_" . $cabecera['RUC'] . "_" . $cabecera['IDsolicitud'] . ".pdf";
+        $carpetaPDFs = __DIR__ . "/../src/Documentos/pdf_cotizaciones/";
         
         // Crear directorio si no existe
         if (!file_exists($carpetaPDFs)) {
@@ -335,37 +334,32 @@ function generarPDFCotizacion($pdo, $idSolicitud) {
         $rutaCompleta = $carpetaPDFs . $nombreArchivo;
         file_put_contents($rutaCompleta, $dompdf->output());
         
-        // 🎯 Ruta RELATIVA para guardar en BD
+        // Ruta RELATIVA para guardar en BD
         $rutaRelativa = "src/Documentos/pdf_cotizaciones/" . $nombreArchivo;
         
-        // 🎯 NUEVO: Actualizar la BD con la ruta del PDF
+        // Actualizar BD con mysqli
+        $rutaRelativaEscaped = mysqli_real_escape_string($cn, $rutaRelativa);
+        $idSolicitudEscaped = mysqli_real_escape_string($cn, $cabecera['IDsolicitud']);
+        
         $sqlUpdate = "UPDATE t100Solicitud_Cotizacion_Proveedor 
-                      SET RutaPDF = :rutaPDF 
-                      WHERE IDsolicitud = :idSolicitud";
-        $stmtUpdate = $pdo->prepare($sqlUpdate);
-        $stmtUpdate->bindParam(':rutaPDF', $rutaRelativa);
-        $stmtUpdate->bindParam(':idSolicitud', $idSolicitud, PDO::PARAM_INT);
-        $stmtUpdate->execute();
+                      SET RutaPDF = '$rutaRelativaEscaped' 
+                      WHERE IDsolicitud = '$idSolicitudEscaped'";
+        mysqli_query($cn, $sqlUpdate);
         
         return [
             'success' => true,
             'message' => 'PDF generado y guardado correctamente',
-            'rutaArchivo' => $rutaCompleta, // Ruta completa para enviar email
-            'rutaRelativa' => $rutaRelativa, // Ruta relativa guardada en BD
+            'rutaArchivo' => $rutaCompleta,
+            'rutaRelativa' => $rutaRelativa,
             'nombreArchivo' => $nombreArchivo,
             'correoProveedor' => $cabecera['Correo'],
             'razonSocial' => $cabecera['Proveedor']
         ];
         
-    } catch (PDOException $e) {
-        return [
-            'success' => false,
-            'message' => 'Error al generar PDF: ' . $e->getMessage()
-        ];
     } catch (Exception $e) {
         return [
             'success' => false,
-            'message' => 'Error general: ' . $e->getMessage()
+            'message' => 'Error al generar PDF: ' . $e->getMessage()
         ];
     }
 }

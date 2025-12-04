@@ -2,30 +2,28 @@
 // Controlador para la funcionalidad de Emitir Nota de Caja para Delivery
 header('Content-Type: application/json; charset=utf-8');
 
-// Configuración de la base de datos
-$host = 'localhost';
-$port = '3306';
-$dbname = 'mundo_patitas3';
-$username = 'root';
-$password = '12345';
+// ✅ USAR LA CONEXIÓN DEL GRUPO
+require_once(__DIR__ . '/Conexion.php');
 
-try {
-    // Conexión a la base de datos
-    $pdo = new PDO("mysql:host=$host;port=$port;dbname=$dbname;charset=utf8mb4", $username, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    $pdo->setAttribute(PDO::ATTR_DEFAULT_FETCH_MODE, PDO::FETCH_ASSOC);
-} catch(PDOException $e) {
+// ✅ CREAR INSTANCIA DE CONEXIÓN
+$conexion = new Conexion();
+$cn = $conexion->conecta();
+
+// Verificar conexión
+if (!$cn) {
     echo json_encode([
         'success' => false,
-        'message' => 'Error de conexión a la base de datos: ' . $e->getMessage()
+        'message' => 'Error de conexión a la base de datos'
     ]);
     exit;
 }
 
+// ⚠️ NOTA: Como mysqli no usa PDO, adaptamos las funciones
+// Mantendremos las funciones pero usando mysqli en lugar de PDO
+
 // Función para obtener datos del responsable de caja
-function obtenerResponsable($pdo) {
+function obtenerResponsable($cn) {
     try {
-        // Ajusta el ID según tu base de datos (aquí uso 50009 como ejemplo para responsable de caja)
         $sql = "SELECT 
                     id_Trabajador, 
                     des_nombreTrabajador, 
@@ -33,11 +31,10 @@ function obtenerResponsable($pdo) {
                 FROM t16CatalogoTrabajadores
                 WHERE id_Trabajador = 50001";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        $responsable = $stmt->fetch();
+        $resultado = mysqli_query($cn, $sql);
         
-        if ($responsable) {
+        if ($resultado && mysqli_num_rows($resultado) > 0) {
+            $responsable = mysqli_fetch_assoc($resultado);
             return [
                 'success' => true,
                 'data' => $responsable
@@ -48,7 +45,7 @@ function obtenerResponsable($pdo) {
                 'message' => 'No se encontró el responsable de caja'
             ];
         }
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener datos del responsable: ' . $e->getMessage()
@@ -57,7 +54,7 @@ function obtenerResponsable($pdo) {
 }
 
 // Función para buscar datos del repartidor
-function buscarRepartidor($pdo, $idRepartidor) {
+function buscarRepartidor($cn, $idRepartidor) {
     try {
         if (!$idRepartidor) {
             return [
@@ -66,7 +63,8 @@ function buscarRepartidor($pdo, $idRepartidor) {
             ];
         }
 
-        // Consulta SQL exacta proporcionada por el usuario con filtro de Estado = 'Despachada'
+        $idRepartidor = mysqli_real_escape_string($cn, $idRepartidor);
+
         $sql = "SELECT 
                     t16.DNITrabajador,
                     t16.des_nombreTrabajador,
@@ -81,7 +79,7 @@ function buscarRepartidor($pdo, $idRepartidor) {
                 LEFT JOIN t401detalleasignacionreparto t401
                     ON t40.Id_OrdenAsignacion = t401.Id_OrdenAsignacion
                 WHERE 
-                    t16.id_Trabajador = :idRepartidor
+                    t16.id_Trabajador = '$idRepartidor'
                     AND t40.Estado = 'Despachada'
                 GROUP BY 
                     t16.DNITrabajador,
@@ -89,20 +87,18 @@ function buscarRepartidor($pdo, $idRepartidor) {
                     t16.des_apepatTrabajador,
                     t40.Id_OrdenAsignacion";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idRepartidor', $idRepartidor);
-        $stmt->execute();
-        $resultado = $stmt->fetch();
+        $resultado = mysqli_query($cn, $sql);
         
-        if ($resultado) {
+        if ($resultado && mysqli_num_rows($resultado) > 0) {
+            $datos = mysqli_fetch_assoc($resultado);
             return [
                 'success' => true,
                 'data' => [
-                    'DNI' => $resultado['DNITrabajador'],
-                    'Nombre' => $resultado['des_nombreTrabajador'],
-                    'ApellidoPaterno' => $resultado['des_apepatTrabajador'],
-                    'IdOrdenAsignacion' => $resultado['Id_OrdenAsignacion'],
-                    'TotalOrdenes' => $resultado['Cantidad_Detalles']
+                    'DNI' => $datos['DNITrabajador'],
+                    'Nombre' => $datos['des_nombreTrabajador'],
+                    'ApellidoPaterno' => $datos['des_apepatTrabajador'],
+                    'IdOrdenAsignacion' => $datos['Id_OrdenAsignacion'],
+                    'TotalOrdenes' => $datos['Cantidad_Detalles']
                 ]
             ];
         } else {
@@ -111,7 +107,7 @@ function buscarRepartidor($pdo, $idRepartidor) {
                 'message' => 'Repartidor no encontrado o sin Asignación de Reparto en estado Despachada'
             ];
         }
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al buscar repartidor: ' . $e->getMessage()
@@ -119,8 +115,8 @@ function buscarRepartidor($pdo, $idRepartidor) {
     }
 }
 
-// Función para obtener detalle de contra entregas usando ID Orden de Asignación
-function obtenerDetalleContraEntregas($pdo, $idOrdenAsignacion) {
+// Función para obtener detalle de contra entregas
+function obtenerDetalleContraEntregas($cn, $idOrdenAsignacion) {
     try {
         if (!$idOrdenAsignacion) {
             return [
@@ -129,7 +125,8 @@ function obtenerDetalleContraEntregas($pdo, $idOrdenAsignacion) {
             ];
         }
 
-        // Consulta SQL exacta proporcionada por el usuario
+        $idOrdenAsignacion = mysqli_real_escape_string($cn, $idOrdenAsignacion);
+
         $sql = "SELECT 
                     t501.IdDet,
                     t501.IdOrdenPedido,
@@ -144,18 +141,22 @@ function obtenerDetalleContraEntregas($pdo, $idOrdenAsignacion) {
                 JOIN t501detalleopce t501
                     ON t59.Id_OrdenPedido = t501.IdOrdenPedido
                 WHERE 
-                    t40.Id_OrdenAsignacion = :idOrdenAsignacion";
+                    t40.Id_OrdenAsignacion = '$idOrdenAsignacion'";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->bindParam(':idOrdenAsignacion', $idOrdenAsignacion);
-        $stmt->execute();
-        $resultados = $stmt->fetchAll();
+        $resultado = mysqli_query($cn, $sql);
+        $datos = [];
+        
+        if ($resultado) {
+            while ($fila = mysqli_fetch_assoc($resultado)) {
+                $datos[] = $fila;
+            }
+        }
         
         return [
             'success' => true,
-            'data' => $resultados
+            'data' => $datos
         ];
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener detalle de contra entregas: ' . $e->getMessage()
@@ -164,7 +165,7 @@ function obtenerDetalleContraEntregas($pdo, $idOrdenAsignacion) {
 }
 
 // Función para generar nota de caja
-function generarNotaCaja($pdo, $datos) {
+function generarNotaCaja($cn, $datos) {
     try {
         // Validar datos requeridos
         $idResponsable = isset($datos['idResponsable']) ? $datos['idResponsable'] : null;
@@ -180,30 +181,108 @@ function generarNotaCaja($pdo, $datos) {
             ];
         }
 
-        // INSERT exacto proporcionado por el usuario
+        // Escapar datos
+        $idResponsable = mysqli_real_escape_string($cn, $idResponsable);
+        $idRepartidor = mysqli_real_escape_string($cn, $idRepartidor);
+        $idOrdenAsignacion = mysqli_real_escape_string($cn, $idOrdenAsignacion);
+        $totalContraEntregas = mysqli_real_escape_string($cn, $totalContraEntregas);
+        $totalVuelto = mysqli_real_escape_string($cn, $totalVuelto);
+
         $sql = "INSERT INTO t28Nota_caja 
                 (IDResponsableCaja, IDRepartidor, IDAsignacionReparto, TotalContraEntrega, VueltoTotal)
                 VALUES
-                (:idResponsable, :idRepartidor, :idOrdenAsignacion, :totalContraEntregas, :totalVuelto)";
+                ('$idResponsable', '$idRepartidor', '$idOrdenAsignacion', '$totalContraEntregas', '$totalVuelto')";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute([
-            ':idResponsable' => $idResponsable,
-            ':idRepartidor' => $idRepartidor,
-            ':idOrdenAsignacion' => $idOrdenAsignacion,
-            ':totalContraEntregas' => $totalContraEntregas,
-            ':totalVuelto' => $totalVuelto
-        ]);
+        $resultado = mysqli_query($cn, $sql);
         
-        $idNotaCaja = $pdo->lastInsertId();
+        if (!$resultado) {
+            throw new Exception('Error al insertar nota de caja: ' . mysqli_error($cn));
+        }
+        
+        $idNotaCaja = mysqli_insert_id($cn);
+
+        // ✅ PASO 1: GENERAR PDF AUTOMÁTICAMENTE
+        require_once(__DIR__ . '/generar_pdf_nota_caja.php');
+        $resultadoPDF = generarPDFNotaCaja($cn, $idNotaCaja);
+        
+        if (!$resultadoPDF['success']) {
+            error_log('Error al generar PDF: ' . $resultadoPDF['message']);
+        }
+
+        // ✅ PASO 2: OBTENER EMAILS
+        $sqlEmails = "SELECT 
+                rep.email AS EmailRepartidor,
+                rep.des_nombreTrabajador AS NombreRepartidor,
+                rep.des_apepatTrabajador AS ApellidoRepartidor,
+                resp.email AS EmailResponsable,
+                resp.des_nombreTrabajador AS NombreResponsable,
+                resp.des_apepatTrabajador AS ApellidoResponsable
+            FROM 
+                t28Nota_caja nc
+            JOIN 
+                t16catalogotrabajadores rep 
+                ON nc.IDRepartidor = rep.id_Trabajador
+            JOIN 
+                t16catalogotrabajadores resp 
+                ON nc.IDResponsableCaja = resp.id_Trabajador
+            WHERE 
+                nc.IDNotaCaja = '$idNotaCaja'";
+        
+        $resultadoEmails = mysqli_query($cn, $sqlEmails);
+        $datosEmails = mysqli_fetch_assoc($resultadoEmails);
+
+        // ✅ PASO 3: ENVIAR EMAIL
+        $emailEnviado = false;
+        $mensajeEmail = '';
+        $correosEnviados = [];
+        
+        if ($datosEmails && !empty($datosEmails['EmailRepartidor'])) {
+            require_once(__DIR__ . '/enviar_email_nota_caja.php');
+            
+            $rutaPDF = __DIR__ . '/../' . $resultadoPDF['rutaRelativa'];
+            $nombreArchivo = $resultadoPDF['nombreArchivo'];
+            $correoRepartidor = $datosEmails['EmailRepartidor'];
+            $nombreRepartidor = $datosEmails['NombreRepartidor'] . ' ' . $datosEmails['ApellidoRepartidor'];
+            $correoResponsable = !empty($datosEmails['EmailResponsable']) ? $datosEmails['EmailResponsable'] : null;
+            $nombreResponsable = $datosEmails['NombreResponsable'] . ' ' . $datosEmails['ApellidoResponsable'];
+            
+            $resultadoEmail = enviarEmailNotaCaja(
+                $rutaPDF,
+                $nombreArchivo,
+                $correoRepartidor,
+                $nombreRepartidor,
+                $idNotaCaja,
+                $correoResponsable,
+                $nombreResponsable
+            );
+            
+            // ⏱️ DELAY: Esperar 2 segundos para asegurar envío completo del email
+            sleep(2);
+            
+            if ($resultadoEmail['success']) {
+                $emailEnviado = true;
+                $correosEnviados[] = $correoRepartidor;
+                if ($correoResponsable) {
+                    $correosEnviados[] = $correoResponsable;
+                }
+            } else {
+                $mensajeEmail = $resultadoEmail['message'];
+            }
+        } else {
+            $mensajeEmail = 'El repartidor no tiene correo electrónico registrado';
+        }
 
         return [
             'success' => true,
             'message' => 'Nota de caja generada exitosamente',
-            'idNotaCaja' => $idNotaCaja
+            'idNotaCaja' => $idNotaCaja,
+            'pdfGenerado' => $resultadoPDF['success'],
+            'emailEnviado' => $emailEnviado,
+            'correosEnviados' => $correosEnviados,
+            'mensajeEmail' => $mensajeEmail
         ];
 
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al generar nota de caja: ' . $e->getMessage()
@@ -212,9 +291,8 @@ function generarNotaCaja($pdo, $datos) {
 }
 
 // Función para obtener notas de caja generadas
-function obtenerNotasCajaGeneradas($pdo) {
+function obtenerNotasCajaGeneradas($cn) {
     try {
-        // SELECT exacto proporcionado por el usuario
         $sql = "SELECT 
                     IDNotaCaja,
                     IDResponsableCaja,
@@ -222,19 +300,25 @@ function obtenerNotasCajaGeneradas($pdo) {
                     IDAsignacionReparto,
                     TotalContraEntrega,
                     VueltoTotal,
-                    FechaEmision
+                    FechaEmision,
+                    RutaPDF
                 FROM t28Nota_caja
                 ORDER BY FechaEmision DESC";
         
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute();
-        $resultados = $stmt->fetchAll();
+        $resultado = mysqli_query($cn, $sql);
+        $datos = [];
+        
+        if ($resultado) {
+            while ($fila = mysqli_fetch_assoc($resultado)) {
+                $datos[] = $fila;
+            }
+        }
         
         return [
             'success' => true,
-            'data' => $resultados
+            'data' => $datos
         ];
-    } catch(PDOException $e) {
+    } catch(Exception $e) {
         return [
             'success' => false,
             'message' => 'Error al obtener notas de caja: ' . $e->getMessage()
@@ -247,28 +331,27 @@ $action = isset($_GET['action']) ? $_GET['action'] : '';
 
 switch ($action) {
     case 'obtener_responsable':
-        echo json_encode(obtenerResponsable($pdo));
+        echo json_encode(obtenerResponsable($cn));
         break;
         
     case 'buscar_repartidor':
         $idRepartidor = isset($_GET['idRepartidor']) ? $_GET['idRepartidor'] : null;
-        echo json_encode(buscarRepartidor($pdo, $idRepartidor));
+        echo json_encode(buscarRepartidor($cn, $idRepartidor));
         break;
         
     case 'obtener_detalle_contra_entregas':
         $idOrdenAsignacion = isset($_GET['idOrdenAsignacion']) ? $_GET['idOrdenAsignacion'] : null;
-        echo json_encode(obtenerDetalleContraEntregas($pdo, $idOrdenAsignacion));
+        echo json_encode(obtenerDetalleContraEntregas($cn, $idOrdenAsignacion));
         break;
         
     case 'generar_nota_caja':
-        // Leer datos JSON del cuerpo de la petición
         $json = file_get_contents('php://input');
         $datos = json_decode($json, true);
-        echo json_encode(generarNotaCaja($pdo, $datos));
+        echo json_encode(generarNotaCaja($cn, $datos));
         break;
         
     case 'obtener_notas_caja_generadas':
-        echo json_encode(obtenerNotasCajaGeneradas($pdo));
+        echo json_encode(obtenerNotasCajaGeneradas($cn));
         break;
         
     default:
@@ -278,4 +361,7 @@ switch ($action) {
         ]);
         break;
 }
+
+// Cerrar conexión
+mysqli_close($cn);
 ?>

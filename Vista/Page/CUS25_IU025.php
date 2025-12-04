@@ -5,6 +5,27 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Consolidación de Entrega</title>
     <style>
+        :root {
+            /* Primarios */
+            --primary: #93c5fd;
+            --primary-600: #3b82f6;
+            --primary-50: #eff6ff;
+            --primary-100: #dbeafe;
+            --primary-200: #bfdbfe;
+            
+            /* Secundarios */
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            
+            /* Azul oscuro para texto en headers */
+            --blue-900: #1e3a8a;
+            --blue-800: #1e40af;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -27,8 +48,8 @@
         }
 
         .repartidor-top {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
+            background-color: var(--primary-50);
+            border: 2px solid var(--primary-200);
             border-radius: 6px;
             padding: 15px;
             margin-bottom: 20px;
@@ -45,14 +66,18 @@
         .header {
             text-align: center;
             margin-bottom: 30px;
-            border-bottom: 2px solid #e0e0e0;
+            border-bottom: 3px solid var(--primary-600);
             padding-bottom: 20px;
+            background: linear-gradient(to bottom, var(--primary-50), white);
+            border-radius: 8px 8px 0 0;
+            padding: 20px;
         }
 
         .header h1 {
-            color: #333;
+            color: var(--gray-900);
             font-size: 2.5em;
             margin-bottom: 10px;
+            font-weight: 700;
         }
 
         .datetime {
@@ -63,17 +88,20 @@
         .section {
             margin-bottom: 30px;
             padding: 20px;
-            border: 1px solid #ddd;
+            border: 1px solid var(--gray-200);
             border-radius: 6px;
-            background-color: #fafafa;
+            background-color: var(--gray-50);
         }
 
         .section h2 {
-            color: #444;
+            color: var(--gray-900);
             margin-bottom: 15px;
             font-size: 1.3em;
-            border-bottom: 1px solid #ccc;
-            padding-bottom: 5px;
+            border-bottom: 3px solid var(--primary-600);
+            padding-bottom: 8px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .form-group {
@@ -84,7 +112,10 @@
             display: block;
             margin-bottom: 5px;
             font-weight: bold;
-            color: #555;
+            color: var(--gray-700);
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
 
         .form-group input,
@@ -117,9 +148,8 @@
             margin-top: 10px;
         }
 
-        /* Estilos específicos para la tabla de Pedidos Asignados */
         .pedidos-asignados-container {
-            max-height: 240px; /* Altura máxima para mostrar aproximadamente 6 filas */
+            max-height: 240px;
             overflow-y: auto;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -149,17 +179,28 @@
         }
 
         th {
-            background-color: #f8f9fa;
+            background-color: var(--primary-200);
             font-weight: bold;
-            color: #555;
+            color: var(--blue-900);
+            text-transform: uppercase;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--primary-600);
         }
 
         tr:hover {
-            background-color: #f5f5f5;
+            background-color: var(--primary-50);
+            transition: background-color 0.2s ease;
         }
 
         .selected-row {
-            background-color: #e3f2fd !important;
+            background-color: var(--primary-100) !important;
+            border-left: 4px solid var(--primary-600);
+            font-weight: bold;
+        }
+
+        .selected-row:hover {
+            background-color: var(--primary-200) !important;
         }
 
         .image-upload {
@@ -227,12 +268,16 @@
         }
 
         .btn-primary {
-            background-color: #007bff;
+            background-color: var(--primary-600);
             color: white;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
         }
 
         .btn-primary:hover {
-            background-color: #0056b3;
+            background-color: #2563eb;
+            box-shadow: 0 4px 6px rgba(59, 130, 246, 0.3);
         }
 
         .btn-secondary {
@@ -262,6 +307,7 @@
 
         .btn:disabled:hover {
             background-color: #6c757d;
+            box-shadow: none;
         }
 
         .footer {

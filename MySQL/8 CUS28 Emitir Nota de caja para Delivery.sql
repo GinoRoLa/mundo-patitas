@@ -13,6 +13,7 @@ CREATE TABLE t28Nota_caja (
     TotalContraEntrega INT NOT NULL DEFAULT 0,
     VueltoTotal DECIMAL(10,2) NOT NULL DEFAULT 0,
     FechaEmision DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    RutaPDF VARCHAR(255) NULL,
     Estado VARCHAR(20) NOT NULL DEFAULT 'Entregado',
 
     PRIMARY KEY (IDNotaCaja),
@@ -29,6 +30,7 @@ CREATE TABLE t28Nota_caja (
         FOREIGN KEY (IDAsignacionReparto) 
         REFERENCES t40ordenasignacionreparto(Id_OrdenAsignacion)
 );
+
 
 
 

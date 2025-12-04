@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Generar Nota de Caja para Repartidor</title>
+    <title>Emitir Nota de caja para Delivery</title>
     <style>
         :root {
             /* Primarios */
@@ -291,6 +291,49 @@
             margin-left: 10px;
         }
 
+        .sections-row {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .section-left {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .section-right {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .btn-ver-pdf {
+            background-color: var(--primary-600);
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .btn-ver-pdf:hover {
+            background-color: #2563eb;
+            transform: scale(1.1);
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-ver-pdf:disabled {
+            background-color: var(--gray-200);
+            color: var(--gray-600);
+            cursor: not-allowed;
+            opacity: 0.5;
+        }
+
         @media (max-width: 768px) {
             .form-row {
                 flex-direction: column;
@@ -325,44 +368,45 @@
 
         <!-- Header -->
         <div class="header">
-            <h1>CUS28 – GENERAR NOTA DE CAJA PARA REPARTIDOR</h1>
+            <h1>CUS28 - EMITIR NOTA DE CAJA PARA DELIVERY</h1>
             <div class="datetime">
                 <span id="currentDate"></span> - <span id="currentTime"></span>
             </div>
         </div>
 
-        <!-- Sección Repartidor -->
-        <div class="section">
-            <h2>Repartidor</h2>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="idRepartidor">ID del Repartidor:</label>
-                    <input type="text" id="idRepartidor">
+        <!-- Secciones Repartidor y Asignación en la misma fila -->
+        <div class="sections-row">
+            <!-- Sección Repartidor (Izquierda) -->
+            <div class="section section-left">
+                <h2>Repartidor</h2>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="idRepartidor">ID del Repartidor:</label>
+                        <input type="text" id="idRepartidor">
+                    </div>
+                    <div class="form-group col-auto">
+                        <button type="button" class="btn btn-primary btn-small" onclick="buscarRepartidor()">Buscar</button>
+                    </div>
                 </div>
-                <div class="form-group col-auto">
-                    <button type="button" class="btn btn-primary btn-small" onclick="buscarRepartidor()">Buscar</button>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="dniRepartidor">DNI:</label>
+                        <input type="text" id="dniRepartidor" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="nombreRepartidor">Nombre:</label>
+                        <input type="text" id="nombreRepartidor" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label for="apellidoRepartidor">Ap. Paterno:</label>
+                        <input type="text" id="apellidoRepartidor" readonly>
+                    </div>
                 </div>
             </div>
-            <div class="form-row">
-                <div class="form-group">
-                    <label for="dniRepartidor">DNI:</label>
-                    <input type="text" id="dniRepartidor" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="nombreRepartidor">Nombre:</label>
-                    <input type="text" id="nombreRepartidor" readonly>
-                </div>
-                <div class="form-group">
-                    <label for="apellidoRepartidor">Ap. Paterno:</label>
-                    <input type="text" id="apellidoRepartidor" readonly>
-                </div>
-            </div>
-        </div>
 
-        <!-- Sección Asignación de Reparto -->
-        <div class="section">
-            <h2>Asignación de Reparto</h2>
-            <div class="form-row">
+            <!-- Sección Asignación de Reparto (Derecha) -->
+            <div class="section section-right">
+                <h2>Asignación de Reparto</h2>
                 <div class="form-group">
                     <label for="idOrdenAsignacion">ID Orden de Asignación de Reparto:</label>
                     <input type="text" id="idOrdenAsignacion" readonly>
@@ -432,11 +476,12 @@
                             <th>Total Notas de Caja</th>
                             <th>Vuelto Total</th>
                             <th>Fecha Emisión</th>
+                            <th>PDF</th>
                         </tr>
                     </thead>
                     <tbody id="notasCajaGeneradasTable">
                         <tr>
-                            <td colspan="7" style="text-align: center; color: #666;">
+                            <td colspan="8" style="text-align: center; color: #666;">
                                 No hay notas de caja generadas
                             </td>
                         </tr>
@@ -467,6 +512,7 @@
         // Variables globales
         let datosRepartidor = null;
         let detalleContraEntregas = [];
+        let notasCajaExistentes = []; // ✅ NUEVO: Almacenar todas las notas existentes
 
         // Cargar datos al iniciar
         document.addEventListener('DOMContentLoaded', async function() {
@@ -521,6 +567,9 @@
                     const idOrdenAsignacion = data.data.IdOrdenAsignacion;
                     if (idOrdenAsignacion) {
                         await cargarDetalleContraEntregas(idOrdenAsignacion);
+                        
+                        // ✅ VALIDAR si ya existe una nota de caja para esta asignación
+                        validarAsignacionDuplicada(idOrdenAsignacion);
                     }
                     
                 } else {
@@ -543,11 +592,28 @@
                     detalleContraEntregas = data.data || [];
                     renderDetalleContraEntregas(detalleContraEntregas);
                     calcularTotales();
+                    
+                    // ✅ NUEVA VALIDACIÓN: Verificar si no hay contra entregas
+                    if (detalleContraEntregas.length === 0) {
+                        alert(
+                            '⚠️ ADVERTENCIA: SIN CONTRA ENTREGAS\n\n' +
+                            `La Orden de Asignación de Reparto "${idOrdenAsignacion}" no tiene contra entregas registradas.\n\n` +
+                            'No se puede generar una nota de caja sin contra entregas.'
+                        );
+                    }
+                    
                     actualizarEstadoBotonGenerar();
                 } else {
                     detalleContraEntregas = [];
                     renderDetalleContraEntregas([]);
                     calcularTotales();
+                    
+                    // ✅ Mostrar mensaje también en caso de error
+                    alert(
+                        '⚠️ ADVERTENCIA: SIN CONTRA ENTREGAS\n\n' +
+                        `La Orden de Asignación de Reparto "${idOrdenAsignacion}" no tiene contra entregas registradas.\n\n` +
+                        'No se puede generar una nota de caja sin contra entregas.'
+                    );
                 }
             } catch (error) {
                 console.error('Error al cargar detalle:', error);
@@ -599,19 +665,96 @@
             document.getElementById('totalVueltoConciliar').value = totalVuelto.toFixed(2);
         }
 
+        // ✅ NUEVA FUNCIÓN: Validar si la asignación ya tiene una nota de caja
+        function validarAsignacionDuplicada(idOrdenAsignacion) {
+            const btnGenerar = document.getElementById('btnGenerarNotaCaja');
+            
+            // Buscar si ya existe una nota de caja con esta asignación
+            const notaExistente = notasCajaExistentes.find(
+                nota => nota.IDAsignacionReparto == idOrdenAsignacion
+            );
+            
+            if (notaExistente) {
+                // ❌ Ya existe una nota de caja para esta asignación
+                btnGenerar.disabled = true;
+                btnGenerar.style.backgroundColor = '#dc3545'; // Rojo
+                btnGenerar.textContent = '⚠️ Asignación ya tiene Nota de Caja';
+                
+                // Mostrar alerta
+                alert(
+                    '⚠️ ADVERTENCIA: ASIGNACIÓN YA REGISTRADA\n\n' +
+                    `La Orden de Asignación de Reparto "${idOrdenAsignacion}" ya tiene una Nota de Caja registrada.\n\n` +
+                    `ID Nota de Caja existente: ${notaExistente.IDNotaCaja}\n` +
+                    `Fecha de emisión: ${formatearFecha(notaExistente.FechaEmision)}\n\n` +
+                    'No se puede generar otra nota de caja para la misma asignación.'
+                );
+                
+                return false;
+            } else {
+                // ✅ No existe duplicado, habilitar botón normal
+                actualizarEstadoBotonGenerar();
+                return true;
+            }
+        }
+        
+        // Función auxiliar para formatear fecha
+        function formatearFecha(fechaISO) {
+            if (!fechaISO) return 'N/A';
+            const fecha = new Date(fechaISO);
+            return fecha.toLocaleString('es-ES', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
         // Actualizar estado del botón generar
         function actualizarEstadoBotonGenerar() {
             const btnGenerar = document.getElementById('btnGenerarNotaCaja');
             const tieneRepartidor = datosRepartidor !== null;
             const tieneDetalles = detalleContraEntregas.length > 0;
             
-            btnGenerar.disabled = !(tieneRepartidor && tieneDetalles);
+            // ✅ Restaurar estilo normal del botón
+            btnGenerar.style.backgroundColor = '';
+            btnGenerar.textContent = 'Generar Nota de Caja';
+            
+            // Habilitar solo si hay datos y no hay duplicados
+            const idOrdenAsignacion = document.getElementById('idOrdenAsignacion').value;
+            const hayDuplicado = notasCajaExistentes.some(
+                nota => nota.IDAsignacionReparto == idOrdenAsignacion
+            );
+            
+            if (hayDuplicado) {
+                btnGenerar.disabled = true;
+                btnGenerar.style.backgroundColor = '#dc3545';
+                btnGenerar.textContent = '⚠️ Asignación ya tiene Nota de Caja';
+            } else {
+                btnGenerar.disabled = !(tieneRepartidor && tieneDetalles);
+            }
         }
 
         // Generar nota de caja
         async function generarNotaCaja() {
             if (!datosRepartidor || detalleContraEntregas.length === 0) {
                 alert('No hay datos suficientes para generar la nota de caja');
+                return;
+            }
+
+            // ✅ VALIDACIÓN FINAL: Verificar duplicado antes de generar
+            const idOrdenAsignacion = document.getElementById('idOrdenAsignacion').value;
+            const notaExistente = notasCajaExistentes.find(
+                nota => nota.IDAsignacionReparto == idOrdenAsignacion
+            );
+            
+            if (notaExistente) {
+                alert(
+                    '❌ ERROR: NO SE PUEDE GENERAR LA NOTA DE CAJA\n\n' +
+                    `La Orden de Asignación "${idOrdenAsignacion}" ya tiene una Nota de Caja registrada.\n\n` +
+                    `ID Nota existente: ${notaExistente.IDNotaCaja}\n` +
+                    'Una asignación solo puede tener una nota de caja.'
+                );
                 return;
             }
 
@@ -624,7 +767,16 @@
 
             try {
                 btnGenerar.disabled = true;
-                btnGenerar.textContent = '⏳ Generando...';
+                btnGenerar.textContent = '⏳ Generando nota de caja...';
+                
+                // Simular progreso visual
+                setTimeout(() => {
+                    btnGenerar.textContent = '📄 Creando PDF...';
+                }, 500);
+                
+                setTimeout(() => {
+                    btnGenerar.textContent = '📧 Enviando emails...';
+                }, 1500);
 
                 const payload = {
                     idResponsable: document.getElementById('responsableId').value,
@@ -643,7 +795,33 @@
                 const data = await response.json();
 
                 if (data.success) {
-                    alert('✅ Nota de caja generada exitosamente\n\nID: ' + data.idNotaCaja);
+                    // ✅ CONSTRUIR MENSAJE DETALLADO
+                    let mensaje = '✅ NOTA DE CAJA GENERADA EXITOSAMENTE\n\n';
+                    mensaje += `📋 ID Nota de Caja: ${data.idNotaCaja}\n\n`;
+                    
+                    if (data.pdfGenerado) {
+                        mensaje += '✅ PDF generado correctamente\n\n';
+                    } else {
+                        mensaje += '⚠️ PDF no se pudo generar\n\n';
+                    }
+                    
+                    if (data.emailEnviado && data.correosEnviados && data.correosEnviados.length > 0) {
+                        mensaje += '📧 EMAILS ENVIADOS EXITOSAMENTE\n';
+                        data.correosEnviados.forEach((correo, index) => {
+                            if (index === 0) {
+                                mensaje += `   • Repartidor: ${correo}\n`;
+                            } else {
+                                mensaje += `   • Responsable Caja (CC): ${correo}\n`;
+                            }
+                        });
+                    } else {
+                        mensaje += '⚠️ NO SE ENVIARON EMAILS\n';
+                        if (data.mensajeEmail) {
+                            mensaje += `   Motivo: ${data.mensajeEmail}\n`;
+                        }
+                    }
+                    
+                    alert(mensaje);
                     
                     // Recargar tabla de notas generadas
                     await cargarNotasCajaGeneradas();
@@ -671,12 +849,15 @@
                 const data = await response.json();
                 
                 if (data.success) {
-                    renderNotasCajaGeneradas(data.data || []);
+                    notasCajaExistentes = data.data || []; // ✅ GUARDAR en variable global
+                    renderNotasCajaGeneradas(notasCajaExistentes);
                 } else {
+                    notasCajaExistentes = [];
                     renderNotasCajaGeneradas([]);
                 }
             } catch (error) {
                 console.error('Error al cargar notas de caja:', error);
+                notasCajaExistentes = [];
                 renderNotasCajaGeneradas([]);
             }
         }
@@ -689,7 +870,7 @@
             if (!datos || datos.length === 0) {
                 tbody.innerHTML = `
                     <tr>
-                        <td colspan="7" style="text-align: center; color: #666;">
+                        <td colspan="8" style="text-align: center; color: #666;">
                             No hay notas de caja generadas
                         </td>
                     </tr>
@@ -711,6 +892,16 @@
                     });
                 }
                 
+                // Botón PDF con lupa 🔍
+                let btnPDF = '';
+                if (item.RutaPDF) {
+                    btnPDF = `<button class="btn-ver-pdf" onclick="verPDF('${item.RutaPDF}', ${item.IDNotaCaja})" title="Ver PDF">
+                                🔍
+                            </button>`;
+                } else {
+                    btnPDF = `<button class="btn-ver-pdf" disabled title="PDF no disponible">❌</button>`;
+                }
+                
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td>${item.IDNotaCaja || ''}</td>
@@ -720,13 +911,28 @@
                     <td>${parseFloat(item.TotalContraEntrega || 0).toFixed(0)}</td>
                     <td>${parseFloat(item.VueltoTotal || 0).toFixed(2)}</td>
                     <td>${fechaFormateada}</td>
+                    <td style="text-align: center;">${btnPDF}</td>
                 `;
                 tbody.appendChild(tr);
             });
         }
 
+        // 🔍 Función para ver PDF en nueva pestaña
+        function verPDF(rutaPDF, idNotaCaja) {
+            if (!rutaPDF) {
+                alert('❌ PDF no disponible para esta nota de caja');
+                return;
+            }
+            
+            // Construir URL relativa desde la raíz del proyecto
+            const urlPDF = '../../' + rutaPDF;
+            
+            // Abrir en nueva pestaña
+            window.open(urlPDF, '_blank');
+        }
+
         // Limpiar formulario
-        function limpiarFormulario() {
+        async function limpiarFormulario() {
             document.getElementById('idRepartidor').value = '';
             document.getElementById('dniRepartidor').value = '';
             document.getElementById('nombreRepartidor').value = '';
@@ -741,6 +947,9 @@
             
             renderDetalleContraEntregas([]);
             actualizarEstadoBotonGenerar();
+            
+            // ✅ Recargar tabla de notas para actualizar validaciones
+            await cargarNotasCajaGeneradas();
         }
 
         // Salir

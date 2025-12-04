@@ -1465,6 +1465,42 @@ CREATE TABLE `t172gestionnoentregados` (
   CONSTRAINT `t172gestionnoentregados_ibfk_3` FOREIGN KEY (`Id_Cliente`) REFERENCES `t20cliente` (`Id_Cliente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+CREATE TABLE `t110rdenAsignacionReprogramacion` (
+  `Id_OrdenAsignacionreprogramacion` int NOT NULL AUTO_INCREMENT,
+  `Id_AsignacionRepartidorVehiculo` int NOT NULL,
+  `FechaProgramada` date NOT NULL,
+  `FecCreacion` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `Estado` varchar(15) NOT NULL DEFAULT 'Pendiente',
+  PRIMARY KEY (`Id_OrdenAsignacionreprogramacion`),
+  KEY `fk_t110_t79` (`Id_AsignacionRepartidorVehiculo`),
+  CONSTRAINT `fk_t110_t79` FOREIGN KEY (`Id_AsignacionRepartidorVehiculo`) REFERENCES `t79asignacionrepartidorvehiculo` (`Id_AsignacionRepartidorVehiculo`) ON DELETE RESTRICT ON UPDATE CASCADE
+) ENGINE=InnoDB AUTO_INCREMENT=80000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `t111detalleasignacionreprogramacion` (
+  `Id_DetalleAsignacionreprogramacion` int NOT NULL AUTO_INCREMENT,
+  `Id_OrdenAsignacionreprogramacion` int NOT NULL,
+  `Id_OPedido` int NOT NULL,
+  PRIMARY KEY (`Id_DetalleAsignacionreprogramacion`),
+  KEY `fk_t111_t110` (`Id_OrdenAsignacionreprogramacion`),
+  KEY `fk_t111_t02` (`Id_OPedido`),
+  CONSTRAINT `fk_t111_t110` FOREIGN KEY (`Id_OrdenAsignacionreprogramacion`) REFERENCES `t110rdenAsignacionReprogramacion` (`Id_OrdenAsignacionreprogramacion`) ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT `fk_t111_t02` FOREIGN KEY (`Id_OPedido`) REFERENCES `t02OrdenPedido` (`Id_OrdenPedido`) ON DELETE RESTRICT ON UPDATE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=81000 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE `t112detallerutareprogramacion` (
+  `Id_DetalleRutaReprogramacion` int NOT NULL AUTO_INCREMENT,
+  `Id_OrdenAsignacionreprogramacion` int NOT NULL,
+  `Id_Distrito` int NOT NULL,
+  `DireccionSnap` varchar(255) NOT NULL,
+  `Orden` int NOT NULL,
+  `RutaPolyline` text,
+  PRIMARY KEY (`Id_DetalleRutaReprogramacion`),
+  KEY `fk_t112_ordenAsignacion` (`Id_OrdenAsignacionreprogramacion`),
+  KEY `fk_t112_distrito` (`Id_Distrito`),
+  CONSTRAINT `fk_t112_distrito` FOREIGN KEY (`Id_Distrito`) REFERENCES `t77distritoenvio` (`Id_Distrito`) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  CONSTRAINT `fk_t112_ordenAsignacion` FOREIGN KEY (`Id_OrdenAsignacionreprogramacion`) REFERENCES `t110rdenAsignacionReprogramacion` (`Id_OrdenAsignacionreprogramacion`) ON DELETE CASCADE ON UPDATE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
 -- ==========================================================
 -- 13) Índices adicionales
 -- ==========================================================

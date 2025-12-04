@@ -502,3 +502,96 @@ BEGIN
 END$$
 
 DELIMITER ;
+
+DROP PROCEDURE IF EXISTS sp_generar_orden_asignacion_reprogramacion;
+DELIMITER $$
+
+CREATE PROCEDURE sp_generar_orden_asignacion_reprogramacion(IN p_json LONGTEXT)
+BEGIN
+    DECLARE v_idOrdenAsignacionReprog INT;
+    DECLARE v_idAsignacion INT;
+    DECLARE v_fecha DATE;
+
+    -- =======================================================
+    -- Tablas temporales
+    -- =======================================================
+    DROP TEMPORARY TABLE IF EXISTS tmp_t111;
+    DROP TEMPORARY TABLE IF EXISTS tmp_t112;
+
+    CREATE TEMPORARY TABLE tmp_t111 (
+        Id_OPedido INT
+    );
+
+    CREATE TEMPORARY TABLE tmp_t112 (
+        Id_Distrito INT,
+        DireccionSnap VARCHAR(255),
+        Orden INT,
+        RutaPolyline TEXT
+    );
+
+    -- =======================================================
+    -- Extraer datos del JSON
+    -- =======================================================
+    SET v_idAsignacion = JSON_EXTRACT(p_json, '$.t110OrdenAsignacionReprogramacion[0].Id_AsignacionRepartidorVehiculo');
+    SET v_fecha        = JSON_UNQUOTE(JSON_EXTRACT(p_json, '$.t110OrdenAsignacionReprogramacion[0].FechaProgramada'));
+
+    -- ✅ t111DetalleAsignacionReprogramacion
+    INSERT INTO tmp_t111 (Id_OPedido)
+    SELECT JSON_EXTRACT(j.value, '$.Id_OPedido')
+    FROM JSON_TABLE(p_json, '$.t111DetalleAsignacionReprogramacion[*]' COLUMNS(value JSON PATH '$')) AS j;
+
+    -- ✅ t112DetalleRutaReprogramacion
+    INSERT INTO tmp_t112 (Id_Distrito, DireccionSnap, Orden, RutaPolyline)
+    SELECT JSON_EXTRACT(j.value, '$.Id_Distrito'),
+           JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.DireccionSnap')),
+           JSON_EXTRACT(j.value, '$.Orden'),
+           JSON_UNQUOTE(JSON_EXTRACT(j.value, '$.RutaPolyline'))
+    FROM JSON_TABLE(p_json, '$.t112DetalleRutaReprogramacion[*]' COLUMNS(value JSON PATH '$')) AS j;
+
+    -- =======================================================
+    -- 1. Insertar cabecera t110OrdenAsignacionReprogramacion
+    -- =======================================================
+    INSERT INTO t110rdenAsignacionReprogramacion (Id_AsignacionRepartidorVehiculo, FechaProgramada)
+    VALUES (v_idAsignacion, v_fecha);
+
+    SET v_idOrdenAsignacionReprog = LAST_INSERT_ID();
+
+    -- =======================================================
+    -- 2. Insertar detalles órdenes t111DetalleAsignacionReprogramacion
+    -- =======================================================
+    INSERT INTO t111detalleasignacionreprogramacion (Id_OrdenAsignacionreprogramacion, Id_OPedido)
+    SELECT v_idOrdenAsignacionReprog, Id_OPedido
+    FROM tmp_t111;
+
+    -- =======================================================
+    -- 3. Insertar detalle de rutas t112DetalleRutaReprogramacion
+    -- =======================================================
+    INSERT INTO t112detallerutareprogramacion (Id_OrdenAsignacionreprogramacion, Id_Distrito, DireccionSnap, Orden, RutaPolyline)
+    SELECT v_idOrdenAsignacionReprog, Id_Distrito, DireccionSnap, Orden, RutaPolyline
+    FROM tmp_t112;
+
+    -- =======================================================
+    -- 4. Registrar disponibilidad vehículo (opcional - ajustar tabla)
+    -- =======================================================
+    -- INSERT INTO t80disponibilidadvehiculo (Id_AsignacionRepartidorVehiculo, Id_OrdenAsignacion, Fecha, Estado)
+    -- VALUES (v_idAsignacion, v_idOrdenAsignacionReprog, v_fecha, 'Ocupado');
+	
+    -- =======================================================
+    -- 4. ✅ ACTUALIZAR t172gestionnoentregados a "Reprogramado"
+    -- =======================================================
+    UPDATE t172gestionnoentregados 
+    SET Estado = 'Reprogramado'
+    WHERE Id_OrdenPedido IN (SELECT Id_OPedido FROM tmp_t111);
+    
+    -- =======================================================
+    -- 5. Actualizar OSEs/OPedidos a "Reprogramado" (opcional)
+    -- =======================================================
+    UPDATE t02OrdenPedido SET Estado = 'Reprogramada'
+    WHERE Id_OrdenPedido IN (SELECT Id_OPedido FROM tmp_t111);
+
+    -- =======================================================
+    -- Retornar el código generado
+    -- =======================================================
+    SELECT v_idOrdenAsignacionReprog AS Id_OrdenAsignacionReprogramacion;
+
+END$$

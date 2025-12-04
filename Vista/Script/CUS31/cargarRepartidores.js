@@ -1,12 +1,17 @@
-
 let vrOriginalesLocal = window.vrOriginales || []; 
 
 window.renderRV = function (lista) {
   const tbody = $("#table-body-rv");
   tbody.empty();
 
+  // ✅ CLAVE: Determinar estado de botones según órdenes seleccionadas
+  const botonesHabilitados = window.opSeleccionadas && window.opSeleccionadas.length > 0;
+
   if (lista.length > 0) {
     lista.forEach(function (r) {
+      const buttonClass = botonesHabilitados ? "btn-disponibilidad" : "btn-disponibilidad-disabled";
+      const disabledAttr = botonesHabilitados ? "" : "disabled";
+      
       let row = `
         <tr>
           <td>${String(r.IdRepartidor).padStart(5, "0")}</td>
@@ -16,7 +21,7 @@ window.renderRV = function (lista) {
           <td>${parseFloat(r.CargaUtilKg).toFixed(2)}</td>
           <td>${parseFloat(r.CapacidadM3).toFixed(2)}</td>
           <td>
-            <button class="style-button btn-disponibilidad-disabled" data-id="${r.CodigoAsignacion}" disabled>Ver</button>
+            <button class="style-button ${buttonClass}" data-id="${r.CodigoAsignacion}" ${disabledAttr}>Ver</button>
           </td>
         </tr>
       `;
@@ -37,9 +42,10 @@ window.renderRV = function (lista) {
     }
   }
   
-  if (typeof window.actualizarEstadoBotones === "function") {
-    window.actualizarEstadoBotones();
-  }
+  // ✅ ELIMINAR esta línea que causaba conflictos:
+  // if (typeof window.actualizarEstadoBotones === "function") {
+  //     window.actualizarEstadoBotones();
+  // }
 };
 
 $(document).ready(() => {

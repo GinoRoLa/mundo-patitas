@@ -129,6 +129,8 @@ select::-ms-expand {
 
 .repartidorVehiculo {
     border-bottom: 1px solid #cccccc;
+    border-top: 1px solid #cccccc;
+    padding: 1rem 0 0 0;
 }
 .verDisponibilidad,.buscarRepartidor, .botonBuscar {
     display: flex;

@@ -88,16 +88,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                 </div>
             </section>
             <section class="repartidorVehiculo">
-                <form class="verDisponibilidad">
-                    <div class="buscarRepartidor">
-                        <label>Ingrese código de repartidor:</label>
-                        <input class="input-style" placeholder="Ingrese código">
-                    </div>
-                    <div class="botonBuscar">
-                        <button class="style-button">Buscar</button>
-                        <button class="style-button">Ver todo</button>
-                    </div>
-                </form>
                 <div class="product-table filter-repartidor-table">
                     <table>
                         <thead>
@@ -141,7 +131,7 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
                         <input type="text" readonly id="emailCliente">
                     </div>
                     <div class="repartidor-details">
-                        <button class="style-button button-change">Cambiar repartidor</button>
+                        <button id="btnCambiarRepartidor" class="style-button button-change">Cambiar repartidor</button>
                     </div>
                 </div>
                 <div id="resumenSeleccion" class="resumen-ose"></div>
@@ -176,5 +166,6 @@ Click nbfs://nbhost/SystemFileSystem/Templates/Scripting/EmptyPHPWebPage.php to 
         </main>
         <script src="../Script/CUS31/cargarOPedido.js" type="text/javascript"></script>
         <script src="../Script/CUS31/cargarRepartidores.js" type="text/javascript"></script>
+        <script src="../Script/CUS31/registrarOAR.js" type="text/javascript"></script>
     </body>
 </html>

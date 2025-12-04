@@ -164,13 +164,13 @@ class CUS22Negocio {
         return $vec;
     }*/
     
-    public function filtrarRepartidoresPorDias($diasLimite) {
+    public function filtrarRepartidoresPorDias($diasLimite) { //cambiar IdRepartidor por CodigoRepartidor
         $obj = new Conexion();
         $dias = $diasLimite + 1;
         // Calculamos la fecha objetivo: hoy + $diasLimite
         $sql = "SELECT 
                     t79.Id_AsignacionRepartidorVehiculo AS CodigoAsignacion,
-                    t16.id_Trabajador AS CodigoRepartidor,
+                    t16.id_Trabajador AS IdRepartidor,
                     t78.Placa,
                     t78.Marca,
                     t78.Modelo,
@@ -190,7 +190,7 @@ class CUS22Negocio {
                               SELECT 0 AS n UNION ALL SELECT 1 UNION ALL SELECT 2 UNION ALL SELECT 3 UNION ALL SELECT 4 
                               UNION ALL SELECT 5 UNION ALL SELECT 6 UNION ALL SELECT 7
                           ) AS dias
-                          WHERE n < $diasLimite
+                          WHERE n <= $diasLimite
                       ) AS fechas
                       LEFT JOIN t80DisponibilidadVehiculo d
                           ON d.Id_AsignacionRepartidorVehiculo = t79.Id_AsignacionRepartidorVehiculo

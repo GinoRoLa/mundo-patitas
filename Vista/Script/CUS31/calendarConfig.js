@@ -14,31 +14,37 @@ document.addEventListener("DOMContentLoaded", function () {
       end: new Date(new Date().getFullYear(), 11, 31),
     },
 
-    // 🔹 DESHABILITAR TODO MENOS LOS PRÓXIMOS 5 DÍAS
+    // 🔹 RANGO DINÁMICO
     dayCellDidMount: function (info) {
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
-
-      const fin = new Date();
-      fin.setDate(hoy.getDate() + 3); // hoy + 4 = total 5 días
+      
+      // ✅ USAR minDiasRestantesSeleccionados o 3 por defecto
+      const diasMax = window.minDiasRestantesSeleccionados !== null ? 
+                      window.minDiasRestantesSeleccionados : 3;
+      
+      const fin = new Date(hoy);
+      fin.setDate(hoy.getDate() + diasMax);  // ✅ CORREGIDO: + diasMax
       fin.setHours(0, 0, 0, 0);
 
       const fechaCelda = new Date(info.date);
       fechaCelda.setHours(0, 0, 0, 0);
 
-      // ❌ Si la celda no está dentro del rango permitido, se deshabilita
       if (fechaCelda < hoy || fechaCelda > fin) {
         info.el.classList.add("fc-day-disabled");
       }
     },
 
-    // 🔹 Solo permitir selección dentro del rango válido
+    // 🔹 Selección dinámica
     selectAllow: function (info) {
       const hoy = new Date();
       hoy.setHours(0, 0, 0, 0);
-
-      const fin = new Date();
-      fin.setDate(hoy.getDate() + 3);
+      
+      const diasMax = window.minDiasRestantesSeleccionados !== null ? 
+                      window.minDiasRestantesSeleccionados : 3;
+      
+      const fin = new Date(hoy);
+      fin.setDate(hoy.getDate() + diasMax);  // ✅ CORREGIDO: + diasMax
       fin.setHours(0, 0, 0, 0);
 
       const fecha = new Date(info.start);
@@ -49,4 +55,9 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 
   window.calendar.render();
+  
+  // ✅ FUNCIÓN GLOBAL para actualizar rango
+  window.actualizarRangoCalendario = function() {
+    window.calendar.render();  // ✅ Solo render() es suficiente
+  };
 });

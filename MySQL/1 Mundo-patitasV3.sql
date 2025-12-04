@@ -1465,6 +1465,110 @@ CREATE TABLE `t172gestionnoentregados` (
   CONSTRAINT `t172gestionnoentregados_ibfk_3` FOREIGN KEY (`Id_Cliente`) REFERENCES `t20cliente` (`Id_Cliente`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
+-- =========================================================
+CREATE TABLE t430EntregaPedidoDelivery (
+  Id_EntregaPedidoDelivery INT NOT NULL AUTO_INCREMENT,
+  Id_OrdenPedido INT NOT NULL,  -- t02OrdenPedido
+  Id_DetalleAsignacion INT NOT NULL, -- t401DetalleAsignacionReparto
+  IDNotaCaja INT NOT NULL, -- t28Nota_caja
+  Id_Trabajador INT NOT NULL,
+  FechaEntrega DATE NOT NULL,
+  HoraEntrega TIME NOT NULL,
+  EstadoEntrega VARCHAR(20) NOT NULL DEFAULT 'Pendiente'
+      COMMENT 'Pendiente / Entregado / No Entregado',
+  Observaciones VARCHAR(255),
+  PRIMARY KEY (Id_EntregaPedidoDelivery),
+  
+  FOREIGN KEY (Id_DetalleAsignacion) 
+    REFERENCES t401DetalleAsignacionReparto(Id_DetalleAsignacion),
+
+  FOREIGN KEY (Id_OrdenPedido) 
+    REFERENCES t02OrdenPedido(Id_OrdenPedido),
+
+  FOREIGN KEY (Id_Trabajador)
+    REFERENCES t16CatalogoTrabajadores(id_Trabajador),
+    
+FOREIGN KEY (IDNotaCaja) 
+REFERENCES t28Nota_caja(IDNotaCaja)
+);
+
+CREATE TABLE t431PagoEntrega (
+  Id_PagoEntrega INT NOT NULL AUTO_INCREMENT,
+  Id_EntregaPedidoDelivery INT NOT NULL,
+
+  MontoEsperado DECIMAL(12,2) NOT NULL CHECK (MontoEsperado >= 0),
+  MontoRecibido DECIMAL(12,2) NOT NULL CHECK (MontoRecibido >= 0),
+  MontoVuelto DECIMAL(12,2) NOT NULL CHECK (MontoVuelto >= 0),
+
+  PRIMARY KEY (Id_PagoEntrega),
+
+  FOREIGN KEY (Id_EntregaPedidoDelivery)
+      REFERENCES t430EntregaPedidoDelivery(Id_EntregaPedidoDelivery)
+);
+
+
+CREATE TABLE t433PagoDenominacion (
+  Id_PagoDenominacion INT NOT NULL AUTO_INCREMENT,
+  Id_PagoEntrega INT NOT NULL,
+
+  Tipo VARCHAR(10) NOT NULL CHECK (Tipo IN ('Billete','Moneda')),
+  Denominacion DECIMAL(12,2) NOT NULL CHECK (Denominacion >= 0),
+
+  Cantidad INT NOT NULL CHECK (Cantidad >= 0),
+
+  PRIMARY KEY (Id_PagoDenominacion),
+
+  FOREIGN KEY (Id_PagoEntrega)
+    REFERENCES t431PagoEntrega(Id_PagoEntrega)
+);
+
+CREATE TABLE t434VueltoDenominacion (
+  Id_VueltoDenominacion INT NOT NULL AUTO_INCREMENT,
+  Id_PagoEntrega INT NOT NULL,
+
+  Tipo VARCHAR(10) NOT NULL CHECK (Tipo IN ('Billete','Moneda')),
+  Denominacion DECIMAL(12,2) NOT NULL CHECK (Denominacion >= 0),
+
+  Cantidad INT NOT NULL CHECK (Cantidad >= 0),
+
+  PRIMARY KEY (Id_VueltoDenominacion),
+
+  FOREIGN KEY (Id_PagoEntrega)
+    REFERENCES t431PagoEntrega(Id_PagoEntrega)
+);
+
+
+CREATE TABLE t432IncidenciaPedidoDelivery (
+  Id_IncidenciaEntrega INT NOT NULL AUTO_INCREMENT,
+  Id_EntregaPedidoDelivery INT NOT NULL,
+  TipoIncidencia VARCHAR(50) NOT NULL, -- EJEMPLOS: CLIENTE_NO_ESTABA / DIRECCION_ERRONEA
+  Descripcion VARCHAR(255),
+  PRIMARY KEY (Id_IncidenciaEntrega),
+
+  FOREIGN KEY (Id_EntregaPedidoDelivery)
+    REFERENCES t430EntregaPedidoDelivery(Id_EntregaPedidoDelivery)
+);
+
+CREATE TABLE t435ControlVueltoRepartidor (
+    Id_ControlVuelto INT NOT NULL AUTO_INCREMENT,
+    IDNotaCaja INT NOT NULL,
+    FechaHoraMovimiento DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    TipoMovimiento VARCHAR(20) NOT NULL 
+        CHECK (TipoMovimiento IN ('ENTREGA_INICIAL', 'USO_VUELTO', 'RECEPCION_COBRO')),
+    MontoMovimiento DECIMAL(12,2) NOT NULL,
+    SaldoActual DECIMAL(12,2) NOT NULL,
+    Id_EntregaPedidoDelivery INT NULL,
+    Descripcion VARCHAR(255),
+    PRIMARY KEY (Id_ControlVuelto),
+    FOREIGN KEY (IDNotaCaja) 
+        REFERENCES t28Nota_caja(IDNotaCaja)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+    FOREIGN KEY (Id_EntregaPedidoDelivery) 
+        REFERENCES t430EntregaPedidoDelivery(Id_EntregaPedidoDelivery)
+        ON UPDATE RESTRICT ON DELETE RESTRICT
+) ENGINE=InnoDB AUTO_INCREMENT=90000;
+
+
 -- ==========================================================
 -- 13) Índices adicionales
 -- ==========================================================

@@ -173,6 +173,20 @@
                         </div>
                     </div>
 
+                    <!-- Card CUS29 -->
+                    <div class="col">
+                        <div class="card shadow-sm h-100">
+                            <div class="card-body d-flex flex-column">
+                                <h5 class="card-title">CUS29</h5>
+                                <p class="card-text flex-grow-1">Consolidación Pedidos Contraentrega</p>
+                                <a href="vista/page/CUS29_IU029.php" 
+                                   class="btn btn-primary mt-auto" target="_blank">
+                                    Ir al caso de uso
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </section>
         </main>

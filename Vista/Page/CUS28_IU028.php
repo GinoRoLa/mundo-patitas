@@ -473,7 +473,7 @@
                             <th>ID Responsable de Caja</th>
                             <th>ID Repartidor</th>
                             <th>ID Asignación Reparto</th>
-                            <th>Total Notas de Caja</th>
+                            <th>Total C.E.</th>
                             <th>Vuelto Total</th>
                             <th>Fecha Emisión</th>
                             <th>PDF</th>

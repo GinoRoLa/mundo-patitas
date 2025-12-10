@@ -3,8 +3,13 @@ use mundo_patitas3;
 -- ---------------------------------------------------------------------------------------
 
 
+-- 🔴 Desactivar validación de claves foráneas
+SET FOREIGN_KEY_CHECKS = 0;
+
+-- 🗑️ Eliminar la tabla si ya existe
 DROP TABLE IF EXISTS t28Nota_caja;
 
+-- 🟢 Crear nuevamente la tabla
 CREATE TABLE t28Nota_caja (
     IDNotaCaja INT NOT NULL AUTO_INCREMENT,
     IDResponsableCaja INT NOT NULL,
@@ -30,6 +35,10 @@ CREATE TABLE t28Nota_caja (
         FOREIGN KEY (IDAsignacionReparto) 
         REFERENCES t40ordenasignacionreparto(Id_OrdenAsignacion)
 );
+
+-- 🟢 Reactivar validación de claves foráneas
+SET FOREIGN_KEY_CHECKS = 1;
+
 
 
 
